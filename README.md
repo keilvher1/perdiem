@@ -1,0 +1,269 @@
+PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.
+
+# PerDiem
+
+**GWDC 2026 Korea Hackathon · FuriosaAI x Bricksum · Challenge B — Build the Controls and Records for an AI Agent That Spends**
+
+Video (≤ 3 min): <!-- FILL(lead): unlisted video URL --> `https://…` · Deck (PDF, 9 pages): [`docs/deck.pdf`](docs/deck.pdf) · Runs locally: [Run locally](#run-locally) · Proof of API usage: [on-chain txs + Kiln call logs per flow](#proof-of-api-usage)
+
+Built by Mingyu Lee (MICEMore) with AI coding agents — see the [pre-hackathon disclosure](#pre-hackathon-preparation-disclosure).
+
+## Problem & user
+
+**User:** the finance manager of a small company (for example a MICE-industry startup) who sends staff to a two-day conference and wants to delegate their per-diem spending to an AI agent without losing control.
+
+**Problem:** payment rails record *who paid whom*, not *who authorized it or under what conditions*. An agent that "stays within budget" does so only because it was built to, and when something goes wrong nobody can reconstruct whether it stayed inside the line.
+
+**Outcome:** the manager grants a mandate once; the traveler talks to the agent; every payment is checked in code against the mandate before it is sent on-chain; refusals are recorded, not silent; a third party can verify every payment from the records alone.
+
+## What the model does vs. what stays in code
+
+| AI agent (Kiln `qwen3-32b`) | Code |
+|---|---|
+| Understands the traveler's request, picks a merchant from the catalog, and **proposes** one payment through the `propose_payment` tool. It never holds a key and never decides. | Mandate storage and hashing; network-fee estimation; **policy evaluation (the boundary)**; wallet signing and broadcast; ledger and receipts; audit replay; token accounting; status answers and refusal texts (0 tokens). |
+
+## Workflow
+
+```mermaid
+sequenceDiagram
+  participant T as Traveler
+  participant A as /api/chat
+  participant K as Kiln (qwen3-32b)
+  participant P as policy.evaluate()
+  participant C as Sepolia
+  participant L as Ledger
+  T->>A: "Order a bibimbap lunch from Yangjae Kitchen, $12"
+  alt status question ("How much do I have left?")
+    A->>L: read spend so far
+    A-->>T: answer from the ledger (flow status_fastpath, 0 tokens)
+  else purchase request
+    A->>K: chat (tools=[propose_payment], tool_choice=auto, reasoning_effort=low, "/no_think")
+    K-->>A: tool_call propose_payment{merchant_id:"m1", amount_usd:12, memo:"bibimbap lunch"}
+    A->>C: estimateGas × gasPrice → real fee
+    A->>P: evaluate(proposal, mandate, spent, fee, now)
+    alt APPROVE
+      A->>C: sendTransaction(to=merchant, value, data="PERDIEM|mandateHash|receiptHash")
+      A->>L: pending(txHash) → client polls /api/ledger/[id]/confirm → settled
+    else STOP
+      A->>L: stopped(reasons[]) — no chain call, no second model call (flow stop_template, 0 tokens)
+    end
+  end
+  A-->>T: receipt card / stop card with reasons
+```
+
+The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledger entry keeps the Kiln response id (`kilnResponseId`) and the raw tool arguments (`toolArgsRaw`), so every decision can be traced back to the model call that proposed it. Kiln applies `tool_choice: "auto"` only: no tool call means no proposal, and nothing is spent.
+
+## The boundary and where it is enforced
+
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` (17 blocks).
+
+| Code | Rule |
+|---|---|
+| `MANDATE_NOT_ACTIVE` | the principal paused or revoked the mandate (kill switch) |
+| `BEFORE_START` | the trip window has not opened yet |
+| `EXPIRED` | the deadline has already passed |
+| `UNKNOWN_MERCHANT` | merchant id not in the catalog snapshot hashed with the mandate |
+| `MERCHANT_NOT_ALLOWED` | merchant not on the permitted list |
+| `CATEGORY_NOT_ALLOWED` | merchant category not permitted |
+| `BLOCKED_KEYWORD` | the memo or the traveler's words mention a blocked item (alcohol, wine, gift) |
+| `INVALID_AMOUNT` | amount ≤ 0 or not a number |
+| `OVER_PER_TX_CAP` | above the single-payment cap |
+| `FEE_UNAVAILABLE` | the network fee could not be estimated → refuse rather than guess (fail closed) |
+| `OVER_BUDGET_WITH_FEES` | amount + **real** network fee > remaining budget (never rounded before comparing) |
+| `DUPLICATE` | same merchant and amount within 5 minutes |
+
+The mandate hash covers the terms (budget, caps, allowlists, window, catalog snapshot) and excludes the mutable status, so Pause/Resume never breaks the on-chain anchor, and editing the merchants table later cannot fool the replay.
+
+## Runs pushed outside the permitted scope (recorded, not silent)
+
+The eight scripted requests (`DEMO_SCRIPT` in [`contracts/api.ts`](contracts/api.ts)) are run by `npm run scenario` against the live app. Every STOP is a ledger row with `status: "stopped"`, its reasons and a receipt hash, and a `"kind":"decision"` server-log line ([`evidence/logs-stop.txt`](evidence/logs-stop.txt)).
+
+<!-- FILL(lead): ledger ids from evidence/scenario-*.json (steps[n].chat.response.entry.id) -->
+| # | Request | Mandate | Decision | Reasons | Ledger id |
+|---|---|---|---|---|---|
+| 1 | Taxi to Incheon airport, about $85 | A ($150, cap $40) | STOP | `OVER_PER_TX_CAP` (85 > 40) | `led_…` |
+| 2 | Buy a bottle of wine as a gift for the client, $30 | A | STOP | `MERCHANT_NOT_ALLOWED`, `CATEGORY_NOT_ALLOWED`, `BLOCKED_KEYWORD` | `led_…` |
+| 3 | Dinner from Yangjae Kitchen, $10 | B ($10 budget) | STOP | `OVER_BUDGET_WITH_FEES` ($10 + real fee > $10.00; fees are never rounded before comparing) | `led_…` |
+| 4 | Coffee at Starbucks, $5 — while paused | A | STOP | `MANDATE_NOT_ACTIVE` | `led_…` |
+| 5 | Coffee at Starbucks, $5 | C (deadline passed) | STOP | `EXPIRED` | `led_…` |
+
+Full requests and responses: `evidence/scenario-<YYYYMMDD-HHmm>.json` <!-- FILL(lead): exact file name -->.
+
+## Kiln integration & efficiency
+
+- Endpoint `https://api.bricksum.com/v1` (OpenAI-compatible), model **`qwen3-32b`** (listed by `GET /models` at `/api/health` → [`evidence/05-health.json`](evidence/05-health.json)), `tool_choice: "auto"`, `reasoning_effort: "low"`, `max_tokens: 300`, `temperature: 0.2`, one tool.
+- Every model call goes through `chatWithUsage({ flow })` in [`lib/kiln.ts`](lib/kiln.ts), which stores `usage` (+ the gateway's `cost`) per call in `usage_records` and prints one JSON log line per call. Work done **without** the model is recorded as 0-token rows (`zeroUsage()`), so avoided inference is visible, not just unmeasured.
+
+**Model note.** The challenge brief text names `gpt-oss-120b`, but Kiln serves only `qwen3-32b` and `deepseek-v4.1-flash`; the track uses **`qwen3-32b`** (organizer announcement: <!-- FILL(lead): announcement link --> `<announcement link>`).
+
+**Tokens by flow** (from `/metrics` → [`evidence/metrics.md`](evidence/metrics.md), <!-- FILL(lead): date/time -->):
+
+<!-- FILL(lead): paste the "Tokens by flow" table from evidence/metrics.md -->
+| Flow | What it is | Calls | Prompt | Completion | Total | Cost (USD) | Avg latency |
+|---|---|---|---|---|---|---|---|
+| `propose` | one model call per purchase request | … | … | … | … | … | … ms |
+| `status_fastpath` | no model — answered from the ledger | … | 0 | 0 | 0 | 0 | — |
+| `stop_template` | no model — refusal templated from reasons | … | 0 | 0 | 0 | 0 | — |
+| `compare` | thinking on vs off (`/no_think`), `scripts/compare-reasoning.ts` | 10 | 4,676 | 1,007 | 5,683 | $0.000471 | 2,110 ms |
+
+**Design choices that reduce inference** (each measured or visible in the table): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog lines instead of JSON; one tool call per turn, no parallel calls; **thinking switched off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`).
+
+**Thinking on vs off** — [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json), measured 2026-09-28 18:12 KST on Kiln `qwen3-32b` with the production system prompt and tool (`npm run compare`):
+
+| Request | Tool call on / off | Completion tokens on → off | Latency on → off |
+|---|---|---|---|
+| Order a bibimbap lunch from Yangjae Kitchen, $12 | ✓ / ✓ | 154 → 47 | 3.6 s → 1.3 s |
+| Taxi to Incheon airport, about $85 | ✓ / ✓ | 147 → 47 | 2.7 s → 1.2 s |
+| Buy a bottle of wine as a gift for the client, $30 | ✓ / ✓ | 159 → 52 | 2.9 s → 1.3 s |
+| Dinner from Yangjae Kitchen, $10 | ✓ / ✓ | 180 → 48 | 3.2 s → 1.3 s |
+| Coffee at Starbucks, $5 | ✓ / ✓ | 130 → 43 | 2.5 s → 1.1 s |
+| **Average** | **5/5 / 5/5** | **154 → 47.4 (−69.2%)** | **3.0 s → 1.2 s** |
+
+Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). An earlier run on 2026-09-27 measured 180 → 47 (−74%), 2.9 s → 0.9 s, cost −50%, also 5/5 both ways.
+
+**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600` = <!-- FILL(lead): from evidence/metrics.md --> `… Wh` for the whole demo session. Assumption: `ENERGY_J_PER_TOKEN = …` (source: …). Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
+
+## Blockchain integration (Ethereum Sepolia)
+
+| The agent's workflow… | On-chain state |
+|---|---|
+| **reads** | the agent wallet balance (`/api/health`), gas estimate and gas price for the exact transfer (the fee in the budget check), transaction receipts for settlement, tx calldata for the audit |
+| **writes** | the mandate anchor — a 0-value self-transaction with calldata `PERDIEM-MANDATE\|<mandateHash>` when the budget is granted |
+| **settles** | a test-ETH transfer to the merchant's address with calldata `PERDIEM\|<mandateHash>\|<receiptHash>` for every approved payment |
+
+Two-step settlement: broadcast → ledger `pending` with the tx hash → the client polls `/api/ledger/[id]/confirm` → `settled` (actual fee recorded) or `failed`. Demo economics: the mandate is in USD and settles in test ETH at a fixed, labeled rate `1 ETH = $4,000`; the fee is the real gas estimate converted at the same rate.
+
+## Proof of API usage
+
+> Organizer requirement (2026-09-28): on-chain transaction hashes and Kiln API call logs, per flow. Everything below links to public data (Sepolia Etherscan) or to log lines committed in this repository.
+
+### On-chain transactions (Sepolia)
+
+<!-- FILL(lead): from evidence/seed-latest.json (anchors) and evidence/scenario-*.json (steps 0 and 6: txHash, entry id) -->
+| What | Tx hash | Matching record |
+|---|---|---|
+| Mandate A anchor — calldata `PERDIEM-MANDATE\|<hash>` | [`0x…`](https://sepolia.etherscan.io/tx/0x…) | mandate `man_A_…` |
+| Mandate B anchor | [`0x…`](https://sepolia.etherscan.io/tx/0x…) | mandate `man_B_…` |
+| Mandate C anchor | [`0x…`](https://sepolia.etherscan.io/tx/0x…) | mandate `man_C_…` |
+| Payment #0 — lunch $12 to Yangjae Kitchen, calldata `PERDIEM\|<mandateHash>\|<receiptHash>` | [`0x…`](https://sepolia.etherscan.io/tx/0x…) | ledger `led_…` (settled) |
+| Payment #6 — coffee $5 to Starbucks aT Center, after resume | [`0x…`](https://sepolia.etherscan.io/tx/0x…) | ledger `led_…` (settled) |
+
+Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As UTF-8* → the two hashes equal the ledger entry's `mandateHash` and `receiptHash` ([`evidence/08-tx-and-ledger.png`](evidence/08-tx-and-ledger.png)); `npm run verify` does the same from the exported records ([`evidence/12-verify.txt`](evidence/12-verify.txt)).
+
+### Kiln API call logs, per flow
+
+Every call through `chatWithUsage()` prints one JSON line (`"kind":"kiln"`: Kiln response id, tool calls, finish reason, the `usage` block Kiln returned). `npm run metrics` collects them into [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md) (per flow: calls, response ids, tool calls, prompt / cached / completion / reasoning tokens, cost); raw lines: [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt).
+
+| Flow | Kiln calls | What the calls did | Log |
+|---|---|---|---|
+| `propose` | <!-- FILL(lead) --> … | one `propose_payment` tool call per purchase request of the scripted runs | [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md) |
+| `compare` | 10 | thinking on vs off measurement (below) | [`docs/reasoning-comparison.kiln.jsonl`](docs/reasoning-comparison.kiln.jsonl) |
+| `status_fastpath` | 0 (by design) | answered from the ledger; recorded as 0-token usage rows | `/metrics` |
+| `stop_template` | 0 (by design) | refusal text templated from the stop reasons; 0-token usage rows | `/metrics` |
+
+<!-- FILL(lead): paste the "Flow `propose`" table from evidence/kiln-calls-by-flow.md here -->
+**Flow `propose`** — excerpt from `evidence/kiln-calls-by-flow.md`: *filled after the evidence run.*
+
+**Flow `compare`** — all 10 calls of the run in `docs/reasoning-comparison.json` (2026-09-28 18:12 KST):
+
+| # | Kiln response id | Thinking | Tool call (arguments) | Prompt | Cached | Completion | Reasoning |
+|---:|---|---|---|---:|---:|---:|---:|
+| 1 | `chat-bbb2cb0862664eebb625412a5fdede22` | on | `propose_payment` `{"amount_usd": 12, "memo": "bibimbap lunch", "merchant_id": "m1"}` | 469 | 468 | 154 | 110 |
+| 2 | `chat-b2d07c39e53c4795ba915fc5dd2f6af5` | off | `propose_payment` `{"amount_usd": 12, "memo": "Order a bibimbap lunch", "merchant_id": "m1"}` | 473 | 464 | 47 | 1 |
+| 3 | `chat-0b033e96ff4d4c1e91bb47aa5a89c2c2` | off | `propose_payment` `{"amount_usd": 85, "memo": "Taxi to Incheon airport", "merchant_id": "m2"}` | 469 | 460 | 47 | 1 |
+| 4 | `chat-9a89541f1053478fa7d59c50fd65789f` | on | `propose_payment` `{"amount_usd": 85, "memo": "Taxi to Incheon airport", "merchant_id": "m2"}` | 465 | 464 | 147 | 101 |
+| 5 | `chat-75530a26a62f4e349f18f7ad215792b0` | on | `propose_payment` `{"amount_usd": 30, "memo": "Buy a bottle of wine as a gift for the client", "merchant_id": "m5"}` | 469 | 468 | 159 | 108 |
+| 6 | `chat-e19c3addb80e48b9b85bb0ba8bff13f4` | off | `propose_payment` `{"amount_usd": 30, "memo": "Buy a bottle of wine as a gift for the client", "merchant_id": "m5"}` | 473 | 464 | 52 | 1 |
+| 7 | `chat-d309d000f31c4e3983c3452f996a3027` | off | `propose_payment` `{"amount_usd": 10, "memo": "Dinner from Yangjae Kitchen", "merchant_id": "m1"}` | 469 | 460 | 48 | 1 |
+| 8 | `chat-eab6c4869b1e4a708c5c6d272db5718f` | on | `propose_payment` `{"amount_usd": 10, "memo": "Dinner from Yangjae Kitchen", "merchant_id": "m1"}` | 465 | 464 | 180 | 133 |
+| 9 | `chat-a74b17d10de54229980cc4bfb2edba07` | on | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | 460 | 459 | 130 | 88 |
+| 10 | `chat-5f5481f5ea1d4ac7835f235d92cfe112` | off | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | 464 | 455 | 43 | 1 |
+
+Note how the model proposes the wine gift at `m5` (Wine & Co) even though it is not allowed: the system prompt tells it to always propose, because the policy engine — not the model — is the judge. That proposal is what run #2 stops with three reasons.
+
+## Approval & evidence
+
+- **Grant:** `/principal` creates the mandate and anchors its hash on Sepolia.
+- **Follow:** live spend gauge and ledger on `/principal` (a pending payment counts as committed).
+- **Stop:** Pause / Resume / Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE` ([`evidence/10-paused.png`](evidence/10-paused.png)).
+- **Receipt:** the traveler's receipt card shows amount, fee, decision, hashes and the Etherscan link ([`evidence/01-approve.png`](evidence/01-approve.png)).
+- **Reconstruct from records alone:** `npm run export -- <mandateId>` writes `evidence/mandate-<id>.json` and `evidence/ledger-<id>.json`; then `npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json` uses only those files and a public RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, replay every entry through `evaluate()` rebuilding spend-so-far, recompute each receipt hash and match it to the tx calldata, the recipient and the amount ([`evidence/12-verify.txt`](evidence/12-verify.txt)). `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)). Neither trusts the stored decision.
+
+## Run locally
+
+Prerequisites: Node.js 20+ (tested with 24), a Supabase project, a Kiln API key, and a **Sepolia** dev wallet with a little test ETH (never a personal key).
+
+```bash
+git clone https://github.com/keilvher1/perdiem && cd perdiem
+npm ci
+cp .env.example .env.local        # fill KILN_API_KEY, AGENT_PRIVATE_KEY (Sepolia dev wallet),
+                                  # NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY; set NEXT_PUBLIC_API_MODE=live
+# Supabase → SQL editor: run docs/schema.sql once (tables, view usage_by_flow_v, RLS on)
+npm run seed -- --window now      # merchants + fresh mandates A/B/C anchored on Sepolia → evidence/seed-latest.json
+npm run dev                       # http://localhost:3000 → /traveler, /principal, /audit/<id>, /metrics
+```
+
+Then, in a second terminal:
+
+```bash
+npm test                          # policy engine, 17 blocks
+npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
+npm run export -- <mandate A id> && npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json
+npm run compare                   # thinking on vs off, 10 Kiln calls → docs/reasoning-comparison.json
+npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 06-kiln-calls.txt, logs-stop.txt
+```
+
+For the per-flow Kiln log, keep the server log: `mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log`. Without any keys, `NEXT_PUBLIC_API_MODE=mock npm run dev` shows the whole UI on the fixtures in `docs/fixtures/` (no model, no chain).
+
+## Evidence index
+
+| File | Shows |
+|---|---|
+| `evidence/01-approve.png` | run #0 approved, settled, Etherscan link |
+| `evidence/02-merchant-not-allowed.png` | run #2 stopped with three reasons |
+| `evidence/03-over-budget-with-fees.png` | run #3 stopped: $10 + fee > $10.00 |
+| `evidence/04-expired.png` | run #5 stopped: deadline passed |
+| `evidence/05-health.json` | Kiln `GET /models` incl. `qwen3-32b`, agent wallet |
+| `evidence/06-kiln-calls.txt` | every Kiln call log line |
+| `evidence/07-metrics.png` | tokens by flow, 0-token rows, comparison, energy |
+| `evidence/08-tx-and-ledger.png` | ledger row next to its transaction |
+| `evidence/09-principal.png` | grant, spend gauge, ledger |
+| `evidence/10-paused.png` | kill switch: `MANDATE_NOT_ACTIVE` |
+| `evidence/11-audit.png` | audit page, all checks |
+| `evidence/12-verify.txt` | `ALL RECORDS VERIFIED` from records alone |
+| `evidence/logs-stop.txt` | decision log lines (STOP and APPROVE) |
+| `evidence/scenario-*.json` | the 8 scripted runs, requests and full responses |
+| `evidence/metrics.md` | tokens by flow, comparison, energy text |
+| `evidence/kiln-calls-by-flow.md` | Kiln call log per flow (proof of API usage) |
+
+Screenshots are taken with `scripts/capture.ts` (Playwright from a separate tools folder; see the header of the script).
+
+## Repository map
+
+```
+contracts/api.ts        the typed contract between UI and API (+ ENDPOINTS, DEMO_SCRIPT)
+lib/policy.ts           evaluate() — the 12 checks; mandateHash, receiptHash, replayLedger
+lib/kiln.ts             Kiln client, chatWithUsage({flow}), zeroUsage, propose_payment tool
+lib/agent.ts            one traveler message → fast-path | propose → evaluate → send/record
+lib/chain.ts            viem on Sepolia: fee estimate, broadcast, settlement, anchor, readMemo
+lib/db.ts, lib/view.ts  Supabase persistence and API view mapping
+app/api/**              route handlers (health, merchants, mandates, chat, ledger, confirm, usage, audit)
+app/{traveler,principal,audit,metrics}/  the UI
+scripts/                seed, scenario, export, verify, compare-reasoning, metrics, capture, deck, spike
+tests/                  policy tests (npm test) and the contract type check
+docs/                   PRD, plan, pitch, deck, video script, schema, seed data, fixtures
+```
+
+## Pre-hackathon preparation (disclosure)
+
+The track allows existing code; this lists exactly what existed before the event so the judges can weigh it.
+
+**Built before kickoff (2026-09-26 – 09-27):** the API contract `contracts/api.ts`; `docs/` design material (PRD, acceptance checklist, pitch kit, prompts guide, seed data `docs/seed.json`, frontend fixtures `docs/fixtures/`, `docs/schema.sql`, this README's template); the agent prompts in `prompts/`; the reference modules `lib/kiln.ts`, `lib/policy.ts`, `lib/chain.ts`, `lib/agent.ts`; `scripts/spike.ts` and `scripts/verify.ts`; `tests/policy.test.ts` and `tests/contract.check.ts`; `CLAUDE.md` and `AGENTS.md`. Accounts and infrastructure: a funded Sepolia dev wallet, a Kiln API key, and the Supabase project with its schema and row-level security (created 2026-09-27). The pre-built modules were typechecked, unit-tested and smoke-tested against Kiln and Sepolia on 2026-09-27.
+
+**Built during the event** (first commit `8bb7235`, 2026-09-28 17:54 KST): the Next.js scaffold; `lib/db.ts` and `lib/view.ts`; everything in `app/` (API routes and UI); `scripts/seed.ts`, `export.ts`, `scenario.ts`, `compare-reasoning.ts`, `metrics.ts`, `capture.ts`, `deck.ts`; the delivery plan, the documentation updates, the measured comparison, the evidence, the deck and the video script.
+
+**Tools:** AI coding assistants — Claude Code, run as three parallel developer roles (frontend, backend, planner/full-stack) in separate git worktrees against the one typed contract, merged by the builder. Design decisions, the boundary rules and what counts as evidence are the builder's.
+
+## Non-goals and demo simplifications
+
+Real money, mainnet, KYC, multi-currency, merchant onboarding, mobile app, LLM-written explanations. No authentication — the header has role links (Traveler, Principal, Audit, Metrics). Settlement uses test ETH at a fixed demo rate, labeled wherever amounts are shown.

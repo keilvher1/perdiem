@@ -30,10 +30,10 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 ### A. Declared Function & User Need
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
-| A1 | "Declare in one sentence, in your README, the function you built" | README line 1 = PRD §1 declared sentence | FS | `README.md` line 1 | ☐ (FS P8) |
-| A2 | "Identify the intended user and the problem being solved" | README "Problem & user" | FS | `README.md` | ☐ (FS P8) |
+| A1 | "Declare in one sentence, in your README, the function you built" | README line 1 = PRD §1 declared sentence | FS | `README.md` line 1 | ✅ (FS, README.md) |
+| A2 | "Identify the intended user and the problem being solved" | README "Problem & user" | FS | `README.md` | ✅ (FS, README.md) |
 | A3 | "Demonstrate the workflow from user input to a usable outcome" | `/traveler` chat → receipt card (approved → pending → settled, tx link) | FE (UI) + BE (`/api/chat`, confirm) | `evidence/01-approve.png`, video 0:30–0:55 | ◐ |
-| A4 | "Explain which task the AI agent performs and which parts you kept in code" | README table "model proposes / code decides" | FS | `README.md` | ☐ (FS P8) |
+| A4 | "Explain which task the AI agent performs and which parts you kept in code" | README table "model proposes / code decides" | FS | `README.md` | ✅ (FS, README.md) |
 
 ### B. Boundaries & Stopping
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
@@ -50,7 +50,7 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 |---|---|---|---|---|---|
 | C1 | "The resulting AI agent must operate using the NPU-based Kiln API with (Qwen3-32B)" | `lib/kiln.ts` (base URL `api.bricksum.com/v1`, `qwen3-32b`), `/api/health` lists `GET /models` | pre-built + BE (health route) | `evidence/05-health.json` | ◐ |
 | C2 | "Demonstrate actual API calls within the selected workflow" | `chatWithUsage` prints one `"kind":"kiln"` JSON line per call; ledger rows keep `kilnResponseId` + `toolArgsRaw` | pre-built; FS extractor | `evidence/06-kiln-calls.txt`, `evidence/kiln-calls-by-flow.md` | ◐ |
-| C3 | "show how the responses inform the agent's decisions or actions" | tool-call args → `Proposal` → `evaluate()`; README sequence diagram | FS (README) | `README.md` workflow diagram | ☐ (FS P8) |
+| C3 | "show how the responses inform the agent's decisions or actions" | tool-call args → `Proposal` → `evaluate()`; README sequence diagram | FS (README) | `README.md` workflow diagram | ✅ (FS, README.md) |
 | C4 | "Report token usage broken down by flow rather than as a single total" | `/api/usage` + `/metrics` by flow: `propose`, `status_fastpath` (0), `stop_template` (0), `compare` | BE (route) + FE (page) + FS (`metrics.ts`) | `evidence/07-metrics.png`, `evidence/metrics.md` | ◐ |
 | C5 | "explain how the design reduces unnecessary inference and energy consumption" | fast-path, templated STOP, compact catalog, one tool call, thinking off for `propose` (measured by `scripts/compare-reasoning.ts`) | FS | `docs/reasoning-comparison.json`, `README.md` | ◐ (P4) |
 | C6 | "supporting energy estimates with available measurements or clearly stated assumptions" | energy card: `total_tokens × ENERGY_J_PER_TOKEN / 3600`, assumption + source shown, or "assumption not set" | BE (usage route) + FE (card) + FS (`metrics.md` text) | `evidence/07-metrics.png`, `evidence/metrics.md` | ◐ |
@@ -61,7 +61,7 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 | D1 | "Demonstrate the selected functionality on a devnet or testnet" | Ethereum Sepolia only | pre-built (`lib/chain.ts`) | `README.md` | ✅ |
 | D2 | "An end-to-end run of the workflow should produce at least one on-chain transaction — a payment, a settlement, or a record written on-chain" | mandate anchor tx (seed / POST mandates) + payment txs #0 and #6 | BE (seed, chat) | README "Proof of API usage" tx table | 🔒 |
 | D3 | "provide its transaction hash with the matching log or history entry" | ledger row `txHash` + `receiptHash`; calldata `PERDIEM|mandateHash|receiptHash` | BE + FE | `evidence/08-tx-and-ledger.png` | ◐ |
-| D4 | "Show how the chain is used by the workflow: which state the agent reads, writes, or settles" | README reads / writes / settles table | FS | `README.md` | ☐ (FS P8) |
+| D4 | "Show how the chain is used by the workflow: which state the agent reads, writes, or settles" | README reads / writes / settles table | FS | `README.md` | ✅ (FS, README.md) |
 
 ### E. Approval & Evidence
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
@@ -79,13 +79,13 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 | # | Requirement | Artifact | Owner | Status |
 |---|---|---|---|---|
 | R1 | Public GitHub repo | `github.com/keilvher1/perdiem` switched to Public after `git log --all -- .env.local` is empty | lead | ☐ |
-| R2 | README with description + how to run | `README.md` (line 1 declared sentence; "Run locally": schema, `.env.example`, `npm run seed -- --window now`, `npm run dev`) | FS | ☐ (FS P8) |
+| R2 | README with description + how to run | `README.md` (line 1 declared sentence; "Run locally": schema, `.env.example`, `npm run seed -- --window now`, `npm run dev`) | FS | ✅ (FS, README.md) |
 | R3 | Demo video ≤ 3 min | `docs/VIDEO-SCRIPT.md` (2:55 narration + shot list) → recording, uploaded unlisted; link in README line 4 | FS (script), lead (recording) | ◐ |
-| R4 | Presentation PDF ≤ 10 pages | `docs/deck/deck.html` → `docs/deck.pdf` via `scripts/deck.ts` (9 pages) | FS | ◐ (re-render after evidence run) |
+| R4 | Presentation PDF ≤ 10 pages | `docs/deck/deck.html` → `docs/deck.pdf` via `scripts/deck.ts` (9 pages) | FS | ✅ 9 pages (re-render after the evidence run) |
 | R5 | **Proof of API usage in the README: on-chain tx hashes** | README "Proof of API usage" → tx table (anchors A/B/C, payment #0, payment #6) with Etherscan links + matching ledger ids | FS (placeholders), lead (fill) | 🔒 |
 | R6 | **Proof of API usage in the README: Kiln API call logs, per flow** | README "Proof of API usage" → excerpt of `evidence/kiln-calls-by-flow.md` (per flow: calls, response ids, tool calls, tokens) + link to `evidence/06-kiln-calls.txt` | FS (tooling + placeholders), lead (fill) | 🔒 |
-| R7 | Pre-built work clearly disclosed | README "Pre-hackathon preparation (disclosure)" | FS | ☐ (FS P8) |
-| R8 | Challenge named | README line 3 "FuriosaAI x Bricksum — Challenge B" | FS | ☐ (FS P8) |
+| R7 | Pre-built work clearly disclosed | README "Pre-hackathon preparation (disclosure)" | FS | ✅ (FS, README.md) |
+| R8 | Challenge named | README line 3 "FuriosaAI x Bricksum — Challenge B" | FS | ✅ (FS, README.md) |
 | R9 | Model note | README: brief text says gpt-oss-120b, Kiln serves only `qwen3-32b` and `deepseek-v4.1-flash`, the track uses `qwen3-32b` (+ announcement link) | FS (text), lead (link) | ◐ |
 | R10 | Submitted before 2026-09-30 12:00 KST | submission form with repo, video, PDF links | lead | ☐ |
 
