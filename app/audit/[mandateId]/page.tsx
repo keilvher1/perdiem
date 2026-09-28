@@ -3,21 +3,21 @@
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
 import { CircleCheck, OctagonAlert, RefreshCw, ShieldCheck, SquareTerminal } from "lucide-react";
-import type { AuditResponse } from "@/contracts/api";
+import type { AuditResponse, MandateDetailResponse } from "@/contracts/api";
 import { api } from "@/lib/api-client";
 import { fmtRel, fmtUsd } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckMark } from "@/components/perdiem/check-mark";
-import { CopyButton } from "@/components/perdiem/copy-button";
 import { TableShell, Tbl, Td, Th, THead, Tr } from "@/components/perdiem/data-table";
 import { HashChip } from "@/components/perdiem/hash-chip";
 import { JsonView } from "@/components/perdiem/json-view";
 import { PageContainer, PageHeader, Panel, PanelTitle } from "@/components/perdiem/page";
 import { ReasonChips } from "@/components/perdiem/reason-chips";
+import { EvidenceActions } from "@/components/perdiem/evidence-actions";
 import { EmptyState, ErrorState } from "@/components/perdiem/states";
 import { useNow } from "@/hooks/use-now";
-import { useResource } from "@/hooks/use-resource";
+import { useResource, type Resource } from "@/hooks/use-resource";
 import { cn } from "@/lib/utils";
 
 function Decision({ d }: { d: "APPROVE" | "STOP" }) {
@@ -241,8 +241,7 @@ function TransactionsSection({ audit }: { audit: AuditResponse }) {
   );
 }
 
-function VerifyYourself({ id }: { id: string }) {
-  const cmd = `npx tsx scripts/verify.ts evidence/mandate-${id}.json evidence/ledger-${id}.json`;
+function VerifyYourself({ id, records }: { id: string; records: Resource<MandateDetailResponse> }) {
   return (
     <Panel className="bg-zinc-900 text-zinc-100" as="section">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -251,20 +250,21 @@ function VerifyYourself({ id }: { id: string }) {
             <SquareTerminal aria-hidden className="size-4 text-zinc-400" /> Verify it yourself
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-            No app needed: the script reads the exported mandate and ledger plus a public Sepolia RPC, recomputes every hash and decision,
-            and reads each transaction’s calldata.
+            Download the two records, then run the script: it needs no app and no database, only the files plus a public Sepolia RPC.
+            It recomputes every hash and decision and reads each transaction’s calldata.
           </p>
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-black/40 px-3 py-2.5 ring-1 ring-white/10">
-        <span aria-hidden className="font-mono text-xs text-zinc-500">$</span>
-        <code className="min-w-0 flex-1 overflow-x-auto font-mono text-xs whitespace-nowrap text-zinc-100">{cmd}</code>
-        <CopyButton value={cmd} label="Copy verify command" showText className="text-zinc-300 hover:bg-white/10 hover:text-white" />
-      </div>
-      <p className="mt-3 text-xs text-zinc-400">
-        Export the records first with <code className="font-mono text-zinc-300">npm run export -- {id}</code> (writes the two JSON files).
-      </p>
-      <p className="mt-1.5 flex items-start gap-2 text-xs text-zinc-400">
+      <EvidenceActions
+        id={id}
+        records={records.data}
+        loading={records.loading || records.refreshing}
+        error={records.error}
+        onRetry={records.refresh}
+        tone="dark"
+        className="mt-4"
+      />
+      <p className="mt-3 flex items-start gap-2 text-xs text-zinc-400">
         <CircleCheck aria-hidden className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
         By hand: open any transaction on Etherscan → Input Data → View as UTF-8, and compare the two hashes with the tables above.
       </p>
@@ -294,6 +294,15 @@ export default function AuditPage() {
   const now = useNow(5000);
   const load = useCallback(() => api.audit(id), [id]);
   const audit = useResource(id ? load : null);
+  // The raw records behind "Download records" (the audit response carries no ledger entries).
+  const loadRecords = useCallback(() => api.mandate(id), [id]);
+  const records = useResource(id ? loadRecords : null);
+  const { refresh: refreshAudit } = audit;
+  const { refresh: refreshRecords } = records;
+  const rerun = useCallback(() => {
+    refreshAudit();
+    refreshRecords();
+  }, [refreshAudit, refreshRecords]);
 
   return (
     <PageContainer>
@@ -310,7 +319,7 @@ export default function AuditPage() {
             {audit.updatedAt !== null && (
               <span className="text-xs text-zinc-400 tabular-nums">Checked {fmtRel(new Date(audit.updatedAt).toISOString(), now)}</span>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={audit.refresh} disabled={audit.refreshing || audit.loading}>
+            <Button type="button" variant="outline" size="sm" onClick={rerun} disabled={audit.refreshing || audit.loading}>
               <RefreshCw aria-hidden className={cn((audit.refreshing || audit.loading) && "animate-spin")} />
               Re-run checks
             </Button>
@@ -337,7 +346,7 @@ export default function AuditPage() {
           <TermsSection audit={audit.data} />
           <ReplaySection audit={audit.data} />
           <TransactionsSection audit={audit.data} />
-          <VerifyYourself id={audit.data.mandate.id} />
+          <VerifyYourself id={audit.data.mandate.id} records={records} />
         </div>
       ) : null}
     </PageContainer>
