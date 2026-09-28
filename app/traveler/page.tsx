@@ -79,6 +79,7 @@ function TravelerInner() {
             onRetry={(text, mandateId) => void send(text, mandateId)}
             onPickChip={onPickChip}
             onClear={clearChatSession}
+            onSettled={refresh}
           />
         </div>
       </div>

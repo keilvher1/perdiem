@@ -132,7 +132,7 @@ export function AppShell() {
                   className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-300 px-2 py-0.5 text-[11px] font-medium text-zinc-500 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                 >
                   <Database aria-hidden className="size-3" />
-                  Mock data
+                  <span className="sr-only sm:not-sr-only">Mock data</span>
                 </span>
               </TooltipTrigger>
               <TooltipContent side="bottom" align="end" className="max-w-xs">

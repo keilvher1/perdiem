@@ -65,12 +65,13 @@ export function MandateSelector({
       </SelectTrigger>
       <SelectContent position="popper" align="start" className="w-[var(--radix-select-trigger-width)] min-w-[320px]">
         {mandates.map((m) => (
-          <SelectItem key={m.id} value={m.id} className="py-1.5">
+          <SelectItem key={m.id} value={m.id} className="py-1.5 *:[span]:last:min-w-0 *:[span]:last:flex-1">
             <span className="flex min-w-0 flex-1 items-center gap-2">
-              <span className="truncate font-mono text-xs font-medium text-zinc-900">{m.id}</span>
-              <span className="hidden truncate text-xs text-zinc-500 sm:inline">{m.traveler}</span>
+              <span className="max-w-[14rem] shrink-0 truncate font-mono text-xs font-medium text-zinc-900">{m.id}</span>
+              <span className="hidden min-w-0 truncate text-xs text-zinc-500 sm:inline">{m.traveler}</span>
               <StatusPill status={effectiveMandateStatus(m, now)} size="xs" />
-              <span className="ml-auto pl-2 text-xs whitespace-nowrap text-zinc-600 tabular-nums">
+              {/* In the closed trigger on phones only id + status fit; the open list always shows money. */}
+              <span className="ml-auto pl-2 text-xs whitespace-nowrap text-zinc-600 tabular-nums in-data-[slot=select-trigger]:hidden sm:in-data-[slot=select-trigger]:inline">
                 {fmtUsd(m.remainingUsd)} <span className="text-zinc-400">/ {fmtUsd(m.budgetUsd)}</span>
               </span>
             </span>

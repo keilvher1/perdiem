@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { Bot, CornerDownLeft, LoaderCircle, RotateCcw, SendHorizontal, TriangleAlert } from "lucide-react";
 import type { LedgerEntryView, MandateSummary, UsageRecord } from "@/contracts/api";
 import { DEMO_SCRIPT } from "@/lib/api-client";
@@ -14,8 +14,15 @@ import { updateChatEntry, type ChatMessage } from "@/hooks/use-chat-session";
 import { cn } from "@/lib/utils";
 
 /** Receipt that polls confirm while pending and writes the result back into the session. */
-function LiveReceiptCard({ entry }: { entry: LedgerEntryView }) {
-  useConfirmPolling(entry, updateChatEntry);
+function LiveReceiptCard({ entry, onSettled }: { entry: LedgerEntryView; onSettled?: () => void }) {
+  const onUpdate = useCallback(
+    (e: LedgerEntryView) => {
+      updateChatEntry(e);
+      onSettled?.();
+    },
+    [onSettled],
+  );
+  useConfirmPolling(entry, onUpdate);
   return <ReceiptCard entry={entry} />;
 }
 
@@ -63,7 +70,17 @@ function AgentAvatar() {
   );
 }
 
-function Message({ m, onRetry, busy }: { m: ChatMessage; onRetry: (text: string, mandateId: string) => void; busy: boolean }) {
+function Message({
+  m,
+  onRetry,
+  busy,
+  onSettled,
+}: {
+  m: ChatMessage;
+  onRetry: (text: string, mandateId: string) => void;
+  busy: boolean;
+  onSettled?: () => void;
+}) {
   if (m.kind === "user") {
     return (
       <div className="flex justify-end">
@@ -103,7 +120,7 @@ function Message({ m, onRetry, busy }: { m: ChatMessage; onRetry: (text: string,
         </div>
         {m.entry && (
           <div className="max-w-[560px]">
-            <LiveReceiptCard entry={m.entry} />
+            <LiveReceiptCard entry={m.entry} onSettled={onSettled} />
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2">
@@ -187,6 +204,7 @@ export function ChatPanel({
   onRetry,
   onPickChip,
   onClear,
+  onSettled,
   canSend,
 }: {
   messages: ChatMessage[];
@@ -198,15 +216,42 @@ export function ChatPanel({
   onRetry: (text: string, mandateId: string) => void;
   onPickChip: (text: string, prefix: string, forSelected: boolean) => void;
   onClear: () => void;
+  /** Called when a receipt leaves "pending" (e.g. to refresh the budget). */
+  onSettled?: () => void;
   canSend: boolean;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const busy = pending !== null;
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef(true);
+
+  // Stay pinned to the newest message while content grows (new replies, a receipt flipping to
+  // settled), unless the reader has scrolled up.
   useEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    const content = contentRef.current;
+    if (!el || !content) return;
+    const onScroll = () => {
+      pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    const ro = new ResizeObserver(() => {
+      if (pinnedRef.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(content);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    pinnedRef.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages.length, busy]);
 
   const submit = (e: FormEvent) => {
@@ -238,7 +283,8 @@ export function ChatPanel({
         )}
       </div>
 
-      <div ref={listRef} className="h-[calc(100dvh-460px)] min-h-[340px] space-y-5 overflow-y-auto px-5 py-5" aria-live="polite">
+      <div ref={listRef} className="h-[calc(100dvh-460px)] min-h-[340px] overflow-y-auto" aria-live="polite">
+        <div ref={contentRef} className={cn("space-y-5 px-5 py-5", messages.length === 0 && !busy && "h-full")}>
         {messages.length === 0 && !busy ? (
           <EmptyState
             className="h-full border-0 bg-transparent"
@@ -252,7 +298,7 @@ export function ChatPanel({
             return (
               <div key={m.id} className="space-y-5">
                 {showDivider && <Divider mandate={m.mandateId} />}
-                <Message m={m} onRetry={onRetry} busy={busy} />
+                <Message m={m} onRetry={onRetry} busy={busy} onSettled={onSettled} />
               </div>
             );
           })
@@ -266,6 +312,7 @@ export function ChatPanel({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       <div className="space-y-3 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4">
