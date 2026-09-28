@@ -23,14 +23,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <AppShell />
             </Suspense>
             <main className="flex-1">{children}</main>
-            <footer className="border-t border-zinc-200 bg-white">
+            <footer className="border-t border-zinc-200 bg-white print:hidden">
               <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 text-xs text-zinc-500 sm:flex-row sm:justify-between sm:px-6">
                 <span>Challenge B | FuriosaAI x Bricksum | GWDC 2026 Korea</span>
                 <span>Sepolia testnet only · no real money moves</span>
               </div>
             </footer>
           </MandatesProvider>
-          <Toaster position="bottom-right" theme="light" closeButton />
+          {/* Offsets keep toasts above the floating Evidence button (bottom-6, 44–48 px tall). */}
+          <Toaster position="bottom-right" theme="light" closeButton offset={{ bottom: 88 }} mobileOffset={{ bottom: 80 }} />
         </TooltipProvider>
       </body>
     </html>

@@ -129,3 +129,32 @@
     @apply font-sans;
   }
 }
+
+/* Printable trip statement (/audit/[id]/report): A4, the app chrome is print:hidden. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report-row,
+  .report-keep {
+    break-inside: avoid;
+  }
+  .report-thead {
+    display: table-header-group;
+  }
+  .report-annex {
+    break-before: page;
+  }
+  .report-section h2 {
+    break-after: avoid;
+  }
+}

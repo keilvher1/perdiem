@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/perdiem/states";
 import { ReceiptCard } from "@/components/perdiem/receipt-card";
 import { useConfirmPolling } from "@/hooks/use-confirm-polling";
-import { errorTxHash, nothingWasSent, updateChatEntry, type ChatMessage } from "@/hooks/use-chat-session";
+import { errorTxHash, nothingWasSent, unrecordedPaymentCode, updateChatEntry, type ChatMessage } from "@/hooks/use-chat-session";
 import { cn } from "@/lib/utils";
 
 /** Receipt that polls confirm while pending and writes the result back into the session. */
@@ -114,6 +114,8 @@ function Message({
     }
     // The failure may have come after a broadcast: never claim nothing was paid, never offer a retry.
     const txHash = errorTxHash(m.details);
+    const unrecorded = unrecordedPaymentCode(m.code);
+    if (unrecorded) return <UnrecordedPayment m={m} code={unrecorded} txHash={txHash} />;
     return (
       <div className="flex gap-3">
         <AgentAvatar />
@@ -167,6 +169,62 @@ function Message({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] text-zinc-400 tabular-nums">{fmtTime(m.at)}</span>
           <UsageLine usage={m.usage} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A payment was broadcast but the ledger does not hold it (yet). Never "Try again": the retry
+ * could pay a second time, because spent-so-far and DUPLICATE are read from the ledger.
+ */
+function UnrecordedPayment({
+  m,
+  code,
+  txHash,
+}: {
+  m: Extract<ChatMessage, { kind: "error" }>;
+  code: "PAYMENT_NOT_RECORDED" | "LEDGER_UNRECONCILED";
+  txHash: `0x${string}` | null;
+}) {
+  const thisRequest = code === "PAYMENT_NOT_RECORDED";
+  return (
+    <div className="flex gap-3">
+      <AgentAvatar />
+      <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-amber-300 bg-amber-50/80 px-4 py-3 text-sm">
+        <p className="flex items-center gap-1.5 font-medium text-amber-950">
+          <TriangleAlert aria-hidden className="size-4" />
+          {thisRequest ? "A payment may have been broadcast — do not retry" : "An earlier payment is not in the ledger yet — do not retry"}
+        </p>
+        <p className="mt-1 text-amber-900/90">
+          {thisRequest
+            ? "This payment may already be on its way on Sepolia, but the ledger could not record it. Sending the request again could pay twice."
+            : "A payment for this mandate may have been broadcast without being recorded. Until the server writes it to the ledger, it evaluates no new spend for this mandate; this request was refused before any evaluation. Do not resend the earlier request: it could pay twice."}
+        </p>
+        <p className="mt-1 text-xs font-medium text-amber-900">
+          The server keeps the entry and records it before evaluating anything else for this mandate. Check the ledger or Etherscan
+          instead of retrying.
+        </p>
+        <p className="mt-1 text-xs text-amber-800/80">
+          {m.text}{" "}
+          <span className="font-mono">
+            {m.code}
+            {m.status > 0 ? ` · HTTP ${m.status}` : ""}
+          </span>
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {txHash && (
+            <Button asChild size="sm" variant="outline" className="bg-white">
+              <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
+                View tx on Etherscan
+                <ArrowUpRight aria-hidden />
+              </a>
+            </Button>
+          )}
+          <Button asChild size="sm" variant="outline" className="bg-white">
+            <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>Open ledger</Link>
+          </Button>
         </div>
       </div>
     </div>
