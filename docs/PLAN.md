@@ -1,6 +1,6 @@
 # PerDiem — delivery plan (Challenge B, GWDC 2026 Korea)
 
-Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) 22:30 KST (after the evidence run: set `man_*_ev1` = recorded API run, set `man_*_ev3` = chat screenshots; README markers filled; deck re-render next).
+Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) 22:35 KST (after the evidence run: set `man_*_ev1` = recorded API run, set `man_*_ev3` = chat screenshots; README markers filled, deck re-rendered from the evidence).
 Deadline: **2026-09-30 (Wed) 12:00 KST, submission closes.** Everything below serves that one date.
 
 Legend for status: ☐ todo · ◐ in progress · ✅ done (on a branch) · 🔒 needs the lead's live evidence run. Evidence sets of 2026-09-28: **ev1** (`evidence/seed-1.json`, 20:32–20:33 KST) is the recorded API run; **ev3** (`evidence/seed-3.json`, 22:10 KST) produced the chat screenshots; **ev2** (22:07 KST) was a screenshot take that was replaced.
@@ -81,7 +81,7 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 | R1 | Public GitHub repo | `github.com/keilvher1/perdiem` switched to Public after `git log --all -- .env.local` is empty | lead | ☐ |
 | R2 | README with description + how to run | `README.md` (line 1 declared sentence; "Run locally": schema, `.env.example`, `npm run seed -- --window now`, `npm run dev`) | FS | ✅ (FS, README.md) |
 | R3 | Demo video ≤ 3 min | `docs/VIDEO-SCRIPT.md` (2:55 narration + shot list) → recording, uploaded unlisted; link in README line 7 | FS (script), lead (recording) | ◐ script done; recording + unlisted upload pending (README line 7 keeps one video placeholder) |
-| R4 | Presentation PDF ≤ 10 pages | `docs/deck/deck.html` → `docs/deck.pdf` via `scripts/deck.ts` (9 pages) | FS | ✅ 9 pages (re-render after the evidence run) |
+| R4 | Presentation PDF ≤ 10 pages | `docs/deck/deck.html` → `docs/deck.pdf` via `scripts/deck.ts` (9 pages) | FS | ✅ 9 pages, re-rendered 22:29 KST from the evidence: screenshots 01–03 (ev3) and 11 (ev1), runs table from the ev1 scenario, flows + energy from `evidence/metrics.md` (+ compare row), verify excerpt from `evidence/12-verify.txt`; byline Mingyu Lee |
 | R5 | **Proof of API usage in the README: on-chain tx hashes** | README "Proof of API usage" → tx table (anchors A/B/C, payment #0, payment #6) with Etherscan links + matching ledger ids | FS (placeholders + fill from evidence) | ✅ ev1: `seed-1.json` anchors, `scenario-20260928-2033.json` payments; backend run kept in a `<details>` block |
 | R6 | **Proof of API usage in the README: Kiln API call logs, per flow** | README "Proof of API usage" → excerpt of `evidence/kiln-calls-by-flow.md` (per flow: calls, response ids, tool calls, tokens) + link to `evidence/06-kiln-calls.txt` | FS (tooling + fill from evidence) | ✅ `propose` rows of ev1 (7 calls → ledger id → decision) + `compare` (10) |
 | R7 | Pre-built work clearly disclosed | README "Pre-hackathon preparation (disclosure)" | FS | ✅ (FS, README.md) |
@@ -136,7 +136,7 @@ Nine checklist PNGs: 01, 02, 03, 04, 07, 08, 09, 10, 11 (the Evidence button is 
 | ✅ done early: Mon 9/28 18:48 (round 1), 19:38 (QA), 20:28 (round 2) | lead | merge `feat/backend` → `feat/frontend` → `feat/fullstack` into `main` (see `docs/REVIEW-NOTES.md`), `NEXT_PUBLIC_API_MODE=live`, `npm run seed -- --window now`, `npm run scenario` | build green (`2669fe6`, 9-suite `npm test`); scenario 8/8 (ev1, 20:33) |
 | before the evidence run | FE/BE/lead | **merge cutoff** for anything that changes pages in the screenshots (receipt card, Evidence button, AppShell, layout); if it is not merged and green when the run starts, run without it | build green in mock and live |
 | ✅ done Mon 9/28 20:30–22:12 (commits `b162928`, `7590e5a`) | lead | **evidence run** on port 3000 — one server only, `ENERGY_J_PER_TOKEN` set — exact runbook with go/no-go checks: **`docs/EVIDENCE-RUN.md`** (DB backup + clean, seed, scenario, export + verify, download + `cmp`, capture pages/chat/drawer/report, metrics; keep the committed `docs/reasoning-comparison.json` unless README/deck are regenerated) | all files of §4 present |
-| ◐ Mon 9/28 22:15–: README ✅, deck re-render next | FS | fill README "Proof of API usage", re-render deck with screenshots (`npx tsx scripts/deck.ts`) | README keeps exactly two `FILL(lead)` markers: the video URL and the announcement link |
+| ✅ done early: Mon 9/28 22:15–22:35 | FS | fill README "Proof of API usage", re-render deck with screenshots (`npx tsx scripts/deck.ts`) | README keeps exactly two `FILL(lead)` markers: the video URL and the announcement link |
 | Tue 9/29 22:00–00:30 | lead | video take 1 (fresh seed per take; DUPLICATE window 5 min) following `docs/VIDEO-SCRIPT.md` | ≤ 3:00 cut |
 | Wed 9/30 07:00–10:00 | lead | video take 2 if needed, upload unlisted, README links, repo Public, incognito check of every link | checklist §F all ✅ |
 | Wed 9/30 10:00–11:00 | lead | submit (repo, video, PDF) | confirmation email |

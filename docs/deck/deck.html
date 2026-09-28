@@ -126,10 +126,14 @@
 
   /* 6 — live evidence */
   .strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .strip .frame { height: 176px; }
+  .strip .frame { height: 196px; }
+  /* chat screenshots (1280×1000 CSS px, newest card scrolled to the top): show the reply and the card, not the page chrome */
+  .strip img[src] { object-view-box: inset(24% 38% 26% 3%); }
+  .strip img[src][data-evidence="02-merchant-not-allowed.png"] { object-view-box: inset(25.8% 38% 24% 3%); }
+  .strip img[src][data-evidence="03-over-budget-with-fees.png"] { object-view-box: inset(26.4% 38% 24% 3%); }
   table.runs { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 14px; }
   table.runs th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; padding: 0 10px 6px; border-bottom: 1px solid var(--line-2); }
-  table.runs td { padding: 3.5px 10px; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: middle; }
+  table.runs td { padding: 2.5px 10px; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: middle; }
   table.runs td.req { color: var(--ink); }
   table.runs td.num { font-family: var(--mono); color: var(--ink-3); width: 28px; }
   .runs-note { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); }
@@ -277,7 +281,7 @@
   </div>
   <div class="note-row" style="margin-top:18px">
     <span class="chip">The model never holds keys</span>
-    <span class="chip">Unit-tested · <span class="mono" style="font-size:13px">npm test</span> (6 suites)</span>
+    <span class="chip">Unit-tested · <span class="mono" style="font-size:13px">npm test</span> (9 suites)</span>
     <span class="chip">Mandate hash covers terms + catalog, not status</span>
     <span class="chip">Stopping is recorded, not silent</span>
   </div>

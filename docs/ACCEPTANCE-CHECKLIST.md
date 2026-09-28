@@ -55,10 +55,10 @@
 | Challenge 명시 ("FuriosaAI x Bricksum — Challenge B") | ✅ README 5번째 줄 |
 | GitHub 저장소 링크(접근 가능) | ☐ 공개 전환 후 시크릿 창 확인(lead) |
 | 데모 영상 3분 이내 링크 | ☐ 촬영·업로드 대기(README 7번째 줄 자리표시 1개) |
-| 프로젝트 요약 + 피치덱 PDF | ◐ 요약 = README, 덱 = `docs/deck.pdf`(오늘 증거로 재렌더 예정) |
+| 프로젝트 요약 + 피치덱 PDF | ✅ 요약 = README, 덱 = `docs/deck.pdf`(9쪽, 22:29 KST에 오늘 증거로 재렌더) |
 | README에 사전 준비 범위 공개(contracts/, docs/, prompts/, lib/{kiln,policy,chain,agent}.ts, scripts/{spike,verify}.ts, tests/, 지갑, 키, Supabase 프로젝트) | ✅ README "Pre-hackathon preparation (disclosure)" |
 | 공개(Public) GitHub 저장소 + README에 설명과 실행 방법(how to run) | ◐ README 설명·실행 방법 ✅, 공개 전환(lead) ☐ |
-| 발표 자료 PDF 10쪽 이내 (`docs/deck.pdf`) | ◐ 9쪽, 오늘 증거로 재렌더 예정 |
+| 발표 자료 PDF 10쪽 이내 (`docs/deck.pdf`) | ✅ 9쪽(`docs/deck.pdf`, 22:29 KST 재렌더, `scripts/deck.ts`는 10쪽 초과 시 거부) |
 | **README에 API 사용 증거: 온체인 tx 해시(앵커 + 결제) + Kiln API 호출 로그(flow별, `evidence/kiln-calls-by-flow.md`)** | ✅ README "Proof of API usage"(ev1 tx 5건 + flow별 Kiln 로그) |
 | 모델 표기: 과제서 문구는 gpt-oss-120b, Kiln 제공 모델은 qwen3-32b와 deepseek-v4.1-flash뿐 → 트랙은 qwen3-32b 사용(공지 링크) | ◐ 문구 ✅, 공지 링크 대기(README 자리표시 1개) |
 | 마감 2026-09-30 12:00 KST 전 제출 | ☐ |

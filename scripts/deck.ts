@@ -11,8 +11,10 @@
  * What gets filled in (everything else is static text in deck.html):
  *   {{cmp.*}}, {{chart}}          docs/reasoning-comparison.json (always present)
  *   <img data-evidence="X.png">   evidence/X.png when it exists, else a labeled placeholder stays
- *   <!--@runs--> <!--@runsnote-->  newest evidence/scenario-*.json (else the expected outcomes)
- *   <!--@flows--> <!--@energy-->   evidence/metrics.md (else placeholders + the compare row from the JSON)
+ *   <!--@runs--> <!--@runsnote-->  newest evidence/scenario-*.json (else the expected outcomes); the note also
+ *                                 names the chat-screenshot set from evidence/capture-log.json when it differs
+ *   <!--@flows--> <!--@energy-->   evidence/metrics.md (else placeholders); the compare row always comes from
+ *                                 docs/reasoning-comparison.json unless metrics.md has a compare flow
  *   <!--@verify-->                evidence/12-verify.txt excerpt
  * Re-run after the evidence run so the PDF carries the real screenshots and numbers.
  * Flags: --html <path> | --out <path> | --evidence <dir> | --preview <dir> | --keep-html <path>
@@ -142,8 +144,23 @@ interface ScenarioStep {
 }
 interface Scenario {
   startedAt: string;
+  mandates?: Record<string, string>;
   summary: { total: number; matched: number };
   steps: ScenarioStep[];
+}
+
+/** "man_A_ev3" → "man_*_ev3" (the demo-set label used in the README). */
+const setLabel = (mandateId: string | undefined) => (mandateId ? mandateId.replace(/^man_[A-Z]_/, "man_*_") : null);
+
+/** The chat-screenshot take recorded by scripts/capture.ts --only chat, if any. */
+function chatCapture(): { set: string; at: string } | null {
+  const p = join(EVIDENCE, "capture-log.json");
+  if (!existsSync(p)) return null;
+  const log = JSON.parse(readFileSync(p, "utf8")) as { at: string; steps?: string[]; mandates?: Record<string, string>; sent?: { usage?: { at?: string }[] }[] };
+  if (!log.steps?.includes("chat")) return null;
+  const set = setLabel(log.mandates?.A);
+  const first = log.sent?.flatMap((x) => x.usage ?? []).find((u) => u.at)?.at ?? log.at;
+  return set ? { set, at: first } : null;
 }
 
 function newestScenario(): { file: string; data: Scenario } | null {
@@ -173,7 +190,7 @@ function runsRows(s: Scenario): string {
     .join("\n");
 }
 
-function metricsFlows(md: string): { rows: string; generated: string | null } | null {
+function metricsFlows(md: string): { rows: string; generated: string | null; hasCompare: boolean } | null {
   const sec = md.split("## Tokens by flow")[1]?.split("\n## ")[0];
   if (!sec) return null;
   const out: string[] = [];
@@ -184,7 +201,7 @@ function metricsFlows(md: string): { rows: string; generated: string | null } | 
     out.push(`          <tr${total === "0" ? ' class="zero"' : ""}><td>${flow}</td><td>${calls}</td><td>${prompt}</td><td>${completion}</td><td>${cost}</td></tr>`);
   }
   const gen = md.match(/^Generated (\S+)/m)?.[1] ?? null;
-  return out.length ? { rows: out.join("\n"), generated: gen } : null;
+  return out.length ? { rows: out.join("\n"), generated: gen, hasCompare: out.some((r) => r.includes("<td>compare</td>")) } : null;
 }
 
 function compareRow(c: ReasoningComparison): string {
@@ -248,7 +265,10 @@ async function main() {
   if (sc) {
     filled.push(sc.file);
     html = block(html, "runs", runsRows(sc.data));
-    html = block(html, "runsnote", `Recorded run ${esc(kst(sc.data.startedAt))} — ${sc.data.summary.matched}/${sc.data.summary.total} outcomes as expected · ${esc(sc.file)}`);
+    const runSet = setLabel(sc.data.mandates?.A);
+    const chat = chatCapture();
+    const shots = chat && chat.set !== runSet ? ` · screenshots above: chat take ${esc(chat.set)}, ${esc(kst(chat.at).slice(11))}` : "";
+    html = block(html, "runsnote", `Recorded run ${esc(kst(sc.data.startedAt))}${runSet ? ` (${esc(runSet)})` : ""} — ${sc.data.summary.matched}/${sc.data.summary.total} outcomes as expected · ${esc(sc.file)}${shots}`);
   } else missing.push(`${EVIDENCE}/scenario-*.json`);
 
   // tokens by flow + energy
@@ -257,8 +277,13 @@ async function main() {
   const flows = md ? metricsFlows(md) : null;
   if (flows) {
     filled.push(mdPath);
-    html = block(html, "flows", flows.rows);
-    html = block(html, "flowsnote", `Tokens by flow from /api/usage${flows.generated ? `, ${esc(kst(flows.generated))}` : ""}. Green rows never call the model.`);
+    // compare runs outside the server, so it is in usage_records only after `npm run compare -- --save`.
+    html = block(html, "flows", flows.hasCompare ? flows.rows : `${flows.rows}\n${compareRow(c)}`);
+    html = block(
+      html,
+      "flowsnote",
+      `/api/usage${flows.generated ? ` at ${esc(kst(flows.generated))}` : ""}${flows.hasCompare ? "" : "; compare = the thinking on/off run (docs/reasoning-comparison.json), outside the server"}. Green rows never call the model.`,
+    );
   } else {
     missing.push(mdPath);
     html = block(
@@ -274,7 +299,17 @@ async function main() {
     html = block(html, "flowsnote", "compare row measured on Kiln (docs/reasoning-comparison.json); the other rows are filled from /api/usage after the evidence run. Green rows never call the model.");
   }
   const energy = md?.match(/^Energy estimate: (.*)$/m)?.[1];
-  if (energy) html = block(html, "energy", `<b>Energy:</b> ${esc(energy)}`);
+  if (energy) {
+    // Short form when the assumption is the documented one (RNGD 180 W × 1.233 s ÷ 517 tokens); else the line verbatim.
+    const m = energy.match(/^≈ ([\d.]+) Wh for ([\d,]+) tokens\. Assumption: 0\.429 J\/token \(source: .*180 W.*1\.233 s.*517 tokens/);
+    html = block(
+      html,
+      "energy",
+      m
+        ? `<b>Energy: ≈ ${m[1]} Wh</b> for ${m[2]} tokens = tokens × 0.429 J/token ÷ 3600. <b>Assumption:</b> one RNGD card (180 W TDP) busy for a proposal's measured 1.233 s over its 517 tokens. Multi-card serving or host power would raise it; batching and network time would lower it. An estimate, not a measurement: Kiln does not report per-request energy.`
+        : `<b>Energy:</b> ${esc(energy)}`,
+    );
+  }
 
   // verify excerpt
   const vPath = join(EVIDENCE, "12-verify.txt");
