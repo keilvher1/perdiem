@@ -1,6 +1,6 @@
 # PerDiem — delivery plan (Challenge B, GWDC 2026 Korea)
 
-Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) 18:50 KST.
+Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) 20:05 KST (round 2: Evidence button, status timeline, verify check count).
 Deadline: **2026-09-30 (Wed) 12:00 KST, submission closes.** Everything below serves that one date.
 
 Legend for status: ☐ todo · ◐ in progress · ✅ done (on a branch) · 🔒 needs the lead's live evidence run.
@@ -42,7 +42,7 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 | B2 | "Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added" | Run 3: mandate B ($10) asks for exactly $10 → `OVER_BUDGET_WITH_FEES` (fee never rounded) | BE (route) + FE (stop card) | `evidence/03-over-budget-with-fees.png`, `evidence/scenario-*.json` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | B3 | "— a merchant that is not on the list" | Run 2: wine gift → `MERCHANT_NOT_ALLOWED` + `CATEGORY_NOT_ALLOWED` + `BLOCKED_KEYWORD` | BE + FE | `evidence/02-merchant-not-allowed.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | B4 | "— a deadline already past" | Run 5: mandate C (window 9/20–9/25) → `EXPIRED` | BE + FE | `evidence/04-expired.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
-| B5 | "show through logs or history that it stopped" | ledger rows `status=stopped` with `reasons[]`; server prints one `"kind":"decision"` JSON line per decision; `scripts/metrics.ts` extracts them | BE (log line in `/api/chat`), FS (extractor) | `evidence/logs-stop.txt` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| B5 | "show through logs or history that it stopped" | ledger rows `status=stopped` with `reasons[]`; server prints one `"kind":"decision"` JSON line per decision and one `"kind":"mandate_status"` line per pause/resume/revoke; `scripts/metrics.ts` extracts them | BE (log lines in `/api/chat`, `PATCH /api/mandates/[id]`), FS (extractor) | `evidence/logs-stop.txt`, `evidence/logs-status.txt` (status timeline; log lines, not hashed records) | ✅ built (dry run 09-28; timeline 09-28 round 2) · 🔒 final evidence |
 | B6 | "Stopping is a correct outcome, and it should be recorded rather than silent" | STOP entries carry a `receiptHash` and appear in `/audit` replay; 0-token `stop_template` usage row | BE + FE | `evidence/11-audit.png`, `evidence/metrics.md` | ✅ built (dry run 09-28) · 🔒 final evidence |
 
 ### C. Kiln API Integration & Efficiency
@@ -68,9 +68,9 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 |---|---|---|---|---|---|
 | E1 | "how a person grants a budget" | `/principal` mandate form → anchor tx | FE + BE (`POST /api/mandates`) | video 0:15–0:30, `evidence/09-principal.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | E2 | "follows what is being spent" | `/principal` spend gauge + live ledger | FE | `evidence/09-principal.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
-| E3 | "stops the agent" | Pause / Resume / Revoke → `MANDATE_NOT_ACTIVE` | FE + BE (`PATCH /api/mandates/[id]`) | `evidence/10-paused.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
-| E4 | "receives a receipt" | receipt card (amount, fee, hashes, Etherscan link) | FE | `evidence/01-approve.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
-| E5 | "another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed" | `scripts/export.ts` → `scripts/verify.ts` (records + RPC only); `/audit/[id]` shows the same checks | BE (export, audit route) + FE (audit page) + pre-built verify | `evidence/12-verify.txt`, `evidence/11-audit.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E3 | "stops the agent" | Pause / Resume / Revoke → `MANDATE_NOT_ACTIVE`; the pause/resume order is log evidence only (status is not hashed or on-chain) | FE + BE (`PATCH /api/mandates/[id]`) + FS (timeline) | `evidence/10-paused.png`, `evidence/logs-status.txt` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E4 | "receives a receipt" | receipt card (amount, fee, "You said", tx / receipt / mandate hashes, Etherscan link); floating **Evidence** button → drawer with the latest receipt | FE | `evidence/01-approve.png`, `evidence/14-evidence-drawer.png` | ✅ card built · ◐ Evidence button (FE, round 2; merged before the evidence run or not at all) · 🔒 final evidence |
+| E5 | "another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed" | Evidence drawer / audit page **Download records** (same bytes as `scripts/export.ts`) → `scripts/verify.ts` (records + public RPC only; anchor + payer + mined checks; 2 + 2/entry + 6/payment = 24 for mandate A); `/audit/[id]` shows the same checks with the same count (BE `5fbd6c7`) | BE (export, audit route) + FE (audit page, downloads) + verify (pre-built, hardened `d1c8c76`) | `evidence/12-verify.txt`, `evidence/11-audit.png`, `cmp` of the downloads (`docs/EVIDENCE-RUN.md`) | ✅ built (dry run 09-28) · 🔒 final evidence |
 
 ---
 
@@ -110,13 +110,16 @@ All evidence lives in `evidence/` on `main` after the lead's evidence run. `evid
 | `11-audit.png` | `/audit/<A>`: anchor match, replay table, decoded memos, all ✅ | `scripts/capture.ts` | E5, B6 |
 | `12-verify.txt` | `npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json` → `ALL RECORDS VERIFIED` | lead (`npm run export` then `npm run verify`) | E5 |
 | `logs-stop.txt` | every `"kind":"decision"` line (STOP and APPROVE) from `logs/dev-server.log` | `scripts/metrics.ts` | B5 |
+| `logs-status.txt` | status timeline: every `"kind":"mandate_status"` and `"kind":"decision"` line, merged by `at`, with a count header; server log lines, not hashed records | `scripts/metrics.ts` | B5, E3 |
+| `13-trip-statement.pdf` | printable statement `/audit/<A>/report`, A4 — **only if that stretch route shipped** | `scripts/capture.ts --only report` | E4, E5 |
+| `14-evidence-drawer.png` | Evidence drawer on `/traveler?m=<A>`: latest receipt, Download records, Copy verify command, "P of T checks passed" | `scripts/capture.ts --only drawer` | E4, E5 |
 | `scenario-<YYYYMMDD-HHmm>.json` | the 8 scripted runs: requests, full responses, confirms, expected vs actual | `scripts/scenario.ts` | B2–B4, D2 |
 | `metrics.md` | by-flow table (0-token rows kept), comparison table, energy card text | `scripts/metrics.ts` | C4–C6 |
 | `kiln-calls-by-flow.md` | per flow: calls, response ids, tool-call names, prompt/completion/cached/reasoning tokens | `scripts/metrics.ts` | C2, **R6** |
 | `seed-latest.json` | `{ A, B, C, anchors, at }` of the current demo set | `npm run seed` (BE) | D2 |
 | `mandate-<id>.json`, `ledger-<id>.json` | exported records for the auditor | `npm run export` (BE) | E5 |
 
-Nine PNGs: 01, 02, 03, 04, 07, 08, 09, 10, 11. Non-image: 05, 06, 12, logs-stop, scenario, metrics, kiln-calls-by-flow.
+Nine checklist PNGs: 01, 02, 03, 04, 07, 08, 09, 10, 11 (the Evidence button is hidden in all nine by `scripts/capture.ts`). Plus 14 (drawer) and, if the route shipped, 13 (PDF). Non-image: 05, 06, 12, logs-stop, logs-status, scenario, metrics, kiln-calls-by-flow.
 
 ---
 
@@ -128,7 +131,8 @@ Nine PNGs: 01, 02, 03, 04, 07, 08, 09, 10, 11. Non-image: 05, 06, 12, logs-stop,
 | Mon 9/28 18:00–00:30 | BE | health, `lib/db.ts`, `lib/view.ts`, seed, all routes, export; one `"kind":"decision"` log line per chat decision | curls of Phase 3 green; `npm run build` green |
 | Mon 9/28 18:00–00:30 | FS | P1–P10: plan, doc fixes, scenario/compare/metrics/capture/deck scripts, README, video script, cross-review | each task pushed; `docs/reasoning-comparison.json` measured live |
 | Tue 9/29 06:00–08:30 | lead | merge `feat/backend` → `feat/frontend` → `feat/fullstack` into `main` (see `docs/REVIEW-NOTES.md`), `NEXT_PUBLIC_API_MODE=live`, `npm run seed -- --window now`, `npm run scenario` | build green; scenario 8/8 |
-| Tue 9/29 19:00–21:00 | lead | **evidence run** on port 3000 — one server only, `ENERGY_J_PER_TOKEN` set — with `npm run dev 2>&1 \| tee logs/dev-server.log`: seed 1 → scenario → export + verify → capture `--only pages`; seed 2 → capture `--only chat`; `npm run metrics` (exact order: `docs/REVIEW-NOTES.md` §6; keep the committed `docs/reasoning-comparison.json` unless README/deck are regenerated) | all files of §4 present |
+| before the evidence run | FE/BE/lead | **merge cutoff** for anything that changes pages in the screenshots (receipt card, Evidence button, AppShell, layout); if it is not merged and green when the run starts, run without it | build green in mock and live |
+| Mon 9/28 night, after the round-2 merges (fallback: Tue 9/29 19:00–21:00) | lead | **evidence run** on port 3000 — one server only, `ENERGY_J_PER_TOKEN` set — exact runbook with go/no-go checks: **`docs/EVIDENCE-RUN.md`** (DB backup + clean, seed, scenario, export + verify, download + `cmp`, capture pages/chat/drawer/report, metrics; keep the committed `docs/reasoning-comparison.json` unless README/deck are regenerated) | all files of §4 present |
 | Tue 9/29 21:00–22:00 | lead + FS | fill README "Proof of API usage", re-render deck with screenshots (`npx tsx scripts/deck.ts`) | README has no `<!-- FILL` markers left |
 | Tue 9/29 22:00–00:30 | lead | video take 1 (fresh seed per take; DUPLICATE window 5 min) following `docs/VIDEO-SCRIPT.md` | ≤ 3:00 cut |
 | Wed 9/30 07:00–10:00 | lead | video take 2 if needed, upload unlisted, README links, repo Public, incognito check of every link | checklist §F all ✅ |

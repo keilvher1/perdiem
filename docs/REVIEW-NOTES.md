@@ -87,6 +87,8 @@ Behaviours checked and found correct (no action): the traveler chat stays sendab
 
 ## 6. Evidence run — suggested order (port 3000, one server only)
 
+> **Superseded (2026-09-28 20:15 KST) by [`docs/EVIDENCE-RUN.md`](EVIDENCE-RUN.md)**: the full runbook with the database backup + clean, the Evidence-drawer download check, the drawer/report captures, go/no-go checks after every step and the measured test-ETH cost. The order below is kept for the record.
+
 1. Stop all other dev servers (issue 1). Set `ENERGY_J_PER_TOKEN` / `ENERGY_SOURCE` (issue 6) and `NEXT_PUBLIC_API_MODE=live`.
 2. `mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log`
 3. Seed 1 → API evidence: `npm run seed -- --window now` → `npm run scenario` (8/8, exit 0) → wait until both payments are settled → `npm run export -- <A>` → `npm run verify -- evidence/mandate-<A>.json evidence/ledger-<A>.json > evidence/12-verify.txt` → `npx tsx scripts/capture.ts --only pages` (05, 07, 08, 09, 11 for seed-1 A).

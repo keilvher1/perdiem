@@ -16,6 +16,8 @@ Built by Mingyu Lee (MICEMore) with AI coding agents — see the [pre-hackathon 
 
 **Outcome:** the manager grants a mandate once; the traveler talks to the agent; every payment is checked in code against the mandate before it is sent on-chain; refusals are recorded, not silent; a third party can verify every payment from the records alone.
 
+**Why this problem:** the builder has settled government startup-grant expenses by hand. The spending rules lived in prose, compliance meant boxes ticked by hand, and a refusal came back weeks later as a free-text note. PerDiem does the opposite for one trip's per-diem: the rules are enforced in code before any money moves, every refusal is recorded with its code, the observed value and the limit, and the checks are recomputed from the records. (PerDiem is a per-diem demo, not a grant-settlement system.)
+
 ## What the model does vs. what stays in code
 
 | AI agent (Kiln `qwen3-32b`) | Code |
@@ -55,7 +57,7 @@ The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledg
 
 ## The boundary and where it is enforced
 
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` — policy engine (17 blocks) + view mapping (10) + mandate-request validation (5).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs six suites — policy engine (17 blocks), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4).
 
 | Code | Rule |
 |---|---|
@@ -157,7 +159,7 @@ Backend verification run, 2026-09-28 18:16–18:18 KST, mandates `*_mul19mde`; a
 | Payment #0 — lunch $12 to Yangjae Kitchen, calldata `PERDIEM\|<mandateHash>\|<receiptHash>` | [`0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c`](https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c) | ledger `led_1790587057888_ptkn` (settled, block 11799563), receipt hash `0x6e935e44…02262d` |
 | Payment #6 — coffee $5 to Starbucks aT Center, after resume | [`0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0`](https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0) | ledger `led_1790587097419_yn90` (settled, block 11799566), receipt hash `0x6859207f…1087dd` |
 
-Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As UTF-8* → the two hashes equal the ledger entry's `mandateHash` and `receiptHash`. The verifier does the same from the exported records of mandate A — anchor memo, both payments' calldata, recipient and amount, and a replay of all five entries: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) (`ALL RECORDS VERIFIED`, 19 checks).
+Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As UTF-8* → the two hashes equal the ledger entry's `mandateHash` and `receiptHash`. The verifier does the same from the exported records of mandate A — anchor memo, both payments' calldata, recipient and amount, and a replay of all five entries: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) (`ALL RECORDS VERIFIED`, 19 checks with the verifier of that time). The current `scripts/verify.ts` also checks that the anchor and each payment were sent by the mandate's agent wallet and that each payment was mined and succeeded; on the same two files it prints 24 ✅ and `ALL RECORDS VERIFIED` (re-run 2026-09-28, read-only).
 
 ### Kiln API call logs, per flow
 
@@ -209,9 +211,11 @@ Note how the model proposes the wine gift at `m5` (Wine & Co) even though it is 
 
 - **Grant:** `/principal` creates the mandate and anchors its hash on Sepolia.
 - **Follow:** live spend gauge and ledger on `/principal` (a pending payment counts as committed).
-- **Stop:** Pause / Resume / Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE` ([`evidence/10-paused.png`](evidence/10-paused.png)).
-- **Receipt:** the traveler's receipt card shows amount, fee, decision, hashes and the Etherscan link ([`evidence/01-approve.png`](evidence/01-approve.png)).
-- **Reconstruct from records alone:** `npm run export -- <mandateId>` writes `evidence/mandate-<id>.json` and `evidence/ledger-<id>.json`; then `npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json` (any Node 20+, no `.env.local` needed) uses only those files and a public RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, replay every entry through `evaluate()` rebuilding spend-so-far, recompute each receipt hash and match it to the tx calldata, the recipient and the amount (output for mandate A of the backend verification run: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt)). `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)). Neither trusts the stored decision.
+- **Stop:** Pause / Resume / Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE` ([`evidence/10-paused.png`](evidence/10-paused.png)). The order of events — paused, the stopped request, resumed, the next approval — is in [`evidence/logs-status.txt`](evidence/logs-status.txt): the server's `"kind":"mandate_status"` and `"kind":"decision"` log lines merged by time (`npm run metrics`).
+- **Receipt:** the traveler's receipt card shows amount, fee, decision, the traveler's words, the tx / receipt / mandate hashes and the Etherscan link ([`evidence/01-approve.png`](evidence/01-approve.png)).
+- **Evidence button:** on `/traveler`, `/principal` and `/audit/<mandateId>` a floating **Evidence** button opens a drawer for the selected mandate ([`evidence/14-evidence-drawer.png`](evidence/14-evidence-drawer.png)): status and money summary, the latest receipt, counts of settled / pending / stopped / failed entries, **Download records** (`mandate-<id>.json` and `ledger-<id>.json`, byte-identical to what `npm run export` writes), **Copy verify command**, **Run checks now** (one `GET /api/audit/<id>` → "P of T checks passed"), and links to the audit page and to a printable A4 trip statement, `/audit/<mandateId>/report` (parties and terms, boundary, the recomputed checks, the ledger annex with a running balance; [`evidence/13-trip-statement.pdf`](evidence/13-trip-statement.pdf)). The audit page's *Verify it yourself* panel has the same download buttons. In mock mode the downloads are disabled: placeholder hashes never verify.
+- **Reconstruct from records alone:** get the two files — **Download records** in the Evidence drawer or on the audit page (no database access needed), or `npm run export -- <mandateId>` (needs the service-role key) — then `npx tsx scripts/verify.ts ~/Downloads/mandate-<id>.json ~/Downloads/ledger-<id>.json` (from a clone after `npm ci`; any Node 20+, no `.env.local` needed). It uses only those files and a public Sepolia RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, check that the anchor was sent by the mandate's agent wallet, replay every entry through `evaluate()` rebuilding spend-so-far, and for every entry with a tx hash recompute the receipt hash and match it to the calldata, the recipient, the amount, the payer (the mandate's agent wallet) and the receipt status (mined and succeeded). It converts on-chain value at `DEMO_ETH_USD` (default 4000, the rate the app uses); an auditor who sets a different rate will see the amount checks fail. Number of checks = **2 + 2 × ledger entries + 6 × entries with a tx hash** (2 for the anchor; 2 per entry: carries the mandate hash, stored decision == recomputed; 6 per payment: receipt hash, calldata memo, recipient, amount, payer, mined) — without an anchor tx the anchor counts as one failed check. Mandate A of the scripted run has 5 entries and 2 payments: 2 + 10 + 12 = **24**. `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)) and `GET /api/audit/<id>` counts them with the same formula, so its "P of T" equals the ✅ count of `verify.ts` on the same records. Neither trusts the stored decision. Download or export only after every payment has settled: an unmined payment fails "mined and succeeded" until it is mined.
+- **Limitation — pause and resume are log evidence, not records:** the status is not part of the mandate hash and a pause is not written on-chain, so a pause or resume is visible only as server log lines ([`evidence/logs-status.txt`](evidence/logs-status.txt)) and as the `MANDATE_NOT_ACTIVE` entries it caused — not as hashed records. The records alone cannot prove when a mandate was paused, or that it was active when a payment was approved: replay treats every entry that is not a `MANDATE_NOT_ACTIVE` stop as made while active. A pause can only ever stop a payment, never allow one.
 - **Limitation — stopped entries are not on-chain:** paid entries are bound to the chain by the receipt hash in their calldata. Stopped entries are not: the verifier replays them from their own fields (proposal, time, fee, and the `MANDATE_NOT_ACTIVE` reason for the pause state), so it catches a changed decision, but a consistent rewrite or the deletion of a stopped row is not detectable from the records alone. Next step: anchor a ledger root on-chain.
 
 ## Run locally
@@ -231,12 +235,13 @@ mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log   # http://localhost
 Then, in a second terminal:
 
 ```bash
-npm test                          # policy engine (17 blocks) + view mapping (10) + mandate-request validation (5)
+npm test                          # six suites: policy engine, view mapping, mandate requests, ledger write, DB errors, JSON-only
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
 npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
+                                  # or: Evidence button → Download records → verify.ts on the two downloaded files
 npm run compare                   # thinking on vs off, 10 Kiln calls; OVERWRITES docs/reasoning-comparison.json
                                   # (the README tables are from the committed 2026-09-28 run)
-npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 06-kiln-calls.txt, logs-stop.txt
+npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 06-kiln-calls.txt, logs-stop.txt, logs-status.txt
 ```
 
 The `tee` keeps the server log that `npm run metrics` turns into the per-flow Kiln log (`evidence/kiln-calls-by-flow.md`); with a plain `npm run dev` that file lists only the compare calls. Without any keys, `NEXT_PUBLIC_API_MODE=mock npm run dev` shows the whole UI on the fixtures in `docs/fixtures/` (no model, no chain).
@@ -253,9 +258,9 @@ Committed now — backend verification run, 2026-09-28 18:16–18:18 KST, mandat
 | [`evidence/be-logs-stop.txt`](evidence/be-logs-stop.txt) | the five STOP decision lines (runs 1–5) |
 | [`evidence/be-kiln-calls.txt`](evidence/be-kiln-calls.txt) | the seven `"kind":"kiln"` lines of the `propose` flow (response id, tool call, usage) |
 | [`evidence/mandate-man_A_mul19mde.json`](evidence/mandate-man_A_mul19mde.json), [`evidence/ledger-man_A_mul19mde.json`](evidence/ledger-man_A_mul19mde.json) | exported records of mandate A (`npm run export`) |
-| [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) | `npm run verify` on those two files → `ALL RECORDS VERIFIED` (19 checks) |
+| [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) | `npm run verify` on those two files → `ALL RECORDS VERIFIED` (19 checks with the verifier of that time; the current one prints 24 for the same files) |
 
-Produced by the lead's evidence run (`docs/REVIEW-NOTES.md` §6):
+Produced by the lead's evidence run (`docs/EVIDENCE-RUN.md`):
 
 | File | Shows |
 |---|---|
@@ -270,13 +275,16 @@ Produced by the lead's evidence run (`docs/REVIEW-NOTES.md` §6):
 | `evidence/09-principal.png` | grant, spend gauge, ledger |
 | `evidence/10-paused.png` | kill switch: `MANDATE_NOT_ACTIVE` |
 | `evidence/11-audit.png` | audit page, all checks |
-| `evidence/12-verify.txt` | `ALL RECORDS VERIFIED` from records alone |
+| `evidence/12-verify.txt` | `ALL RECORDS VERIFIED` from records alone (24 checks for mandate A) |
+| `evidence/14-evidence-drawer.png` | the Evidence drawer on `/traveler`: latest receipt, Download records, Copy verify command, "P of T checks passed" |
+| `evidence/13-trip-statement.pdf` | the printable trip statement `/audit/<A>/report` (only if that route shipped) |
 | `evidence/logs-stop.txt` | decision log lines (STOP and APPROVE) |
+| `evidence/logs-status.txt` | pause / resume timeline: `mandate_status` and `decision` server log lines merged by time — log lines, not hashed records |
 | `evidence/scenario-*.json` | the 8 scripted runs, requests and full responses |
 | `evidence/metrics.md` | tokens by flow, comparison, energy text |
 | `evidence/kiln-calls-by-flow.md` | Kiln call log per flow (proof of API usage) |
 
-Screenshots are taken with `scripts/capture.ts` (Playwright from a separate tools folder; see the header of the script).
+Screenshots are taken with `scripts/capture.ts` (Playwright from a separate tools folder; see the header of the script). It hides the Evidence button in the nine checklist screenshots; `--only drawer` and `--only report` take `14-evidence-drawer.png` and `13-trip-statement.pdf`.
 
 ## Repository map
 
@@ -302,7 +310,7 @@ The track allows existing code; this lists exactly what existed before the event
 
 **Built during the event:** the Next.js scaffold; `lib/db.ts` and `lib/view.ts`; everything in `app/` (API routes and UI); `scripts/seed.ts`, `export.ts`, `scenario.ts`, `compare-reasoning.ts`, `metrics.ts`, `capture.ts`, `deck.ts`; the delivery plan, the documentation updates, the measured comparison, the evidence, the deck and the video script.
 
-**How the git history separates the two:** commit `8bb7235` (2026-09-28 17:54 KST) imports the pre-built files above together with the in-event Next.js scaffold (create-next-app, shadcn components, `package.json`, configs) and the `lib/db.ts` / `lib/view.ts` interface stubs; its commit message lists which is which. Everything after `8bb7235` was written during the event. The scaffold settings (tsconfig target, typecheck script, tsx conditions, fonts) were rehearsed in a throwaway dry run on 2026-09-27. One pre-built module changed during the event: `lib/agent.ts` in `5e46c19` (the pending ledger entry is saved outside the broadcast try/catch); `git diff --stat 8bb7235 HEAD -- lib/kiln.ts lib/policy.ts lib/chain.ts lib/agent.ts contracts/ scripts/verify.ts scripts/spike.ts tests/policy.test.ts tests/contract.check.ts` lists only that file.
+**How the git history separates the two:** commit `8bb7235` (2026-09-28 17:54 KST) imports the pre-built files above together with the in-event Next.js scaffold (create-next-app, shadcn components, `package.json`, configs) and the `lib/db.ts` / `lib/view.ts` interface stubs; its commit message lists which is which. Everything after `8bb7235` was written during the event. The scaffold settings (tsconfig target, typecheck script, tsx conditions, fonts) were rehearsed in a throwaway dry run on 2026-09-27. Two pre-built files changed during the event: `lib/agent.ts` in `5e46c19` (the pending ledger entry is saved outside the broadcast try/catch) and in `d1c8c76` (reply wording: "$" in the approval reply, the expiry in KST, a broadcast error no longer claims "not paid"); and `scripts/verify.ts` in `d1c8c76` (new checks: the anchor and every payment were sent by the mandate's agent wallet, and every payment was mined and succeeded). `git diff --stat 8bb7235 HEAD -- lib/kiln.ts lib/policy.ts lib/chain.ts lib/agent.ts contracts/ scripts/verify.ts scripts/spike.ts tests/policy.test.ts tests/contract.check.ts` lists only those two files.
 
 **Tools:** AI coding assistants — Claude Code, run as three parallel developer roles (frontend, backend, planner/full-stack) in separate git worktrees against the one typed contract, merged by the builder. Design decisions, the boundary rules and what counts as evidence are the builder's.
 
