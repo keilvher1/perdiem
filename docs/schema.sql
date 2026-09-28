@@ -28,16 +28,21 @@ create index if not exists ledger_by_mandate on ledger_entries (mandate_id, crea
 create table if not exists usage_records (
   id bigserial primary key,
   mandate_id text,
-  flow text not null,              -- intent | propose | explain | audit | other
+  flow text not null,              -- propose | status_fastpath | stop_template | compare | explain | audit | other
   model text not null,
   prompt_tokens int not null,
   completion_tokens int not null,
   total_tokens int not null,
   cost_usd numeric,
   latency_ms int not null,
+  response_id text,                -- Kiln response id (UsageRecord.responseId); null for 0-token flows
   created_at timestamptz not null default now()
 );
 create index if not exists usage_by_flow on usage_records (flow, created_at);
+
+-- Migration `usage_response_id` (2026-09-28) for databases created before response_id existed.
+-- Idempotent; RLS stays as it is (ON, no policies — only the service-role key is used).
+alter table usage_records add column if not exists response_id text;
 
 -- Handy view for /metrics
 create or replace view usage_by_flow_v as

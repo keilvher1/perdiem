@@ -1,0 +1,1754 @@
+# PerDiem backend — Phase 3 live verification (feat/backend, port 3001)
+# started 2026-09-28T09:16:37Z; every request/response below was captured verbatim by curl
+
+### 0a GET /api/health (before)
+$ curl -s 'http://localhost:3001/api/health'
+{
+    "ok": true,
+    "model": "qwen3-32b",
+    "models": [
+        "deepseek-v4.1-flash",
+        "qwen3-32b"
+    ],
+    "modelAvailable": true,
+    "agentAddress": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+    "balanceEth": "0.04997455691132376",
+    "balanceUsd": 199.89822764529504,
+    "demoEthUsd": 4000,
+    "chain": "sepolia",
+    "rpc": "publicnode",
+    "errors": []
+}
+
+### 0b npm run seed (anchors ON)
+$ npm run seed
+db ok (219 ms, 3 mandates so far)
+warning: usage_records.response_id is missing — apply migration usage_response_id from docs/schema.sql
+window: event — A/B keep seed.json 2026-09-28T08:00:00Z → 2026-09-30T09:00:00Z (now is inside it)
+window: C keeps its past window (stays EXPIRED)
+merchants upserted: m1, m2, m3, m4, m5, m6, m7
+A anchor broadcast 0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c
+B anchor broadcast 0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc
+C anchor broadcast 0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223
+A  man_A_mul19mde         $150  2026-09-28T08:00:00Z → 2026-09-30T09:00:00Z  hash 0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c
+   anchor https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c
+B  man_B_mul19mde         $ 10  2026-09-28T08:00:00Z → 2026-09-30T09:00:00Z  hash 0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56
+   anchor https://sepolia.etherscan.io/tx/0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc
+C  man_C_mul19mde         $150  2026-09-20T00:00:00Z → 2026-09-25T00:00:00Z  hash 0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796
+   anchor https://sepolia.etherscan.io/tx/0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223
+wrote evidence/seed-latest.json (A=man_A_mul19mde, B=man_B_mul19mde, C=man_C_mul19mde)
+
+### 0c anchors mined (receipt poll via lib/chain.ts getSettlementStatus)
+A 0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c {"state":"settled","blockNumber":"11799558","gasUsed":"24280","actualFeeUsd":0.14182073245952}
+B 0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc {"state":"settled","blockNumber":"11799558","gasUsed":"24280","actualFeeUsd":0.14182073245952}
+C 0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223 {"state":"settled","blockNumber":"11799558","gasUsed":"24280","actualFeeUsd":0.14182073245952}
+
+
+### 1 POST /api/chat — A: lunch $12 (expect APPROVE, pending, txHash)
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"Order a bibimbap lunch from Yangjae Kitchen, $12"}'
+# at 2026-09-28T09:17:37Z
+# HTTP 200
+{
+    "reply": "Approved. Paying Yangjae Kitchen $12.00 for \"Order a bibimbap lunch\" (est. network fee $0.156584). Tx: https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+    "entry": {
+        "id": "led_1790587057888_ptkn",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "merchantId": "m1",
+            "amountUsd": 12,
+            "memo": "Order a bibimbap lunch",
+            "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+            "requestedAt": "2026-09-28T09:17:37.888Z"
+        },
+        "merchantName": "Yangjae Kitchen",
+        "decision": "APPROVE",
+        "reasons": [],
+        "feeUsd": 0.156583837582208,
+        "feeSource": "estimate",
+        "totalUsd": 12.156583837582208,
+        "kilnResponseId": "chat-094eb94e3bd846f0b2ca5b0bcb61bb0d",
+        "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+        "at": "2026-09-28T09:17:37.888Z",
+        "status": "pending",
+        "txHash": "0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+        "receiptHash": "0x6e935e440c41969238b20f32dbd30ca51562922af173871eb9d32d058102262d",
+        "merchantCategory": "meal",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 473,
+            "completionTokens": 47,
+            "totalTokens": 520,
+            "costUsd": 3.212e-05,
+            "latencyMs": 2137,
+            "responseId": "chat-094eb94e3bd846f0b2ca5b0bcb61bb0d",
+            "at": "2026-09-28T09:17:40.025Z"
+        }
+    ]
+}
+
+### 1b GET /api/ledger/<entry>/confirm — poll 1
+$ curl -s -X GET 'http://localhost:3001/api/ledger/led_1790587057888_ptkn/confirm'
+# at 2026-09-28T09:17:48Z
+# HTTP 200
+{
+    "entry": {
+        "id": "led_1790587057888_ptkn",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "memo": "Order a bibimbap lunch",
+            "amountUsd": 12,
+            "merchantId": "m1",
+            "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+            "requestedAt": "2026-09-28T09:17:37.888Z"
+        },
+        "merchantName": "Yangjae Kitchen",
+        "decision": "APPROVE",
+        "reasons": [],
+        "feeUsd": 0.156583837582208,
+        "feeSource": "estimate",
+        "totalUsd": 12.156583837582208,
+        "status": "settled",
+        "txHash": "0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+        "receiptHash": "0x6e935e440c41969238b20f32dbd30ca51562922af173871eb9d32d058102262d",
+        "actualFeeUsd": 0.1468565889408,
+        "settledAt": "2026-09-28T09:17:48.851Z",
+        "kilnResponseId": "chat-094eb94e3bd846f0b2ca5b0bcb61bb0d",
+        "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+        "at": "2026-09-28T09:17:37.888Z",
+        "merchantCategory": "meal",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c"
+    },
+    "settlement": {
+        "state": "settled",
+        "blockNumber": "11799563",
+        "gasUsed": "26640",
+        "actualFeeUsd": 0.1468565889408
+    }
+}
+
+### 2 POST /api/chat — A: taxi $85 (expect STOP [OVER_PER_TX_CAP])
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"Taxi to Incheon airport, about $85"}'
+# at 2026-09-28T09:17:58Z
+# HTTP 200
+{
+    "reply": "Stopped. I did not pay Kakao T Taxi $85.00.\n\u2022 [OVER_PER_TX_CAP] Single payment cap is $40.",
+    "entry": {
+        "id": "led_1790587078158_8ra4",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "merchantId": "m2",
+            "amountUsd": 85,
+            "memo": "Taxi to Incheon airport",
+            "sourceText": "Taxi to Incheon airport, about $85",
+            "requestedAt": "2026-09-28T09:17:58.158Z"
+        },
+        "merchantName": "Kakao T Taxi",
+        "decision": "STOP",
+        "reasons": [
+            {
+                "code": "OVER_PER_TX_CAP",
+                "message": "Single payment cap is $40.",
+                "observed": 85,
+                "limit": 40
+            }
+        ],
+        "feeUsd": 0.14875293528448,
+        "feeSource": "estimate",
+        "totalUsd": 85.14875293528448,
+        "kilnResponseId": "chat-6a8e5e60f8564db58d82461ffc3eadb7",
+        "toolArgsRaw": "{\"amount_usd\": 85, \"memo\": \"Taxi to Incheon airport\", \"merchant_id\": \"m2\"}",
+        "at": "2026-09-28T09:17:58.158Z",
+        "status": "stopped",
+        "receiptHash": "0xdd917681d7e1165fe51039f4a7440c8d1dcaa139782cad32e17be40b6c03295e",
+        "merchantCategory": "transport"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 469,
+            "completionTokens": 47,
+            "totalTokens": 516,
+            "costUsd": 3.196e-05,
+            "latencyMs": 2143,
+            "responseId": "chat-6a8e5e60f8564db58d82461ffc3eadb7",
+            "at": "2026-09-28T09:18:00.301Z"
+        },
+        {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:01.017Z"
+        }
+    ]
+}
+
+### 3 POST /api/chat — A: wine gift $30 (expect STOP [MERCHANT_NOT_ALLOWED, CATEGORY_NOT_ALLOWED, BLOCKED_KEYWORD])
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"Buy a bottle of wine as a gift for the client, $30"}'
+# at 2026-09-28T09:18:01Z
+# HTTP 200
+{
+    "reply": "Stopped. I did not pay Wine & Co $30.00.\n\u2022 [MERCHANT_NOT_ALLOWED] Wine & Co is not on the permitted list.\n\u2022 [CATEGORY_NOT_ALLOWED] Category \"alcohol\" is not permitted.\n\u2022 [BLOCKED_KEYWORD] Request mentions a blocked item (\"wine\").",
+    "entry": {
+        "id": "led_1790587081310_lqcc",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "merchantId": "m5",
+            "amountUsd": 30,
+            "memo": "Buy a bottle of wine as a gift for the client",
+            "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+            "requestedAt": "2026-09-28T09:18:01.310Z"
+        },
+        "merchantName": "Wine & Co",
+        "decision": "STOP",
+        "reasons": [
+            {
+                "code": "MERCHANT_NOT_ALLOWED",
+                "message": "Wine & Co is not on the permitted list.",
+                "observed": "m5",
+                "limit": "m1, m2, m3, m4, m7"
+            },
+            {
+                "code": "CATEGORY_NOT_ALLOWED",
+                "message": "Category \"alcohol\" is not permitted.",
+                "observed": "alcohol",
+                "limit": "meal, transport, supplies"
+            },
+            {
+                "code": "BLOCKED_KEYWORD",
+                "message": "Request mentions a blocked item (\"wine\").",
+                "observed": "wine"
+            }
+        ],
+        "feeUsd": 0.15682883967369599,
+        "feeSource": "estimate",
+        "totalUsd": 30.156828839673697,
+        "kilnResponseId": "chat-663ad444e1eb46b58ca50120088fe985",
+        "toolArgsRaw": "{\"amount_usd\": 30, \"memo\": \"Buy a bottle of wine as a gift for the client\", \"merchant_id\": \"m5\"}",
+        "at": "2026-09-28T09:18:01.310Z",
+        "status": "stopped",
+        "receiptHash": "0x8cdfa1af5d10102e6fdfd486f9fe7e0221c78ac01339abf6bbcf6421f65b7ab7",
+        "merchantCategory": "alcohol"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 473,
+            "completionTokens": 52,
+            "totalTokens": 525,
+            "costUsd": 3.352e-05,
+            "latencyMs": 1269,
+            "responseId": "chat-663ad444e1eb46b58ca50120088fe985",
+            "at": "2026-09-28T09:18:02.579Z"
+        },
+        {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:02.783Z"
+        }
+    ]
+}
+
+### 4 POST /api/chat — B ($10 budget): dinner $10 (expect STOP [OVER_BUDGET_WITH_FEES])
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_B_mul19mde","text":"Dinner from Yangjae Kitchen, $10"}'
+# at 2026-09-28T09:18:03Z
+# HTTP 200
+{
+    "reply": "Stopped. I did not pay Yangjae Kitchen $10.00.\n\u2022 [OVER_BUDGET_WITH_FEES] Amount $10.00 + network fee $0.156829 = $10.156829 exceeds remaining budget $10.00.",
+    "entry": {
+        "id": "led_1790587083179_anyn",
+        "mandateId": "man_B_mul19mde",
+        "mandateHash": "0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+        "proposal": {
+            "merchantId": "m1",
+            "amountUsd": 10,
+            "memo": "Dinner from Yangjae Kitchen",
+            "sourceText": "Dinner from Yangjae Kitchen, $10",
+            "requestedAt": "2026-09-28T09:18:03.179Z"
+        },
+        "merchantName": "Yangjae Kitchen",
+        "decision": "STOP",
+        "reasons": [
+            {
+                "code": "OVER_BUDGET_WITH_FEES",
+                "message": "Amount $10.00 + network fee $0.156829 = $10.156829 exceeds remaining budget $10.00.",
+                "observed": 10.156828839673697,
+                "limit": 10
+            }
+        ],
+        "feeUsd": 0.15682883967369599,
+        "feeSource": "estimate",
+        "totalUsd": 10.156828839673697,
+        "kilnResponseId": "chat-ca7729fa2bf141c8b05b6933dad21c29",
+        "toolArgsRaw": "{\"amount_usd\": 10, \"memo\": \"Dinner from Yangjae Kitchen\", \"merchant_id\": \"m1\"}",
+        "at": "2026-09-28T09:18:03.179Z",
+        "status": "stopped",
+        "receiptHash": "0x36971afd8d315dbd03b345ccaedc6c2c7669c62d8599545f181e199b9886eb66",
+        "merchantCategory": "meal"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 469,
+            "completionTokens": 48,
+            "totalTokens": 517,
+            "costUsd": 3.224e-05,
+            "latencyMs": 1243,
+            "responseId": "chat-ca7729fa2bf141c8b05b6933dad21c29",
+            "at": "2026-09-28T09:18:04.422Z"
+        },
+        {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:04.631Z"
+        }
+    ]
+}
+
+### 5a PATCH /api/mandates/<A> — pause
+$ curl -s -X PATCH 'http://localhost:3001/api/mandates/man_A_mul19mde' -H 'content-type: application/json' -d '{"status":"paused"}'
+# at 2026-09-28T09:18:13Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_A_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "budgetUsd": 150,
+        "perTxCapUsd": 40,
+        "status": "paused",
+        "startsAt": "2026-09-28T08:00:00Z",
+        "expiresAt": "2026-09-30T09:00:00Z",
+        "hash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "anchorTx": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "spentUsd": 12.156583837582208,
+        "pendingUsd": 0,
+        "remainingUsd": 137.84341616241778,
+        "entryCount": 3,
+        "createdAt": "2026-09-28T09:16:39.706Z"
+    }
+}
+
+### 5b POST /api/chat — A paused: coffee $5 (expect STOP [MANDATE_NOT_ACTIVE])
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"Coffee at Starbucks, $5"}'
+# at 2026-09-28T09:18:14Z
+# HTTP 200
+{
+    "reply": "Stopped. I did not pay Starbucks aT Center $5.00.\n\u2022 [MANDATE_NOT_ACTIVE] Mandate is paused; the principal must resume it before the agent can spend.",
+    "entry": {
+        "id": "led_1790587094496_55dm",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-28T09:18:14.496Z"
+        },
+        "merchantName": "Starbucks aT Center",
+        "decision": "STOP",
+        "reasons": [
+            {
+                "code": "MANDATE_NOT_ACTIVE",
+                "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+                "observed": "paused",
+                "limit": "active"
+            }
+        ],
+        "feeUsd": 0.145776103902688,
+        "feeSource": "estimate",
+        "totalUsd": 5.145776103902688,
+        "kilnResponseId": "chat-b534745823014a3ab13ae26947fc3043",
+        "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+        "at": "2026-09-28T09:18:14.496Z",
+        "status": "stopped",
+        "receiptHash": "0xfb076c10c6dac103f6639dcb0dae23f479ba43c37d11665276a4387eeb5bca14",
+        "merchantCategory": "meal"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 464,
+            "completionTokens": 43,
+            "totalTokens": 507,
+            "costUsd": 3.064e-05,
+            "latencyMs": 1862,
+            "responseId": "chat-b534745823014a3ab13ae26947fc3043",
+            "at": "2026-09-28T09:18:16.358Z"
+        },
+        {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:16.810Z"
+        }
+    ]
+}
+
+### 5c PATCH /api/mandates/<A> — resume
+$ curl -s -X PATCH 'http://localhost:3001/api/mandates/man_A_mul19mde' -H 'content-type: application/json' -d '{"status":"active"}'
+# at 2026-09-28T09:18:17Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_A_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "budgetUsd": 150,
+        "perTxCapUsd": 40,
+        "status": "active",
+        "startsAt": "2026-09-28T08:00:00Z",
+        "expiresAt": "2026-09-30T09:00:00Z",
+        "hash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "anchorTx": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "spentUsd": 12.156583837582208,
+        "pendingUsd": 0,
+        "remainingUsd": 137.84341616241778,
+        "entryCount": 4,
+        "createdAt": "2026-09-28T09:16:39.706Z"
+    }
+}
+
+### 5d POST /api/chat — A resumed: coffee $5 (expect APPROVE, second tx)
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"Coffee at Starbucks, $5"}'
+# at 2026-09-28T09:18:17Z
+# HTTP 200
+{
+    "reply": "Approved. Paying Starbucks aT Center $5.00 for \"Coffee at Starbucks\" (est. network fee $0.145776). Tx: https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+    "entry": {
+        "id": "led_1790587097419_yn90",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-28T09:18:17.419Z"
+        },
+        "merchantName": "Starbucks aT Center",
+        "decision": "APPROVE",
+        "reasons": [],
+        "feeUsd": 0.145776103902688,
+        "feeSource": "estimate",
+        "totalUsd": 5.145776103902688,
+        "kilnResponseId": "chat-7dc9d448a93a43fb8ec559a363a82dbb",
+        "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+        "at": "2026-09-28T09:18:17.419Z",
+        "status": "pending",
+        "txHash": "0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+        "receiptHash": "0x6859207fe25c45c103bb13694b3a708961f0ce737a3d3d3c0d60c74f711087dd",
+        "merchantCategory": "meal",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 464,
+            "completionTokens": 43,
+            "totalTokens": 507,
+            "costUsd": 3.064e-05,
+            "latencyMs": 1240,
+            "responseId": "chat-7dc9d448a93a43fb8ec559a363a82dbb",
+            "at": "2026-09-28T09:18:18.659Z"
+        }
+    ]
+}
+
+### 6 POST /api/chat — C (expired window): coffee $5 (expect STOP [EXPIRED])
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_C_mul19mde","text":"Coffee at Starbucks, $5"}'
+# at 2026-09-28T09:18:27Z
+# HTTP 200
+{
+    "reply": "Stopped. I did not pay Starbucks aT Center $5.00.\n\u2022 [EXPIRED] Mandate deadline has passed.",
+    "entry": {
+        "id": "led_1790587107865_z1kk",
+        "mandateId": "man_C_mul19mde",
+        "mandateHash": "0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796",
+        "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-28T09:18:27.865Z"
+        },
+        "merchantName": "Starbucks aT Center",
+        "decision": "STOP",
+        "reasons": [
+            {
+                "code": "EXPIRED",
+                "message": "Mandate deadline has passed.",
+                "observed": "2026-09-28T09:18:27.865Z",
+                "limit": "2026-09-25T00:00:00Z"
+            }
+        ],
+        "feeUsd": 0.154295847708,
+        "feeSource": "estimate",
+        "totalUsd": 5.154295847708,
+        "kilnResponseId": "chat-9bc12813a3f7463e976615358488c178",
+        "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+        "at": "2026-09-28T09:18:27.865Z",
+        "status": "stopped",
+        "receiptHash": "0x20c522ee8e5158cb88c0f659f7048d4c80b4106051140248c101796485c5515a",
+        "merchantCategory": "meal"
+    },
+    "usage": [
+        {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 464,
+            "completionTokens": 43,
+            "totalTokens": 507,
+            "costUsd": 3.064e-05,
+            "latencyMs": 1920,
+            "responseId": "chat-9bc12813a3f7463e976615358488c178",
+            "at": "2026-09-28T09:18:29.785Z"
+        },
+        {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:30.168Z"
+        }
+    ]
+}
+
+### 7 POST /api/chat — A: status question (expect entry null, status_fastpath, 0 tokens)
+$ curl -s -X POST 'http://localhost:3001/api/chat' -H 'content-type: application/json' -d '{"mandateId":"man_A_mul19mde","text":"How much do I have left?"}'
+# at 2026-09-28T09:18:30Z
+# HTTP 200
+{
+    "reply": "Spent $17.30 of $150.00. Remaining $132.70. Mandate active, expires 2026-09-30T09:00:00Z.",
+    "entry": null,
+    "usage": [
+        {
+            "flow": "status_fastpath",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-28T09:18:30.423Z"
+        }
+    ]
+}
+
+### 5e GET /api/ledger/<entry2>/confirm — poll 1
+$ curl -s -X GET 'http://localhost:3001/api/ledger/led_1790587097419_yn90/confirm'
+# at 2026-09-28T09:18:30Z
+# HTTP 200
+{
+    "entry": {
+        "id": "led_1790587097419_yn90",
+        "mandateId": "man_A_mul19mde",
+        "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "proposal": {
+            "memo": "Coffee at Starbucks",
+            "amountUsd": 5,
+            "merchantId": "m7",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-28T09:18:17.419Z"
+        },
+        "merchantName": "Starbucks aT Center",
+        "decision": "APPROVE",
+        "reasons": [],
+        "feeUsd": 0.145776103902688,
+        "feeSource": "estimate",
+        "totalUsd": 5.145776103902688,
+        "status": "settled",
+        "txHash": "0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+        "receiptHash": "0x6859207fe25c45c103bb13694b3a708961f0ce737a3d3d3c0d60c74f711087dd",
+        "actualFeeUsd": 0.15232883868000002,
+        "settledAt": "2026-09-28T09:18:30.706Z",
+        "kilnResponseId": "chat-7dc9d448a93a43fb8ec559a363a82dbb",
+        "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+        "at": "2026-09-28T09:18:17.419Z",
+        "merchantCategory": "meal",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0"
+    },
+    "settlement": {
+        "state": "settled",
+        "blockNumber": "11799566",
+        "gasUsed": "26640",
+        "actualFeeUsd": 0.15232883868000002
+    }
+}
+
+### 8a GET /api/usage (expect byFlow propose, status_fastpath, stop_template)
+$ curl -s -X GET 'http://localhost:3001/api/usage'
+# at 2026-09-28T09:18:42Z
+# HTTP 200
+{
+    "byFlow": [
+        {
+            "flow": "propose",
+            "calls": 9,
+            "promptTokens": 4209,
+            "completionTokens": 413,
+            "totalTokens": 4622,
+            "costUsd": 0.00028436,
+            "avgLatencyMs": 1657
+        },
+        {
+            "flow": "status_fastpath",
+            "calls": 2,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "avgLatencyMs": 0
+        },
+        {
+            "flow": "stop_template",
+            "calls": 7,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "avgLatencyMs": 0
+        }
+    ],
+    "totals": {
+        "calls": 18,
+        "promptTokens": 4209,
+        "completionTokens": 413,
+        "totalTokens": 4622,
+        "costUsd": 0.00028436
+    },
+    "zeroTokenCalls": {
+        "statusFastpath": 2,
+        "stopTemplate": 7
+    },
+    "energy": {
+        "assumedJPerToken": null,
+        "source": null,
+        "totalTokens": 4622,
+        "totalWh": null
+    },
+    "comparison": null
+}
+
+### 8b GET /api/audit/<A> (expect summary.allVerified true)
+$ curl -s -X GET 'http://localhost:3001/api/audit/man_A_mul19mde'
+# at 2026-09-28T09:18:57Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_A_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+        "budgetUsd": 150,
+        "perTxCapUsd": 40,
+        "allowedMerchantIds": [
+            "m1",
+            "m2",
+            "m3",
+            "m4",
+            "m7"
+        ],
+        "allowedCategories": [
+            "meal",
+            "transport",
+            "supplies"
+        ],
+        "blockedKeywords": [
+            "alcohol",
+            "wine",
+            "gift"
+        ],
+        "startsAt": "2026-09-28T08:00:00Z",
+        "expiresAt": "2026-09-30T09:00:00Z",
+        "catalog": [
+            {
+                "id": "m1",
+                "name": "Yangjae Kitchen",
+                "category": "meal",
+                "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+            },
+            {
+                "id": "m2",
+                "name": "Kakao T Taxi",
+                "category": "transport",
+                "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+            },
+            {
+                "id": "m3",
+                "name": "T-money Top-up",
+                "category": "transport",
+                "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+            },
+            {
+                "id": "m4",
+                "name": "Daiso Yangjae",
+                "category": "supplies",
+                "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+            },
+            {
+                "id": "m5",
+                "name": "Wine & Co",
+                "category": "alcohol",
+                "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+            },
+            {
+                "id": "m6",
+                "name": "Lotte Duty Free",
+                "category": "gift",
+                "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+            },
+            {
+                "id": "m7",
+                "name": "Starbucks aT Center",
+                "category": "meal",
+                "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+            }
+        ],
+        "status": "active",
+        "hash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "anchorTx": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "spentUsd": 17.302359941484895,
+        "pendingUsd": 0,
+        "remainingUsd": 132.6976400585151,
+        "createdAt": "2026-09-28T09:16:39.706Z"
+    },
+    "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+    "anchor": {
+        "txHash": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "memo": "PERDIEM-MANDATE|0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "matches": true
+    },
+    "replay": [
+        {
+            "entryId": "led_1790587057888_ptkn",
+            "storedDecision": "APPROVE",
+            "recomputedDecision": "APPROVE",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": []
+        },
+        {
+            "entryId": "led_1790587078158_8ra4",
+            "storedDecision": "STOP",
+            "recomputedDecision": "STOP",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": [
+                {
+                    "code": "OVER_PER_TX_CAP",
+                    "message": "Single payment cap is $40.",
+                    "observed": 85,
+                    "limit": 40
+                }
+            ]
+        },
+        {
+            "entryId": "led_1790587081310_lqcc",
+            "storedDecision": "STOP",
+            "recomputedDecision": "STOP",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": [
+                {
+                    "code": "MERCHANT_NOT_ALLOWED",
+                    "message": "Wine & Co is not on the permitted list.",
+                    "observed": "m5",
+                    "limit": "m1, m2, m3, m4, m7"
+                },
+                {
+                    "code": "CATEGORY_NOT_ALLOWED",
+                    "message": "Category \"alcohol\" is not permitted.",
+                    "observed": "alcohol",
+                    "limit": "meal, transport, supplies"
+                },
+                {
+                    "code": "BLOCKED_KEYWORD",
+                    "message": "Request mentions a blocked item (\"wine\").",
+                    "observed": "wine"
+                }
+            ]
+        },
+        {
+            "entryId": "led_1790587094496_55dm",
+            "storedDecision": "STOP",
+            "recomputedDecision": "STOP",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": [
+                {
+                    "code": "MANDATE_NOT_ACTIVE",
+                    "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+                    "observed": "paused",
+                    "limit": "active"
+                }
+            ]
+        },
+        {
+            "entryId": "led_1790587097419_yn90",
+            "storedDecision": "APPROVE",
+            "recomputedDecision": "APPROVE",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": []
+        }
+    ],
+    "transactions": [
+        {
+            "entryId": "led_1790587057888_ptkn",
+            "txHash": "0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+            "memo": "PERDIEM|0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c|0x6e935e440c41969238b20f32dbd30ca51562922af173871eb9d32d058102262d",
+            "memoMatches": true,
+            "receiptHashMatches": true,
+            "recipientMatches": true,
+            "amountMatches": true,
+            "valueUsd": 12,
+            "to": "0xa863e2a7716fe766cfa3e7004ccf9ae43e00b936"
+        },
+        {
+            "entryId": "led_1790587097419_yn90",
+            "txHash": "0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+            "memo": "PERDIEM|0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c|0x6859207fe25c45c103bb13694b3a708961f0ce737a3d3d3c0d60c74f711087dd",
+            "memoMatches": true,
+            "receiptHashMatches": true,
+            "recipientMatches": true,
+            "amountMatches": true,
+            "valueUsd": 5,
+            "to": "0xa6b9fa16888f1dc570ffd1b2e2b98f085801678b"
+        }
+    ],
+    "summary": {
+        "passed": 19,
+        "total": 19,
+        "allVerified": true
+    }
+}
+
+### 8c GET /api/audit/<B> (extra)
+$ curl -s -X GET 'http://localhost:3001/api/audit/man_B_mul19mde'
+# at 2026-09-28T09:18:57Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_B_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+        "budgetUsd": 10,
+        "perTxCapUsd": 40,
+        "allowedMerchantIds": [
+            "m1",
+            "m2",
+            "m3",
+            "m4",
+            "m7"
+        ],
+        "allowedCategories": [
+            "meal",
+            "transport",
+            "supplies"
+        ],
+        "blockedKeywords": [
+            "alcohol",
+            "wine",
+            "gift"
+        ],
+        "startsAt": "2026-09-28T08:00:00Z",
+        "expiresAt": "2026-09-30T09:00:00Z",
+        "catalog": [
+            {
+                "id": "m1",
+                "name": "Yangjae Kitchen",
+                "category": "meal",
+                "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+            },
+            {
+                "id": "m2",
+                "name": "Kakao T Taxi",
+                "category": "transport",
+                "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+            },
+            {
+                "id": "m3",
+                "name": "T-money Top-up",
+                "category": "transport",
+                "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+            },
+            {
+                "id": "m4",
+                "name": "Daiso Yangjae",
+                "category": "supplies",
+                "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+            },
+            {
+                "id": "m5",
+                "name": "Wine & Co",
+                "category": "alcohol",
+                "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+            },
+            {
+                "id": "m6",
+                "name": "Lotte Duty Free",
+                "category": "gift",
+                "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+            },
+            {
+                "id": "m7",
+                "name": "Starbucks aT Center",
+                "category": "meal",
+                "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+            }
+        ],
+        "status": "active",
+        "hash": "0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+        "anchorTx": "0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+        "spentUsd": 0,
+        "pendingUsd": 0,
+        "remainingUsd": 10,
+        "createdAt": "2026-09-28T09:16:39.956Z"
+    },
+    "mandateHash": "0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+    "anchor": {
+        "txHash": "0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+        "memo": "PERDIEM-MANDATE|0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+        "matches": true
+    },
+    "replay": [
+        {
+            "entryId": "led_1790587083179_anyn",
+            "storedDecision": "STOP",
+            "recomputedDecision": "STOP",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": [
+                {
+                    "code": "OVER_BUDGET_WITH_FEES",
+                    "message": "Amount $10.00 + network fee $0.156829 = $10.156829 exceeds remaining budget $10.00.",
+                    "observed": 10.156828839673697,
+                    "limit": 10
+                }
+            ]
+        }
+    ],
+    "transactions": [],
+    "summary": {
+        "passed": 3,
+        "total": 3,
+        "allVerified": true
+    }
+}
+
+### 8d GET /api/audit/<C> (extra)
+$ curl -s -X GET 'http://localhost:3001/api/audit/man_C_mul19mde'
+# at 2026-09-28T09:18:57Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_C_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+        "budgetUsd": 150,
+        "perTxCapUsd": 40,
+        "allowedMerchantIds": [
+            "m1",
+            "m2",
+            "m3",
+            "m4",
+            "m7"
+        ],
+        "allowedCategories": [
+            "meal",
+            "transport",
+            "supplies"
+        ],
+        "blockedKeywords": [
+            "alcohol",
+            "wine",
+            "gift"
+        ],
+        "startsAt": "2026-09-20T00:00:00Z",
+        "expiresAt": "2026-09-25T00:00:00Z",
+        "catalog": [
+            {
+                "id": "m1",
+                "name": "Yangjae Kitchen",
+                "category": "meal",
+                "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+            },
+            {
+                "id": "m2",
+                "name": "Kakao T Taxi",
+                "category": "transport",
+                "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+            },
+            {
+                "id": "m3",
+                "name": "T-money Top-up",
+                "category": "transport",
+                "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+            },
+            {
+                "id": "m4",
+                "name": "Daiso Yangjae",
+                "category": "supplies",
+                "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+            },
+            {
+                "id": "m5",
+                "name": "Wine & Co",
+                "category": "alcohol",
+                "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+            },
+            {
+                "id": "m6",
+                "name": "Lotte Duty Free",
+                "category": "gift",
+                "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+            },
+            {
+                "id": "m7",
+                "name": "Starbucks aT Center",
+                "category": "meal",
+                "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+            }
+        ],
+        "status": "active",
+        "hash": "0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796",
+        "anchorTx": "0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+        "spentUsd": 0,
+        "pendingUsd": 0,
+        "remainingUsd": 150,
+        "createdAt": "2026-09-28T09:16:40.474Z"
+    },
+    "mandateHash": "0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796",
+    "anchor": {
+        "txHash": "0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+        "explorerUrl": "https://sepolia.etherscan.io/tx/0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+        "memo": "PERDIEM-MANDATE|0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796",
+        "matches": true
+    },
+    "replay": [
+        {
+            "entryId": "led_1790587107865_z1kk",
+            "storedDecision": "STOP",
+            "recomputedDecision": "STOP",
+            "consistent": true,
+            "mandateHashMatches": true,
+            "recomputedReasons": [
+                {
+                    "code": "EXPIRED",
+                    "message": "Mandate deadline has passed.",
+                    "observed": "2026-09-28T09:18:27.865Z",
+                    "limit": "2026-09-25T00:00:00Z"
+                }
+            ]
+        }
+    ],
+    "transactions": [],
+    "summary": {
+        "passed": 3,
+        "total": 3,
+        "allVerified": true
+    }
+}
+
+### 8e GET /api/ledger?mandateId=<A>
+$ curl -s -X GET 'http://localhost:3001/api/ledger?mandateId=man_A_mul19mde'
+# at 2026-09-28T09:18:58Z
+# HTTP 200
+{
+    "entries": [
+        {
+            "id": "led_1790587057888_ptkn",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Order a bibimbap lunch",
+                "amountUsd": 12,
+                "merchantId": "m1",
+                "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+                "requestedAt": "2026-09-28T09:17:37.888Z"
+            },
+            "merchantName": "Yangjae Kitchen",
+            "decision": "APPROVE",
+            "reasons": [],
+            "feeUsd": 0.156583837582208,
+            "feeSource": "estimate",
+            "totalUsd": 12.156583837582208,
+            "status": "settled",
+            "txHash": "0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+            "receiptHash": "0x6e935e440c41969238b20f32dbd30ca51562922af173871eb9d32d058102262d",
+            "actualFeeUsd": 0.1468565889408,
+            "settledAt": "2026-09-28T09:17:48.851Z",
+            "kilnResponseId": "chat-094eb94e3bd846f0b2ca5b0bcb61bb0d",
+            "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+            "at": "2026-09-28T09:17:37.888Z",
+            "merchantCategory": "meal",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c"
+        },
+        {
+            "id": "led_1790587078158_8ra4",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Taxi to Incheon airport",
+                "amountUsd": 85,
+                "merchantId": "m2",
+                "sourceText": "Taxi to Incheon airport, about $85",
+                "requestedAt": "2026-09-28T09:17:58.158Z"
+            },
+            "merchantName": "Kakao T Taxi",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "OVER_PER_TX_CAP",
+                    "limit": 40,
+                    "message": "Single payment cap is $40.",
+                    "observed": 85
+                }
+            ],
+            "feeUsd": 0.14875293528448,
+            "feeSource": "estimate",
+            "totalUsd": 85.14875293528448,
+            "status": "stopped",
+            "receiptHash": "0xdd917681d7e1165fe51039f4a7440c8d1dcaa139782cad32e17be40b6c03295e",
+            "kilnResponseId": "chat-6a8e5e60f8564db58d82461ffc3eadb7",
+            "toolArgsRaw": "{\"amount_usd\": 85, \"memo\": \"Taxi to Incheon airport\", \"merchant_id\": \"m2\"}",
+            "at": "2026-09-28T09:17:58.158Z",
+            "merchantCategory": "transport"
+        },
+        {
+            "id": "led_1790587081310_lqcc",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Buy a bottle of wine as a gift for the client",
+                "amountUsd": 30,
+                "merchantId": "m5",
+                "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+                "requestedAt": "2026-09-28T09:18:01.310Z"
+            },
+            "merchantName": "Wine & Co",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "MERCHANT_NOT_ALLOWED",
+                    "limit": "m1, m2, m3, m4, m7",
+                    "message": "Wine & Co is not on the permitted list.",
+                    "observed": "m5"
+                },
+                {
+                    "code": "CATEGORY_NOT_ALLOWED",
+                    "limit": "meal, transport, supplies",
+                    "message": "Category \"alcohol\" is not permitted.",
+                    "observed": "alcohol"
+                },
+                {
+                    "code": "BLOCKED_KEYWORD",
+                    "message": "Request mentions a blocked item (\"wine\").",
+                    "observed": "wine"
+                }
+            ],
+            "feeUsd": 0.15682883967369599,
+            "feeSource": "estimate",
+            "totalUsd": 30.156828839673697,
+            "status": "stopped",
+            "receiptHash": "0x8cdfa1af5d10102e6fdfd486f9fe7e0221c78ac01339abf6bbcf6421f65b7ab7",
+            "kilnResponseId": "chat-663ad444e1eb46b58ca50120088fe985",
+            "toolArgsRaw": "{\"amount_usd\": 30, \"memo\": \"Buy a bottle of wine as a gift for the client\", \"merchant_id\": \"m5\"}",
+            "at": "2026-09-28T09:18:01.310Z",
+            "merchantCategory": "alcohol"
+        },
+        {
+            "id": "led_1790587094496_55dm",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Coffee at Starbucks",
+                "amountUsd": 5,
+                "merchantId": "m7",
+                "sourceText": "Coffee at Starbucks, $5",
+                "requestedAt": "2026-09-28T09:18:14.496Z"
+            },
+            "merchantName": "Starbucks aT Center",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "MANDATE_NOT_ACTIVE",
+                    "limit": "active",
+                    "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+                    "observed": "paused"
+                }
+            ],
+            "feeUsd": 0.145776103902688,
+            "feeSource": "estimate",
+            "totalUsd": 5.145776103902688,
+            "status": "stopped",
+            "receiptHash": "0xfb076c10c6dac103f6639dcb0dae23f479ba43c37d11665276a4387eeb5bca14",
+            "kilnResponseId": "chat-b534745823014a3ab13ae26947fc3043",
+            "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+            "at": "2026-09-28T09:18:14.496Z",
+            "merchantCategory": "meal"
+        },
+        {
+            "id": "led_1790587097419_yn90",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Coffee at Starbucks",
+                "amountUsd": 5,
+                "merchantId": "m7",
+                "sourceText": "Coffee at Starbucks, $5",
+                "requestedAt": "2026-09-28T09:18:17.419Z"
+            },
+            "merchantName": "Starbucks aT Center",
+            "decision": "APPROVE",
+            "reasons": [],
+            "feeUsd": 0.145776103902688,
+            "feeSource": "estimate",
+            "totalUsd": 5.145776103902688,
+            "status": "settled",
+            "txHash": "0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+            "receiptHash": "0x6859207fe25c45c103bb13694b3a708961f0ce737a3d3d3c0d60c74f711087dd",
+            "actualFeeUsd": 0.15232883868000002,
+            "settledAt": "2026-09-28T09:18:30.706Z",
+            "kilnResponseId": "chat-7dc9d448a93a43fb8ec559a363a82dbb",
+            "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+            "at": "2026-09-28T09:18:17.419Z",
+            "merchantCategory": "meal",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0"
+        }
+    ]
+}
+
+### 8f GET /api/mandates/<A>
+$ curl -s -X GET 'http://localhost:3001/api/mandates/man_A_mul19mde'
+# at 2026-09-28T09:18:58Z
+# HTTP 200
+{
+    "mandate": {
+        "id": "man_A_mul19mde",
+        "principal": "MICEMore Finance",
+        "traveler": "Mingyu",
+        "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+        "budgetUsd": 150,
+        "perTxCapUsd": 40,
+        "allowedMerchantIds": [
+            "m1",
+            "m2",
+            "m3",
+            "m4",
+            "m7"
+        ],
+        "allowedCategories": [
+            "meal",
+            "transport",
+            "supplies"
+        ],
+        "blockedKeywords": [
+            "alcohol",
+            "wine",
+            "gift"
+        ],
+        "startsAt": "2026-09-28T08:00:00Z",
+        "expiresAt": "2026-09-30T09:00:00Z",
+        "catalog": [
+            {
+                "id": "m1",
+                "name": "Yangjae Kitchen",
+                "category": "meal",
+                "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+            },
+            {
+                "id": "m2",
+                "name": "Kakao T Taxi",
+                "category": "transport",
+                "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+            },
+            {
+                "id": "m3",
+                "name": "T-money Top-up",
+                "category": "transport",
+                "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+            },
+            {
+                "id": "m4",
+                "name": "Daiso Yangjae",
+                "category": "supplies",
+                "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+            },
+            {
+                "id": "m5",
+                "name": "Wine & Co",
+                "category": "alcohol",
+                "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+            },
+            {
+                "id": "m6",
+                "name": "Lotte Duty Free",
+                "category": "gift",
+                "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+            },
+            {
+                "id": "m7",
+                "name": "Starbucks aT Center",
+                "category": "meal",
+                "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+            }
+        ],
+        "status": "active",
+        "hash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+        "anchorTx": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "anchorUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+        "spentUsd": 17.302359941484895,
+        "pendingUsd": 0,
+        "remainingUsd": 132.6976400585151,
+        "createdAt": "2026-09-28T09:16:39.706Z"
+    },
+    "ledger": [
+        {
+            "id": "led_1790587057888_ptkn",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Order a bibimbap lunch",
+                "amountUsd": 12,
+                "merchantId": "m1",
+                "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+                "requestedAt": "2026-09-28T09:17:37.888Z"
+            },
+            "merchantName": "Yangjae Kitchen",
+            "decision": "APPROVE",
+            "reasons": [],
+            "feeUsd": 0.156583837582208,
+            "feeSource": "estimate",
+            "totalUsd": 12.156583837582208,
+            "status": "settled",
+            "txHash": "0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c",
+            "receiptHash": "0x6e935e440c41969238b20f32dbd30ca51562922af173871eb9d32d058102262d",
+            "actualFeeUsd": 0.1468565889408,
+            "settledAt": "2026-09-28T09:17:48.851Z",
+            "kilnResponseId": "chat-094eb94e3bd846f0b2ca5b0bcb61bb0d",
+            "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+            "at": "2026-09-28T09:17:37.888Z",
+            "merchantCategory": "meal",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c"
+        },
+        {
+            "id": "led_1790587078158_8ra4",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Taxi to Incheon airport",
+                "amountUsd": 85,
+                "merchantId": "m2",
+                "sourceText": "Taxi to Incheon airport, about $85",
+                "requestedAt": "2026-09-28T09:17:58.158Z"
+            },
+            "merchantName": "Kakao T Taxi",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "OVER_PER_TX_CAP",
+                    "limit": 40,
+                    "message": "Single payment cap is $40.",
+                    "observed": 85
+                }
+            ],
+            "feeUsd": 0.14875293528448,
+            "feeSource": "estimate",
+            "totalUsd": 85.14875293528448,
+            "status": "stopped",
+            "receiptHash": "0xdd917681d7e1165fe51039f4a7440c8d1dcaa139782cad32e17be40b6c03295e",
+            "kilnResponseId": "chat-6a8e5e60f8564db58d82461ffc3eadb7",
+            "toolArgsRaw": "{\"amount_usd\": 85, \"memo\": \"Taxi to Incheon airport\", \"merchant_id\": \"m2\"}",
+            "at": "2026-09-28T09:17:58.158Z",
+            "merchantCategory": "transport"
+        },
+        {
+            "id": "led_1790587081310_lqcc",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Buy a bottle of wine as a gift for the client",
+                "amountUsd": 30,
+                "merchantId": "m5",
+                "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+                "requestedAt": "2026-09-28T09:18:01.310Z"
+            },
+            "merchantName": "Wine & Co",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "MERCHANT_NOT_ALLOWED",
+                    "limit": "m1, m2, m3, m4, m7",
+                    "message": "Wine & Co is not on the permitted list.",
+                    "observed": "m5"
+                },
+                {
+                    "code": "CATEGORY_NOT_ALLOWED",
+                    "limit": "meal, transport, supplies",
+                    "message": "Category \"alcohol\" is not permitted.",
+                    "observed": "alcohol"
+                },
+                {
+                    "code": "BLOCKED_KEYWORD",
+                    "message": "Request mentions a blocked item (\"wine\").",
+                    "observed": "wine"
+                }
+            ],
+            "feeUsd": 0.15682883967369599,
+            "feeSource": "estimate",
+            "totalUsd": 30.156828839673697,
+            "status": "stopped",
+            "receiptHash": "0x8cdfa1af5d10102e6fdfd486f9fe7e0221c78ac01339abf6bbcf6421f65b7ab7",
+            "kilnResponseId": "chat-663ad444e1eb46b58ca50120088fe985",
+            "toolArgsRaw": "{\"amount_usd\": 30, \"memo\": \"Buy a bottle of wine as a gift for the client\", \"merchant_id\": \"m5\"}",
+            "at": "2026-09-28T09:18:01.310Z",
+            "merchantCategory": "alcohol"
+        },
+        {
+            "id": "led_1790587094496_55dm",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Coffee at Starbucks",
+                "amountUsd": 5,
+                "merchantId": "m7",
+                "sourceText": "Coffee at Starbucks, $5",
+                "requestedAt": "2026-09-28T09:18:14.496Z"
+            },
+            "merchantName": "Starbucks aT Center",
+            "decision": "STOP",
+            "reasons": [
+                {
+                    "code": "MANDATE_NOT_ACTIVE",
+                    "limit": "active",
+                    "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+                    "observed": "paused"
+                }
+            ],
+            "feeUsd": 0.145776103902688,
+            "feeSource": "estimate",
+            "totalUsd": 5.145776103902688,
+            "status": "stopped",
+            "receiptHash": "0xfb076c10c6dac103f6639dcb0dae23f479ba43c37d11665276a4387eeb5bca14",
+            "kilnResponseId": "chat-b534745823014a3ab13ae26947fc3043",
+            "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+            "at": "2026-09-28T09:18:14.496Z",
+            "merchantCategory": "meal"
+        },
+        {
+            "id": "led_1790587097419_yn90",
+            "mandateId": "man_A_mul19mde",
+            "mandateHash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "proposal": {
+                "memo": "Coffee at Starbucks",
+                "amountUsd": 5,
+                "merchantId": "m7",
+                "sourceText": "Coffee at Starbucks, $5",
+                "requestedAt": "2026-09-28T09:18:17.419Z"
+            },
+            "merchantName": "Starbucks aT Center",
+            "decision": "APPROVE",
+            "reasons": [],
+            "feeUsd": 0.145776103902688,
+            "feeSource": "estimate",
+            "totalUsd": 5.145776103902688,
+            "status": "settled",
+            "txHash": "0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0",
+            "receiptHash": "0x6859207fe25c45c103bb13694b3a708961f0ce737a3d3d3c0d60c74f711087dd",
+            "actualFeeUsd": 0.15232883868000002,
+            "settledAt": "2026-09-28T09:18:30.706Z",
+            "kilnResponseId": "chat-7dc9d448a93a43fb8ec559a363a82dbb",
+            "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+            "at": "2026-09-28T09:18:17.419Z",
+            "merchantCategory": "meal",
+            "explorerUrl": "https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0"
+        }
+    ]
+}
+
+### 8g GET /api/mandates
+$ curl -s -X GET 'http://localhost:3001/api/mandates'
+# at 2026-09-28T09:18:58Z
+# HTTP 200
+{
+    "mandates": [
+        {
+            "id": "man_C_mul19mde",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 150,
+            "perTxCapUsd": 40,
+            "status": "active",
+            "startsAt": "2026-09-20T00:00:00Z",
+            "expiresAt": "2026-09-25T00:00:00Z",
+            "hash": "0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796",
+            "anchorTx": "0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+            "anchorUrl": "https://sepolia.etherscan.io/tx/0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+            "spentUsd": 0,
+            "pendingUsd": 0,
+            "remainingUsd": 150,
+            "entryCount": 1,
+            "createdAt": "2026-09-28T09:16:40.474Z"
+        },
+        {
+            "id": "man_B_mul19mde",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 10,
+            "perTxCapUsd": 40,
+            "status": "active",
+            "startsAt": "2026-09-28T08:00:00Z",
+            "expiresAt": "2026-09-30T09:00:00Z",
+            "hash": "0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+            "anchorTx": "0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+            "anchorUrl": "https://sepolia.etherscan.io/tx/0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+            "spentUsd": 0,
+            "pendingUsd": 0,
+            "remainingUsd": 10,
+            "entryCount": 1,
+            "createdAt": "2026-09-28T09:16:39.956Z"
+        },
+        {
+            "id": "man_A_mul19mde",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 150,
+            "perTxCapUsd": 40,
+            "status": "active",
+            "startsAt": "2026-09-28T08:00:00Z",
+            "expiresAt": "2026-09-30T09:00:00Z",
+            "hash": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+            "anchorTx": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+            "anchorUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+            "spentUsd": 17.302359941484895,
+            "pendingUsd": 0,
+            "remainingUsd": 132.6976400585151,
+            "entryCount": 5,
+            "createdAt": "2026-09-28T09:16:39.706Z"
+        },
+        {
+            "id": "man_C_devbe1",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 150,
+            "perTxCapUsd": 40,
+            "status": "revoked",
+            "startsAt": "2026-09-20T00:00:00Z",
+            "expiresAt": "2026-09-25T00:00:00Z",
+            "hash": "0xfa206fa7fc7ff0e4c6eb235fae3a62c23c39b6f7870ad1ffb220b6d7b66c42f6",
+            "anchorTx": null,
+            "anchorUrl": null,
+            "spentUsd": 0,
+            "pendingUsd": 0,
+            "remainingUsd": 150,
+            "entryCount": 1,
+            "createdAt": "2026-09-28T09:09:59.938Z"
+        },
+        {
+            "id": "man_B_devbe1",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 10,
+            "perTxCapUsd": 40,
+            "status": "paused",
+            "startsAt": "2026-09-28T08:00:00Z",
+            "expiresAt": "2026-09-30T09:00:00Z",
+            "hash": "0x9f9abef2dea5d4740792296589a3c96ddeca72df17e23035ca0ff09212ee79e7",
+            "anchorTx": null,
+            "anchorUrl": null,
+            "spentUsd": 0,
+            "pendingUsd": 0,
+            "remainingUsd": 10,
+            "entryCount": 0,
+            "createdAt": "2026-09-28T09:09:59.867Z"
+        },
+        {
+            "id": "man_A_devbe1",
+            "principal": "MICEMore Finance",
+            "traveler": "Mingyu",
+            "budgetUsd": 150,
+            "perTxCapUsd": 40,
+            "status": "paused",
+            "startsAt": "2026-09-28T08:00:00Z",
+            "expiresAt": "2026-09-30T09:00:00Z",
+            "hash": "0x2ec2078c8f60b48acadd038ec1072a1eb48ac6e1a27e075dc1f2517ad36eb79c",
+            "anchorTx": null,
+            "anchorUrl": null,
+            "spentUsd": 0,
+            "pendingUsd": 0,
+            "remainingUsd": 150,
+            "entryCount": 1,
+            "createdAt": "2026-09-28T09:09:59.741Z"
+        }
+    ]
+}
+
+### 8h GET /api/merchants
+$ curl -s -X GET 'http://localhost:3001/api/merchants'
+# at 2026-09-28T09:18:58Z
+# HTTP 200
+{
+    "merchants": [
+        {
+            "id": "m1",
+            "name": "Yangjae Kitchen",
+            "category": "meal",
+            "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+        },
+        {
+            "id": "m2",
+            "name": "Kakao T Taxi",
+            "category": "transport",
+            "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+        },
+        {
+            "id": "m3",
+            "name": "T-money Top-up",
+            "category": "transport",
+            "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+        },
+        {
+            "id": "m4",
+            "name": "Daiso Yangjae",
+            "category": "supplies",
+            "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+        },
+        {
+            "id": "m5",
+            "name": "Wine & Co",
+            "category": "alcohol",
+            "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+        },
+        {
+            "id": "m6",
+            "name": "Lotte Duty Free",
+            "category": "gift",
+            "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+        },
+        {
+            "id": "m7",
+            "name": "Starbucks aT Center",
+            "category": "meal",
+            "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+        }
+    ]
+}
+
+### 9 npm run export -- man_A_mul19mde
+$ npm run export -- man_A_mul19mde
+man_A_mul19mde: hash 0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c, anchor 0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c, 5 entries (settled 2, pending 0, stopped 3, failed 0)
+  wrote evidence/mandate-man_A_mul19mde.json
+  wrote evidence/ledger-man_A_mul19mde.json
+
+### 10 npm run verify -- evidence/mandate-man_A_mul19mde.json evidence/ledger-man_A_mul19mde.json
+$ npm run verify -- evidence/mandate-man_A_mul19mde.json evidence/ledger-man_A_mul19mde.json
+mandate man_A_mul19mde — recomputed hash 0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c
+✅ anchor 0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c memo matches recomputed hash
+✅ led_1790587057888_ptkn: entry carries the mandate hash
+✅ led_1790587057888_ptkn: stored APPROVE == recomputed APPROVE
+✅ led_1790587078158_8ra4: entry carries the mandate hash
+✅ led_1790587078158_8ra4: stored STOP == recomputed STOP (OVER_PER_TX_CAP)
+✅ led_1790587081310_lqcc: entry carries the mandate hash
+✅ led_1790587081310_lqcc: stored STOP == recomputed STOP (MERCHANT_NOT_ALLOWED, CATEGORY_NOT_ALLOWED, BLOCKED_KEYWORD)
+✅ led_1790587094496_55dm: entry carries the mandate hash
+✅ led_1790587094496_55dm: stored STOP == recomputed STOP (MANDATE_NOT_ACTIVE)
+✅ led_1790587097419_yn90: entry carries the mandate hash
+✅ led_1790587097419_yn90: stored APPROVE == recomputed APPROVE
+✅ led_1790587057888_ptkn: receipt hash recomputed from the entry == stored
+✅ led_1790587057888_ptkn: calldata memo == recomputed hashes
+✅ led_1790587057888_ptkn: paid to the catalog wallet of Yangjae Kitchen
+✅ led_1790587057888_ptkn: on-chain value $12.00 == ledger amount $12.00
+✅ led_1790587097419_yn90: receipt hash recomputed from the entry == stored
+✅ led_1790587097419_yn90: calldata memo == recomputed hashes
+✅ led_1790587097419_yn90: paid to the catalog wallet of Starbucks aT Center
+✅ led_1790587097419_yn90: on-chain value $5.00 == ledger amount $5.00
+ALL RECORDS VERIFIED
+
+### 11 GET /api/health (after: balance reflects 3 anchors + 2 payments)
+$ curl -s -X GET 'http://localhost:3001/api/health'
+# at 2026-09-28T09:19:40Z
+# HTTP 200
+{
+    "ok": true,
+    "model": "qwen3-32b",
+    "models": [
+        "deepseek-v4.1-flash",
+        "qwen3-32b"
+    ],
+    "modelAvailable": true,
+    "agentAddress": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+    "balanceEth": "0.04554339500507392",
+    "balanceUsd": 182.17358002029567,
+    "demoEthUsd": 4000,
+    "chain": "sepolia",
+    "rpc": "publicnode",
+    "errors": []
+}
+
+### Summary (backend dev, 2026-09-28 ~09:16-09:20 UTC)
+# mandates: A=man_A_mul19mde ($150)  B=man_B_mul19mde ($10)  C=man_C_mul19mde (expired window)
+# Sepolia txs broadcast in this run (5 total):
+#   anchor A   0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c  (block 11799558)
+#   anchor B   0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc  (block 11799558)
+#   anchor C   0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223  (block 11799558)
+#   pay  $12   0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c  (Yangjae Kitchen, block 11799563, entry led_1790587057888_ptkn)
+#   pay  $5    0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0  (Starbucks aT Center, block 11799566, entry led_1790587097419_yn90)
+# 1 APPROVE→settled | 2 STOP OVER_PER_TX_CAP | 3 STOP MERCHANT_NOT_ALLOWED+CATEGORY_NOT_ALLOWED+BLOCKED_KEYWORD
+# 4 STOP OVER_BUDGET_WITH_FEES ($10.00 + fee $0.156829 > $10.00) | 5 paused→STOP MANDATE_NOT_ACTIVE, resumed→APPROVE→settled
+# 6 STOP EXPIRED | 7 status_fastpath, 0 tokens, entry null | 8 usage byFlow propose/status_fastpath/stop_template,
+# audit A 19/19 allVerified (B 3/3, C 3/3) | export + verify: ALL RECORDS VERIFIED
+# Server log extracts: evidence/be-logs-stop.txt (STOP decisions), evidence/be-kiln-calls.txt (Kiln calls, flow=propose),
+# evidence/be-decisions.txt (all decisions, settlements, pause/resume).
