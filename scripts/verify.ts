@@ -14,7 +14,7 @@
  */
 import { readFileSync } from "node:fs";
 import { mandateHash, receiptHash, replayLedger, findMerchant, type LedgerEntry, type Mandate } from "../lib/policy";
-import { readMemo } from "../lib/chain";
+import { getSettlementStatus, readMemo } from "../lib/chain";
 
 type Exported = { mandate: Mandate; anchorTx?: `0x${string}` };
 
@@ -38,6 +38,7 @@ async function main() {
   if (anchorTx) {
     const memo = await readMemo(anchorTx);
     mark(memo.memo === `PERDIEM-MANDATE|${h}`, `anchor ${anchorTx} memo matches recomputed hash`);
+    mark(memo.from.toLowerCase() === mandate.agentWallet.toLowerCase(), `anchor sent by the mandate's agent wallet ${mandate.agentWallet}`);
   } else {
     mark(false, "no anchorTx in export — cannot prove the terms were fixed before spending");
   }
@@ -58,6 +59,17 @@ async function main() {
     mark(tx.memo === `PERDIEM|${e.mandateHash}|${receiptHash(e)}`, `${e.id}: calldata memo == recomputed hashes`);
     mark(!!merchant && tx.to?.toLowerCase() === merchant.wallet.toLowerCase(), `${e.id}: paid to the catalog wallet of ${merchant?.name ?? e.proposal.merchantId}`);
     mark(Math.abs(tx.valueUsd - e.proposal.amountUsd) < 0.01, `${e.id}: on-chain value $${tx.valueUsd.toFixed(2)} == ledger amount $${e.proposal.amountUsd.toFixed(2)}`);
+    mark(tx.from.toLowerCase() === mandate.agentWallet.toLowerCase(), `${e.id}: sent by the mandate's agent wallet`);
+    let mined = false;
+    let why = "";
+    try {
+      const st = await getSettlementStatus(e.txHash);
+      mined = st.state === "settled";
+      why = st.state === "failed" ? ` (${st.reason})` : st.state === "pending" ? " (not mined yet)" : "";
+    } catch (err) {
+      why = ` (RPC error: ${(err as { shortMessage?: string }).shortMessage ?? (err as Error).message})`;
+    }
+    mark(mined, `${e.id}: tx mined and succeeded${why}`);
   }
 
   console.log(bad === 0 ? "\nALL RECORDS VERIFIED" : `\n${bad} CHECK(S) FAILED`);

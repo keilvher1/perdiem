@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsx tests/policy.test.ts && tsx --conditions=react-server tests/view.test.ts && tsx tests/mandate-request.test.ts",
+    "test": "tsx tests/policy.test.ts && tsx --conditions=react-server tests/view.test.ts && tsx tests/mandate-request.test.ts && tsx --conditions=react-server tests/ledger-write.test.ts && tsx --conditions=react-server tests/db-error.test.ts && tsx --conditions=react-server tests/http-json.test.ts",
     "seed": "tsx --conditions=react-server --env-file=.env.local scripts/seed.ts",
     "scenario": "tsx --conditions=react-server --env-file=.env.local scripts/scenario.ts",
     "export": "tsx --conditions=react-server --env-file=.env.local scripts/export.ts",

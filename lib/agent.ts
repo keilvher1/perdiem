@@ -77,8 +77,12 @@ export async function handleTravelerMessage(userText: string, deps: AgentDeps): 
     usage.push(u);
     await deps.saveUsage(u);
     const spent = spentUsd(deps.ledger);
+    const exp = new Date(m.expiresAt);
+    const expired = now > exp;
+    const when =
+      exp.toLocaleString("en-US", { timeZone: "Asia/Seoul", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) + " KST";
     return {
-      text: `Spent $${spent.toFixed(2)} of $${m.budgetUsd.toFixed(2)}. Remaining $${(m.budgetUsd - spent).toFixed(2)}. Mandate ${m.status}, expires ${m.expiresAt}.`,
+      text: `Spent $${spent.toFixed(2)} of $${m.budgetUsd.toFixed(2)}. Remaining $${(m.budgetUsd - spent).toFixed(2)}. Mandate ${expired ? "expired" : m.status}, ${expired ? "ended" : "expires"} ${when}.`,
       usage,
     };
   }
@@ -178,17 +182,24 @@ export async function handleTravelerMessage(userText: string, deps: AgentDeps): 
   try {
     sent = await sendPaymentNoWait({ to: merchant!.wallet, amountUsd: proposal.amountUsd, mandateHash: mh, receiptHash: rh });
   } catch (err) {
-    // Only a failed BROADCAST is recorded as "failed" (nothing left the wallet).
+    // The broadcast call errored. Usually nothing left the wallet, but a transport error (timeout)
+    // can hide a tx the node accepted, so the reply does not claim "not paid". viem's shortMessage
+    // is used on purpose: the full message can echo the RPC URL (which may embed an API key).
     const entry: LedgerEntry = { ...base, status: "failed", receiptHash: rh };
     await deps.saveEntry(entry);
-    return { text: `Approved but broadcast failed: ${(err as Error).message}`, entry, usage };
+    const msg = (err as { shortMessage?: string }).shortMessage ?? (err as Error).message;
+    return {
+      text: `Approved, but the broadcast did not confirm (${msg}). Check the ledger or Etherscan for the agent wallet before retrying.`,
+      entry,
+      usage,
+    };
   }
   // The payment is on its way. Save it outside the broadcast try/catch, so a DB error here can never
   // relabel money that was actually sent as "failed" (it surfaces as an error; the tx hash is in the log).
   const entry: LedgerEntry = { ...base, status: "pending", txHash: sent.txHash, receiptHash: rh };
   await deps.saveEntry(entry);
   return {
-    text: `Approved. Paying ${merchant!.name} ${fmtUsd(proposal.amountUsd)} for "${proposal.memo}" (est. network fee ${fmtUsd(decision.feeUsd)}). Tx: ${sent.explorerUrl}`,
+    text: `Approved. Paying ${merchant!.name} $${fmtUsd(proposal.amountUsd)} for "${proposal.memo}" (est. network fee $${fmtUsd(decision.feeUsd)}). Tx: ${sent.explorerUrl}`,
     entry,
     usage,
   };

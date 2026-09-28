@@ -61,8 +61,10 @@ export async function POST(req: Request) {
       try {
         anchor = await anchorMandate(hash); // broadcast only — confirmation is visible via the explorer
       } catch (err) {
-        console.error(JSON.stringify({ kind: "api_error", route: "POST /api/mandates", code: "ANCHOR_FAILED", message: errorMessage(err) }));
-        return apiError(502, "ANCHOR_FAILED", `Could not broadcast the mandate anchor: ${errorMessage(err)}`);
+        // viem's shortMessage: the full message can echo the RPC URL, which may embed an API key.
+        const msg = (err as { shortMessage?: string }).shortMessage ?? errorMessage(err);
+        console.error(JSON.stringify({ kind: "api_error", route: "POST /api/mandates", code: "ANCHOR_FAILED", message: msg }));
+        return apiError(502, "ANCHOR_FAILED", `Could not broadcast the mandate anchor: ${msg}`);
       }
 
       try {
