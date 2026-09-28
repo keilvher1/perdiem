@@ -38,7 +38,7 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 ### B. Boundaries & Stopping
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
-| B1 | "State the boundary the agent must not cross and where in your system it is enforced" | `lib/policy.ts::evaluate()`, **12 stop checks**, called in `lib/agent.ts` before any `lib/chain.ts` call; `npm test` (17 blocks) | pre-built; FS documents | `README.md` boundary table, `tests/policy.test.ts` | ✅ |
+| B1 | "State the boundary the agent must not cross and where in your system it is enforced" | `lib/policy.ts::evaluate()`, **12 stop checks**, called in `lib/agent.ts` before any `lib/chain.ts` call; `npm test` — policy engine (17 blocks) + view mapping (10) + mandate-request validation (5) | pre-built; FS documents | `README.md` boundary table, `tests/policy.test.ts` | ✅ |
 | B2 | "Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added" | Run 3: mandate B ($10) asks for exactly $10 → `OVER_BUDGET_WITH_FEES` (fee never rounded) | BE (route) + FE (stop card) | `evidence/03-over-budget-with-fees.png`, `evidence/scenario-*.json` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | B3 | "— a merchant that is not on the list" | Run 2: wine gift → `MERCHANT_NOT_ALLOWED` + `CATEGORY_NOT_ALLOWED` + `BLOCKED_KEYWORD` | BE + FE | `evidence/02-merchant-not-allowed.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | B4 | "— a deadline already past" | Run 5: mandate C (window 9/20–9/25) → `EXPIRED` | BE + FE | `evidence/04-expired.png` | ✅ built (dry run 09-28) · 🔒 final evidence |

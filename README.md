@@ -55,7 +55,7 @@ The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledg
 
 ## The boundary and where it is enforced
 
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` (17 blocks).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` — policy engine (17 blocks) + view mapping (10) + mandate-request validation (5).
 
 | Code | Rule |
 |---|---|
@@ -231,7 +231,7 @@ mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log   # http://localhost
 Then, in a second terminal:
 
 ```bash
-npm test                          # policy engine, 17 blocks
+npm test                          # policy engine (17 blocks) + view mapping (10) + mandate-request validation (5)
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
 npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
 npm run compare                   # thinking on vs off, 10 Kiln calls; OVERWRITES docs/reasoning-comparison.json
