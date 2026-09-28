@@ -26,6 +26,7 @@ grep -c '^DEMO_ETH_USD=4000$' .env.local             # 1 (verify.ts and the app 
 grep -c '^ENERGY_J_PER_TOKEN=' .env.local            # 1 (its value is checked through /api/usage in step 3)
 grep -rl 'data-evidence-fab' components app | head -1   # the Evidence button is merged (prints a file)
 ls app/api/_lib/audit.ts scripts/db-clean.ts /Users/mac/perdiem-tools/node_modules/playwright/package.json
+ls 'app/audit/[mandateId]/report/page.tsx'              # the printable statement shipped (FE 4504769); optional
 ```
 
 In Chrome (for step 8 and the video): downloads go to `~/Downloads`, "Ask where to save each file" is **off**. Move older record files out of the way so Chrome does not save the new ones as `… (1).json`:
@@ -194,6 +195,7 @@ Round-2 statements to confirm or edit:
 - Approval & evidence → "24" and the formula: equals `grep -c '^✅' evidence/12-verify.txt` and the audit total (step 6). The "Check one yourself" paragraph: point it at `evidence/12-verify.txt` for the `ev1` set.
 - "byte-identical to what `npm run export` writes": keep only if step 8 printed `IDENTICAL`.
 - Evidence index: keep the `13-trip-statement.pdf` row only if the file exists; add `12-verify-B.txt`, `12-verify-C.txt`, `seed-1.json`, `seed-2.json`, `capture-log*.json` rows if you commit them.
+- If the printable statement did not ship (no `13-trip-statement.pdf`): remove its clause from the "Evidence button" bullet and its evidence-index row.
 - If the Evidence button did not ship: remove the "Evidence button" bullet, the Download-records half of "Reconstruct from records alone", the `14-evidence-drawer.png` row, the capture sentence under the evidence index, and in `docs/deck/deck.html` the Evidence wording on slides 3 and 7.
 
 **Go / no-go:** `grep -n 'FILL(lead)' README.md` lists only the video URL (until the upload) and the announcement link if you have no link yet; no `OPTIONAL(lead)` marker points at data you did not replace.
