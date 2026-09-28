@@ -64,7 +64,7 @@ Next: stablecoin settlement, multi-traveler mandates, and a receipt format finan
 | 0:40–1:00 | `/traveler`: lunch $12 → approved → pending → settled, open tx | "The model proposes. Code decides. Chain settles." |
 | 1:00–1:35 | Runs 1, 2, 3 (taxi $85 / wine gift $30 / mandate B: dinner $10 on $10) | "Stopped: over per-tx cap" / "Stopped: 3 reasons" / "Stopped: $10 + fee > $10" |
 | 1:35–1:50 | `/principal`: Pause → coffee $5 → stopped → Resume → approved; mandate C → "expired" | "The human can stop the agent at any time" |
-| 1:50–2:30 | terminal: `scripts/verify.ts` all ✅, then `/audit/[id]` hash match, replay table, decoded memo; optional: tampered row ❌ | "An auditor can verify from records alone — no app needed" |
+| 1:50–2:30 | terminal: `scripts/verify.ts` all ✅, then `/audit/[id]` hash match, replay table, decoded memo; optional: tampered row ❌ (edit only the `decision` field, e.g. #1 taxi STOP → APPROVE) | "An auditor can verify from records alone — no app needed" |
 | 2:30–2:55 | `/metrics`: tokens by flow, 0-token rows, thinking on vs off (`/no_think`) comparison, energy card with assumption | "Efficient on the NPU by design" |
 | 2:55–3:00 | GitHub URL + Challenge B | — |
 
@@ -84,6 +84,7 @@ Record at 1080p, 1.25× speed on typing, no music needed. Rehearse once; record 
 8. **Where does the energy number come from?** — Tokens × an assumed J/token, shown next to the assumption. Kiln doesn't expose energy per request today; I'd wire the real meter if Bricksum exposes one.
 9. **Did you use AI to write the code?** — Yes. Claude Code wrote most of it, run as three parallel developer roles (frontend, backend, planner/full-stack) against one typed contract, merged by me. The design, the boundary rules and what counts as evidence are my decisions, the pre-kickoff modules are disclosed in the README, and I can walk through any file.
 10. **Team size / what took longest?** — Solo human builder with AI coding agents. Longest was making the audit page distrust the database properly — replaying spend-so-far from earlier entries so a tampered row is caught.
+11. **Could someone delete a refusal from the records?** — Paid entries are bound to the chain: the receipt hash is in the payment's calldata. Stopped entries are not on-chain. The verifier replays each stopped row from its own fields, so a changed decision turns red, but deleting a stopped row, or rewriting it consistently, is not detectable from the records alone today. Next step: anchor a ledger root on-chain.
 
 Fallback line if a question is unclear: *"Could you say that once more? I want to make sure I answer the right question."*
 

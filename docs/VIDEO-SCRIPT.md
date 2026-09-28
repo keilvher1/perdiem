@@ -98,6 +98,7 @@ Suggested voice settings: a calm, neutral English voice; stability ≈ 0.5, simi
 **During the take**
 - [ ] Record clip by clip (section 1 rows). Move the mouse slowly; pause 1 s on each STOP card so the reasons can be read.
 - [ ] On the wine card, hover a reason chip once; on the $10 dinner card, show the "$10 + fee" message.
+- [ ] Optional tamper shot for "if anyone edits a single decision by hand, it turns red" (1:50–2:30): copy the exported ledger outside the repo (`cp evidence/ledger-<A>.json /tmp/ledger-tampered.json`), change **only** the `decision` field of the #1 taxi entry from `"STOP"` to `"APPROVE"`, run `npx tsx scripts/verify.ts evidence/mandate-<A>.json /tmp/ledger-tampered.json` → `❌ … stored APPROVE == recomputed STOP (OVER_PER_TX_CAP)`, `1 CHECK(S) FAILED`. Edit nothing else: clearing `reasons` as well on the paused #4 entry replays as APPROVE and stays green (README → Approval & evidence → Limitation).
 - [ ] Wait for "settled" on camera once (#0); for #6 a cut is fine.
 - [ ] Order matters: #4 must be sent while A is paused and #6 after Resume (the scenario order in `contracts/api.ts`).
 
