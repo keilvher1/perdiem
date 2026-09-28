@@ -16,6 +16,10 @@
  *                           reasoning tokens, cost; plus every call as a row
  *   06-kiln-calls.txt       every raw `"kind":"kiln"` line
  *   logs-stop.txt           every raw `"kind":"decision"` line (STOP and APPROVE), with a count header
+ *   logs-status.txt         status timeline: every raw `"kind":"mandate_status"` line (printed by PATCH
+ *                           /api/mandates/[id] on pause/resume/revoke) merged with every `"kind":"decision"`
+ *                           line by their `at` field, with a header that counts both kinds. SERVER LOG LINES,
+ *                           NOT HASHED RECORDS: no hash, anchor or verify.ts check covers them.
  *
  * Flags: --base-url <url> | --log <file> (repeatable; replaces the default server log) | --no-compare-log
  *        --logs-only (skip /api/usage) | --out-dir <dir, default evidence>
@@ -162,6 +166,80 @@ function parseDecisionLines(text: string): { lines: string[]; stop: number; appr
     }
   }
   return { lines, stop, approve, bad };
+}
+
+interface TimelineLine {
+  kind: "mandate_status" | "decision";
+  raw: string;
+  /** epoch ms of the `at` field, NaN when missing or unparseable */
+  t: number;
+  /** position across all server logs, for a stable order on equal / missing `at` */
+  seq: number;
+  noop: boolean;
+  decision: string | null;
+  codes: string[];
+}
+
+/** Every `mandate_status` and `decision` line of one log, in log order (verbatim JSON). */
+function parseTimelineLines(text: string, seqStart: number): { lines: TimelineLine[]; bad: number } {
+  const lines: TimelineLine[] = [];
+  let bad = 0;
+  let seq = seqStart;
+  for (const line of text.split(/\r?\n/)) {
+    for (const kind of ["mandate_status", "decision"] as const) {
+      const json = extractJson(line, kind);
+      if (!json) {
+        if (line.includes(`"kind":"${kind}"`)) bad++;
+        continue;
+      }
+      try {
+        const o = JSON.parse(json) as { at?: unknown; from?: unknown; to?: unknown; decision?: unknown; codes?: unknown };
+        lines.push({
+          kind,
+          raw: json,
+          t: typeof o.at === "string" ? Date.parse(o.at) : NaN,
+          seq: seq++,
+          noop: kind === "mandate_status" && o.from === o.to,
+          decision: typeof o.decision === "string" ? o.decision : null,
+          codes: Array.isArray(o.codes) ? o.codes.filter((c): c is string => typeof c === "string") : [],
+        });
+      } catch {
+        bad++;
+      }
+    }
+  }
+  return { lines, bad };
+}
+
+/** Sorted by `at` (ties and lines without a valid `at` keep their log order; the latter go last). */
+function renderStatusTimeline(all: TimelineLine[], bad: number, generatedAt: string, logs: string[]): string {
+  const sorted = [...all].sort((a, b) => {
+    const an = Number.isNaN(a.t);
+    const bn = Number.isNaN(b.t);
+    if (an !== bn) return an ? 1 : -1;
+    if (!an && a.t !== b.t) return a.t - b.t;
+    return a.seq - b.seq;
+  });
+  const status = all.filter((l) => l.kind === "mandate_status");
+  const decisions = all.filter((l) => l.kind === "decision");
+  const stop = decisions.filter((l) => l.decision === "STOP").length;
+  const approve = decisions.filter((l) => l.decision === "APPROVE").length;
+  const notActive = decisions.filter((l) => l.codes.includes("MANDATE_NOT_ACTIVE")).length;
+  const noAt = all.filter((l) => Number.isNaN(l.t)).length;
+  const noop = status.filter((l) => l.noop).length;
+  return (
+    [
+      `# PerDiem status timeline — ${all.length} server log line(s): ${status.length} mandate_status + ${decisions.length} decision`,
+      `#   mandate_status: ${status.length} line(s) printed by PATCH /api/mandates/[id] (pause / resume / revoke)${noop ? `, of which ${noop} no-op (from == to, kept verbatim)` : ""}`,
+      `#   decision:       ${decisions.length} line(s) printed by POST /api/chat — ${stop} STOP (${notActive} with MANDATE_NOT_ACTIVE), ${approve} APPROVE`,
+      "# THESE ARE SERVER LOG LINES, NOT HASHED RECORDS. They are console output of the running app, copied verbatim;",
+      "# no mandate hash, receipt hash, on-chain anchor or scripts/verify.ts check covers them. The hashed records show a",
+      "# pause only indirectly, as MANDATE_NOT_ACTIVE STOP entries in the ledger.",
+      `# extracted ${generatedAt} from ${logs.join(", ")} (lines containing "kind":"mandate_status" or "kind":"decision"),`,
+      `# sorted by their "at" field; equal times keep log order${noAt ? `; ${noAt} line(s) without a valid "at" are listed last, in log order` : ""}${bad ? `; ${bad} unparseable line(s) skipped` : ""}`,
+      ...sorted.map((l) => l.raw),
+    ].join("\n") + "\n"
+  );
 }
 
 // ---------- markdown ----------
@@ -335,6 +413,9 @@ async function main() {
   const calls: KilnCall[] = [];
   let bad = 0;
   const decisions = { lines: [] as string[], stop: 0, approve: 0, bad: 0 };
+  const timeline: TimelineLine[] = [];
+  let timelineBad = 0;
+  const serverLogsRead: string[] = [];
   for (const p of sources) {
     const text = readFileSync(p, "utf8");
     const k = parseKilnLines(text, p);
@@ -351,6 +432,10 @@ async function main() {
       decisions.stop += d.stop;
       decisions.approve += d.approve;
       decisions.bad += d.bad;
+      const tl = parseTimelineLines(text, timeline.length);
+      timeline.push(...tl.lines);
+      timelineBad += tl.bad;
+      serverLogsRead.push(p);
     }
   }
 
@@ -365,6 +450,8 @@ async function main() {
     ].join("\n") + "\n",
   );
 
+  writeFileSync(join(OUT_DIR, "logs-status.txt"), renderStatusTimeline(timeline, timelineBad, generatedAt, serverLogsRead.length ? serverLogsRead : SERVER_LOGS));
+
   let comparison: ReasoningComparison | null = usage?.comparison ?? null;
   if (!comparison && existsSync("docs/reasoning-comparison.json")) {
     comparison = JSON.parse(readFileSync("docs/reasoning-comparison.json", "utf8")) as ReasoningComparison;
@@ -374,7 +461,9 @@ async function main() {
   const flows = [...new Set(calls.map((c) => c.flow))].map((f) => `${f}=${calls.filter((c) => c.flow === f).length}`).join(" ");
   console.log(`Kiln calls: ${calls.length} (${flows || "none"})${bad ? `, ${bad} unparseable line(s)` : ""}`);
   console.log(`Decisions: ${decisions.lines.length} (${decisions.stop} STOP, ${decisions.approve} APPROVE)${decisions.bad ? `, ${decisions.bad} unparseable` : ""}`);
-  console.log(`Wrote ${OUT_DIR}/06-kiln-calls.txt, ${OUT_DIR}/kiln-calls-by-flow.md, ${OUT_DIR}/logs-stop.txt${usage ? `, ${OUT_DIR}/metrics.md` : " (metrics.md skipped)"}`);
+  const statusLines = timeline.filter((l) => l.kind === "mandate_status").length;
+  console.log(`Status timeline: ${statusLines} mandate_status + ${timeline.length - statusLines} decision line(s)${timelineBad ? `, ${timelineBad} unparseable` : ""}`);
+  console.log(`Wrote ${OUT_DIR}/06-kiln-calls.txt, ${OUT_DIR}/kiln-calls-by-flow.md, ${OUT_DIR}/logs-stop.txt, ${OUT_DIR}/logs-status.txt${usage ? `, ${OUT_DIR}/metrics.md` : " (metrics.md skipped)"}`);
   if (usage) console.log(energyText(usage));
   if (usageError) process.exit(1);
 }
