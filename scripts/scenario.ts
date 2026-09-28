@@ -15,6 +15,8 @@
  *   Every APPROVE is confirmed by polling GET /api/ledger/<id>/confirm every 6 s, up to 20 times.
  * Output: evidence/scenario-<YYYYMMDD-HHmm>.json (every request and full response) and a console
  * table n | mandate | decision | codes | txHash | tokens. Exit 1 when any run differs from `expect`.
+ * If the Pause (before #4) or Resume (before #6) PATCH fails, the run stops right there — #4 would
+ * otherwise be a real payment on a still-active mandate — and the report records `aborted`.
  *
  * COST: runs 0 and 6 are real Sepolia payments made by the server (~$17 of test ETH at the demo
  * rate). Run it once per fresh seed; a rerun within 5 minutes trips DUPLICATE by design.
@@ -130,6 +132,12 @@ async function http<T>(method: "GET" | "POST" | "PATCH", path: string, body?: un
 
 const isOk = (r: HttpResult<unknown>) => r.status >= 200 && r.status < 300 && r.response !== null && !("error" in (r.response as object));
 
+function failure(r: HttpResult<unknown>): string {
+  const api = r.response && typeof r.response === "object" && "error" in r.response ? (r.response as ApiError).error : null;
+  const detail = r.error ?? (api ? `${api.code}: ${api.message}` : "");
+  return `HTTP ${r.status}${detail ? " " + detail : ""}`;
+}
+
 async function setStatus(id: string, status: MandateStatus): Promise<HttpResult<UpdateMandateStatusResponse>> {
   const body: UpdateMandateStatusRequest = { status };
   const r = await http<UpdateMandateStatusResponse>("PATCH", ENDPOINTS.mandate(id), body);
@@ -190,17 +198,29 @@ async function main() {
 
   const steps: StepRecord[] = [];
   let pausedA = false;
+  let aborted: { beforeStep: number; reason: string; statusChange: HttpResult<UpdateMandateStatusResponse> } | null = null;
   try {
     for (const s of DEMO_SCRIPT) {
       const key = s.mandateId.slice(-1) as Key;
       const mandateId = ids[key];
       let statusChange: StepRecord["statusChange"] = null;
       if (s.n === 4) {
-        statusChange = await setStatus(ids.A, "paused");
+        // Mark first: if the PATCH failed after the server paused A (e.g. a timeout), `finally` still resumes it.
         pausedA = true;
+        statusChange = await setStatus(ids.A, "paused");
+        if (!isOk(statusChange)) {
+          // Never send #4 to a mandate that may still be active: it would be APPROVEd and paid for real,
+          // and #6 would then stop as DUPLICATE.
+          aborted = { beforeStep: 4, reason: `PATCH pause failed (${failure(statusChange)}); aborted before sending #4`, statusChange };
+          break;
+        }
       }
       if (s.n === 6) {
         statusChange = await setStatus(ids.A, "active");
+        if (!isOk(statusChange)) {
+          aborted = { beforeStep: 6, reason: `PATCH resume failed (${failure(statusChange)}); aborted before sending #6`, statusChange };
+          break;
+        }
         pausedA = false;
       }
 
@@ -257,8 +277,11 @@ async function main() {
       steps.push(step);
     }
   } finally {
-    // Never leave mandate A paused if a run crashed between #4 and #6.
-    if (pausedA) await setStatus(ids.A, "active");
+    // Never leave mandate A paused if a run crashed or aborted between #4 and #6.
+    if (pausedA) {
+      const resumed = await setStatus(ids.A, "active");
+      if (!isOk(resumed)) console.error(red(`! could not resume ${ids.A} (${failure(resumed)}) — resume it on /principal`));
+    }
   }
 
   const finishedAt = new Date();
@@ -272,6 +295,7 @@ async function main() {
     mandatesSource: source,
     confirm: NO_CONFIRM ? "skipped" : { pollMs: POLL_MS, maxPolls: POLLS },
     summary: { total: steps.length, matched, mismatched: steps.length - matched },
+    aborted,
     steps,
   };
   mkdirSync(OUT_DIR, { recursive: true });
@@ -287,6 +311,10 @@ async function main() {
     console.log(x.match ? line : red(line));
   }
   console.log(`\n${matched}/${steps.length} runs match the expected outcome. Saved ${out}`);
+  if (aborted) {
+    console.error(red(`ABORTED before #${aborted.beforeStep}: ${aborted.reason}`));
+    process.exit(1);
+  }
   if (matched !== steps.length) process.exit(1);
 }
 

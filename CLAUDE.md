@@ -27,7 +27,7 @@ Start your own dev server on your port: `npm run dev -- -p 3100` (FE), `-p 3001`
 7. **Two-step settlement.** `sendPaymentNoWait()` / `anchorMandate()` broadcast and return; ledger status `pending`; the client polls `/api/ledger/[id]/confirm` which calls `getSettlementStatus()` → `settled | failed`. No `waitForTransactionReceipt` inside any request handler.
 8. **Hashes are stable.** `mandateHash()` excludes `status`; `receiptHash()` excludes `txHash, receiptHash, status, actualFeeUsd, settledAt`. The confirm route may update ONLY those fields. `lib/db.ts::getMandate()` must merge the `mandates.status` column over the stored JSON (otherwise Pause is a no-op).
 9. **Fail closed.** If the fee cannot be estimated, `evaluate()` returns `FEE_UNAVAILABLE`. Never default a missing fee to 0.
-10. Keep prompts short. Catalog goes into the system prompt as `id | name | category` lines from `mandate.catalog` (7 merchants), never JSON. `reasoning_effort: "low"`, `max_tokens ≤ 300`, and `/no_think` appended to the user message for `propose` (`KILN_NO_THINK=1`; measured 2026-09-27 on Kiln qwen3-32b with the production prompt: completion 180 → 47 tokens (−74%), latency 2.9 s → 0.9 s, cost −50%, tool calls 5/5 both ways; the pre-kickoff spike measured 160 → 47).
+10. Keep prompts short. Catalog goes into the system prompt as `id | name | category` lines from `mandate.catalog` (7 merchants), never JSON. `reasoning_effort: "low"`, `max_tokens ≤ 300`, and `/no_think` appended to the user message for `propose` (`KILN_NO_THINK=1`; measured in-event 2026-09-28 by `npm run compare` on Kiln qwen3-32b with the production prompt → `docs/reasoning-comparison.json`: completion 154 → 47.4 tokens (−69.2%), latency 3.0 s → 1.2 s, cost −47.5%, tool calls 5/5 both ways. Earlier pre-event runs — 2026-09-27: 180 → 47; pre-kickoff spike: 160 → 47 — have no raw data in this repo; do not cite them as evidence).
 11. `Response.json()` cannot serialize `bigint`. `lib/chain.ts` already returns strings; keep it that way.
 
 ## Stack
@@ -64,7 +64,7 @@ tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts �
 npm run dev                       # lead only (port 3000); devs: npm run dev -- -p <your port>
 npm run typecheck                 # next typegen && tsc --noEmit (includes tests/contract.check.ts)
 npm run lint                      # eslint (next build does NOT run lint)
-npm test                          # tsx tests/policy.test.ts — 17 blocks
+npm test                          # policy engine (17 blocks) + view mapping (10) + mandate-request validation (5)
 npm run spike -- kiln             # model + tool-call smoke test (5 prompts)
 npm run spike -- chain            # SPENDS test ETH (anchor tx) — backend dev only
 npm run seed -- --window now      # new A/B/C demo set + 3 anchor txs → evidence/seed-latest.json (spends test ETH)

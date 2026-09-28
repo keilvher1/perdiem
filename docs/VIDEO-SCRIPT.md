@@ -89,15 +89,16 @@ Suggested voice settings: a calm, neutral English voice; stability ≈ 0.5, simi
 - [ ] `/api/health` shows `modelAvailable: true` and a test-ETH balance ≥ 0.01 ETH.
 - [ ] **Fresh demo set for this take:** `npm run seed -- --window now` (the DUPLICATE window is 5 minutes, and runs #0/#6 spend ~$17 of test ETH ≈ 0.0045 ETH per take). Note the A/B/C ids from `evidence/seed-latest.json`.
 - [ ] Mandate creation in 0:15–0:40 uses the form (one extra anchor tx, gas only); the traveler runs use the seeded A/B/C so B ($10) and C (expired) exist.
-- [ ] Browser: one window at 1920×1080 (or 1280×800 at 125% zoom), bookmarks bar hidden, notifications off (macOS Focus), no other tabs with personal data. Pre-open tabs: `/principal?m=<A>`, `/traveler?m=<A>`, `/audit/<A>`, `/metrics`.
+- [ ] Browser: one window at 1920×1080, browser zoom 100% (the traveler chat needs ≥ 950 CSS px of viewport height to show a 3-reason STOP card whole; on a 1512×982 MacBook screen use 90% browser zoom instead; never zoom above 100% — at 1280×800 / 125% the wine card's "Stopped — nothing was sent" header is cut off), bookmarks bar hidden, notifications off (macOS Focus), no other tabs with personal data. Pre-open tabs: `/principal?m=<A>`, `/traveler?m=<A>`, `/audit/<A>`, `/metrics`.
 - [ ] Terminal: large font (≥ 18 pt), dark theme, prompt without the user/host name, commands ready: `npm run export -- <A>` and `npm run verify -- evidence/mandate-<A>.json evidence/ledger-<A>.json`.
-- [ ] Energy assumption set (`ENERGY_J_PER_TOKEN`, `ENERGY_SOURCE`) — or be ready to show the "assumption not set" state honestly.
+- [ ] Energy assumption set (`ENERGY_J_PER_TOKEN=0.429`, and `ENERGY_SOURCE` worded as an estimate, not an "upper bound" — `docs/REVIEW-NOTES.md` #6), server restarted after any change — or be ready to show the "assumption not set" state honestly.
 - [ ] `/metrics` shows the thinking on/off table (read from the committed `docs/reasoning-comparison.json`). Do not re-run `npm run compare` unless you also update the README tables and re-render the deck (it overwrites the measurement).
 - [ ] Only this one server is running against the shared database and wallet (stop the FE/BE/FS dev servers on 3100/3001/3200).
 
 **During the take**
 - [ ] Record clip by clip (section 1 rows). Move the mouse slowly; pause 1 s on each STOP card so the reasons can be read.
 - [ ] On the wine card, hover a reason chip once; on the $10 dinner card, show the "$10 + fee" message.
+- [ ] Optional tamper shot for "if anyone edits a single decision by hand, it turns red" (1:50–2:30): copy the exported ledger outside the repo (`cp evidence/ledger-<A>.json /tmp/ledger-tampered.json`), change **only** the `decision` field of the #1 taxi entry from `"STOP"` to `"APPROVE"`, run `npx tsx scripts/verify.ts evidence/mandate-<A>.json /tmp/ledger-tampered.json` → `❌ … stored APPROVE == recomputed STOP (OVER_PER_TX_CAP)`, `1 CHECK(S) FAILED`. Edit nothing else: clearing `reasons` as well on the paused #4 entry replays as APPROVE and stays green (README → Approval & evidence → Limitation).
 - [ ] Wait for "settled" on camera once (#0); for #6 a cut is fine.
 - [ ] Order matters: #4 must be sent while A is paused and #6 after Resume (the scenario order in `contracts/api.ts`).
 

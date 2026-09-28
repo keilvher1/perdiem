@@ -264,7 +264,7 @@
   </div>
   <div class="note-row" style="margin-top:18px">
     <span class="chip">The model never holds keys</span>
-    <span class="chip">17 unit-test blocks · <span class="mono" style="font-size:13px">npm test</span></span>
+    <span class="chip">32 unit tests · <span class="mono" style="font-size:13px">npm test</span></span>
     <span class="chip">Mandate hash covers terms + catalog, not status</span>
     <span class="chip">Stopping is recorded, not silent</span>
   </div>
@@ -360,7 +360,7 @@
         <li>Compact <span class="mono" style="font-size:13px">id | name | category</span> catalog, one tool call per turn</li>
         <li>Thinking switched off for the propose step, same accuracy</li>
       </ul>
-      <div class="card energy"><!--@energy--><b>Energy:</b> total tokens × an assumed J/token ÷ 3600 = Wh. The assumption and its source are printed next to every number; Kiln does not report per-request energy.<!--/@energy--></div>
+      <div class="card energy"><!--@energy--><b>Energy:</b> total tokens × 0.429 J/token ÷ 3600 = Wh (≈ 0.06 Wh per proposal). Assumption: one RNGD card (180 W TDP) busy for a proposal's measured 1.233 s over its 517 tokens — an estimate, not a measurement; Kiln does not report per-request energy.<!--/@energy--></div>
     </div>
   </div>
   <div class="foot"><span>PerDiem · Challenge B</span><span>8 / 9</span></div>
@@ -380,12 +380,13 @@
       <b>Run it yourself</b>
       <div class="term">git clone https://github.com/keilvher1/perdiem && cd perdiem
 cp .env.example .env.local      # Kiln key, dev wallet, Supabase
+# Supabase SQL editor: run docs/schema.sql
 npm ci && npm run seed -- --window now && npm run dev
 npm run scenario                # the 8 scripted runs</div>
     </div>
     <div class="card">
       <b>Honest scope</b>
-      <p class="small" style="margin-top:8px;font-size:14.5px">Testnet only, no real money, no auth. Pre-kickoff modules (contract, policy engine, Kiln and chain wrappers, verifier) are disclosed in the README; the app, routes, scripts and this deck were built during the event with AI coding agents.</p>
+      <p class="small" style="margin-top:8px;font-size:14.5px">Testnet only, no real money, no auth. Pre-kickoff modules (contract, policy engine, agent loop, Kiln and chain wrappers, verifier, tests) are disclosed in the README; the app, routes, scripts and this deck were built during the event with AI coding agents.</p>
     </div>
   </div>
   <div class="thanks"><span class="big">Thank you.</span><span class="small"><!--@generated-->Template — render with npx tsx scripts/deck.ts<!--/@generated--></span></div>
