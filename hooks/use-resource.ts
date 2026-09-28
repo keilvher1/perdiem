@@ -8,6 +8,7 @@ interface ResourceState<T> {
   key: number;
   data: T | null;
   error: ApiClientError | null;
+  updatedAt: number | null;
 }
 
 export interface Resource<T> {
@@ -17,6 +18,8 @@ export interface Resource<T> {
   loading: boolean;
   /** A manual refresh is in flight while older data is still shown. */
   refreshing: boolean;
+  /** Epoch ms of the last successful load. */
+  updatedAt: number | null;
   refresh: () => void;
 }
 
@@ -26,7 +29,7 @@ export interface Resource<T> {
  * Loading is derived from data (no setState inside the effect body).
  */
 export function useResource<T>(load: (() => Promise<T>) | null, pollMs = 0): Resource<T> {
-  const [state, setState] = useState<ResourceState<T>>({ source: null, key: -1, data: null, error: null });
+  const [state, setState] = useState<ResourceState<T>>({ source: null, key: -1, data: null, error: null, updatedAt: null });
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -35,11 +38,14 @@ export function useResource<T>(load: (() => Promise<T>) | null, pollMs = 0): Res
     const run = async () => {
       try {
         const data = await load();
-        if (alive) setState({ source: load, key: refreshKey, data, error: null });
+        if (alive) setState({ source: load, key: refreshKey, data, error: null, updatedAt: Date.now() });
       } catch (e) {
         if (!alive) return;
         const error = toApiClientError(e);
-        setState((prev) => ({ source: load, key: refreshKey, data: prev.source === load ? prev.data : null, error }));
+        setState((prev) => {
+          const same = prev.source === load;
+          return { source: load, key: refreshKey, data: same ? prev.data : null, error, updatedAt: same ? prev.updatedAt : null };
+        });
       }
     };
     void run();
@@ -59,6 +65,7 @@ export function useResource<T>(load: (() => Promise<T>) | null, pollMs = 0): Res
     error,
     loading: load !== null && data === null && error === null,
     refreshing: current && state.key !== refreshKey,
+    updatedAt: current ? state.updatedAt : null,
     refresh,
   };
 }

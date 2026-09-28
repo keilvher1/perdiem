@@ -37,7 +37,7 @@ export function findByPrefix(mandates: MandateSummary[] | null, prefix: string):
 
 /** Selected mandate for Traveler / Principal / Metrics (shared through ?m=). Needs a <Suspense> parent. */
 export function useSelectedMandate() {
-  const { mandates, error, loading, refresh } = useMandates();
+  const { mandates, error, loading, refresh, addOptimistic } = useMandates();
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -59,5 +59,5 @@ export function useSelectedMandate() {
     [params, pathname, router],
   );
 
-  return { id, summary, mandates, error, loading, refresh, select };
+  return { id, summary, mandates, error, loading, refresh, select, addOptimistic };
 }
