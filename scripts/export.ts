@@ -38,7 +38,12 @@ async function exportOne(id: string): Promise<void> {
   );
   console.log(`  wrote evidence/mandate-${id}.json`);
   console.log(`  wrote evidence/ledger-${id}.json`);
-  if (count("pending") > 0) console.warn("  note: pending entries are not verified on-chain until confirmed (poll /api/ledger/<id>/confirm)");
+  if (count("pending") > 0) {
+    console.warn(
+      `  note: ${count("pending")} pending entr${count("pending") === 1 ? "y" : "ies"}: verify and /api/audit check every tx on-chain ("tx mined and succeeded" fails until it mines), ` +
+        "but this file keeps status pending until /api/ledger/<id>/confirm runs; export again after they settle",
+    );
+  }
 }
 
 async function main() {
