@@ -42,7 +42,7 @@ function TravelerInner() {
   const onPickChip = (text: string, prefix: string, forSelected: boolean) => {
     setDraft(text);
     if (forSelected) return;
-    const target = findByPrefix(mandates, prefix);
+    const target = findByPrefix(mandates, prefix, id);
     if (target) {
       select(target.id);
       toast.info(`Switched to ${target.id}`, { description: "This scripted request belongs to another mandate." });

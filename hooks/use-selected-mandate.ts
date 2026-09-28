@@ -30,9 +30,20 @@ export function resolveMandateId(
   return fallback.id;
 }
 
-/** Newest mandate whose id starts with `prefix` (DEMO_SCRIPT ids are prefixes). */
-export function findByPrefix(mandates: MandateSummary[] | null, prefix: string): MandateSummary | null {
-  return mandates?.find((m) => m.id.startsWith(prefix)) ?? null;
+/**
+ * Mandate for a DEMO_SCRIPT prefix. When `sibling` is a seeded id such as man_A_vid1, the same
+ * set's mandate (man_B_vid1) wins, so a scripted chip never jumps into another take's set;
+ * otherwise the newest id starting with `prefix`.
+ */
+export function findByPrefix(
+  mandates: MandateSummary[] | null,
+  prefix: string,
+  sibling: string | null = null,
+): MandateSummary | null {
+  if (!mandates) return null;
+  const suffix = sibling?.match(/^man_[ABC](_.+)$/)?.[1];
+  const same = suffix ? mandates.find((m) => m.id === `${prefix}${suffix}`) : undefined;
+  return same ?? mandates.find((m) => m.id.startsWith(prefix)) ?? null;
 }
 
 /** Selected mandate for Traveler / Principal / Metrics (shared through ?m=). Needs a <Suspense> parent. */
