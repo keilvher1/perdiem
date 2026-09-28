@@ -123,7 +123,7 @@ The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not
 | Coffee at Starbucks, $5 | ✓ / ✓ | 130 → 43 | 2.5 s → 1.1 s |
 | **Average** | **5/5 / 5/5** | **154 → 47.4 (−69.2%)** | **3.0 s → 1.2 s** |
 
-Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). An earlier run on 2026-09-27 measured 180 → 47 (−74%), 2.9 s → 0.9 s, cost −50%, also 5/5 both ways.
+Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). (A pre-event run on 2026-09-27 measured 180 → 47; its raw data is not in this repo, so only the run above is cited.)
 
 **Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600`. For the 4,622 tokens of the snapshot above: 4,622 × 0.429 ÷ 3600 ≈ **0.55 Wh** for all recorded calls at that time; one thinking-off proposal (517 tokens) ≈ 222 J ≈ 0.06 Wh.
 <!-- OPTIONAL(lead): after the evidence run, replace the total with the "Energy" line of evidence/metrics.md -->
