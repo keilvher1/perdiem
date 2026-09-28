@@ -1,0 +1,100 @@
+{
+  "measuredAt": "2026-09-28T09:12:29.986Z",
+  "model": "qwen3-32b",
+  "rows": [
+    {
+      "prompt": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+      "thinkingOn": {
+        "toolCall": true,
+        "completionTokens": 154,
+        "promptTokens": 469,
+        "latencyMs": 3619,
+        "costUsd": 0.00006192
+      },
+      "thinkingOff": {
+        "toolCall": true,
+        "completionTokens": 47,
+        "promptTokens": 473,
+        "latencyMs": 1279,
+        "costUsd": 0.00003244
+      }
+    },
+    {
+      "prompt": "Taxi to Incheon airport, about $85",
+      "thinkingOn": {
+        "toolCall": true,
+        "completionTokens": 147,
+        "promptTokens": 465,
+        "latencyMs": 2704,
+        "costUsd": 0.00005979999999999999
+      },
+      "thinkingOff": {
+        "toolCall": true,
+        "completionTokens": 47,
+        "promptTokens": 469,
+        "latencyMs": 1211,
+        "costUsd": 0.00003228
+      }
+    },
+    {
+      "prompt": "Buy a bottle of wine as a gift for the client, $30",
+      "thinkingOn": {
+        "toolCall": true,
+        "completionTokens": 159,
+        "promptTokens": 469,
+        "latencyMs": 2908,
+        "costUsd": 0.00006332
+      },
+      "thinkingOff": {
+        "toolCall": true,
+        "completionTokens": 52,
+        "promptTokens": 473,
+        "latencyMs": 1274,
+        "costUsd": 0.00003384
+      }
+    },
+    {
+      "prompt": "Dinner from Yangjae Kitchen, $10",
+      "thinkingOn": {
+        "toolCall": true,
+        "completionTokens": 180,
+        "promptTokens": 465,
+        "latencyMs": 3201,
+        "costUsd": 0.00006903999999999999
+      },
+      "thinkingOff": {
+        "toolCall": true,
+        "completionTokens": 48,
+        "promptTokens": 469,
+        "latencyMs": 1252,
+        "costUsd": 0.00003256
+      }
+    },
+    {
+      "prompt": "Coffee at Starbucks, $5",
+      "thinkingOn": {
+        "toolCall": true,
+        "completionTokens": 130,
+        "promptTokens": 460,
+        "latencyMs": 2498,
+        "costUsd": 0.00005484
+      },
+      "thinkingOff": {
+        "toolCall": true,
+        "completionTokens": 43,
+        "promptTokens": 464,
+        "latencyMs": 1147,
+        "costUsd": 0.00003096
+      }
+    }
+  ],
+  "summary": {
+    "toolCallsOn": 5,
+    "toolCallsOff": 5,
+    "avgCompletionOn": 154,
+    "avgCompletionOff": 47.4,
+    "completionSavedPct": 69.2,
+    "avgLatencyOnMs": 2986,
+    "avgLatencyOffMs": 1233
+  }
+}
