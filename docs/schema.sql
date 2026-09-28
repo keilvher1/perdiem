@@ -41,11 +41,22 @@ create table if not exists usage_records (
 create index if not exists usage_by_flow on usage_records (flow, created_at);
 
 -- Migration `usage_response_id` (2026-09-28) for databases created before response_id existed.
--- Idempotent; RLS stays as it is (ON, no policies — only the service-role key is used).
+-- Idempotent.
 alter table usage_records add column if not exists response_id text;
 
--- Handy view for /metrics
-create or replace view usage_by_flow_v as
+-- Row Level Security: ON with NO policies, on purpose. Tables created in SQL (unlike the Table
+-- Editor) start with RLS off, so it is enabled here. The app only uses the service-role key
+-- (server side, lib/db.ts), which bypasses RLS; the anon/authenticated keys read and write nothing.
+-- Idempotent (re-enabling is a no-op).
+alter table mandates       enable row level security;
+alter table merchants      enable row level security;
+alter table ledger_entries enable row level security;
+alter table usage_records  enable row level security;
+
+-- Handy view for /metrics. security_invoker (Postgres 15+): the view runs with the caller's
+-- rights, so it cannot be used to read usage_records past RLS. Keep the WITH clause here: a
+-- CREATE OR REPLACE VIEW without it resets the option to the default (security definer).
+create or replace view usage_by_flow_v with (security_invoker = true) as
 select flow,
        count(*)               as calls,
        sum(prompt_tokens)     as prompt_tokens,
