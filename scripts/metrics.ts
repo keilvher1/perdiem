@@ -193,13 +193,14 @@ function parseTimelineLines(text: string, seqStart: number): { lines: TimelineLi
         continue;
       }
       try {
-        const o = JSON.parse(json) as { at?: unknown; from?: unknown; to?: unknown; decision?: unknown; codes?: unknown };
+        const o = JSON.parse(json) as { at?: unknown; from?: unknown; to?: unknown; changed?: unknown; decision?: unknown; codes?: unknown };
         lines.push({
           kind,
           raw: json,
           t: typeof o.at === "string" ? Date.parse(o.at) : NaN,
           seq: seq++,
-          noop: kind === "mandate_status" && o.from === o.to,
+          // `changed` when the server prints it (app/api/_lib/events.ts), else from == to
+          noop: kind === "mandate_status" && (typeof o.changed === "boolean" ? !o.changed : o.from === o.to),
           decision: typeof o.decision === "string" ? o.decision : null,
           codes: Array.isArray(o.codes) ? o.codes.filter((c): c is string => typeof c === "string") : [],
         });
@@ -230,7 +231,7 @@ function renderStatusTimeline(all: TimelineLine[], bad: number, generatedAt: str
   return (
     [
       `# PerDiem status timeline — ${all.length} server log line(s): ${status.length} mandate_status + ${decisions.length} decision`,
-      `#   mandate_status: ${status.length} line(s) printed by PATCH /api/mandates/[id] (pause / resume / revoke)${noop ? `, of which ${noop} no-op (from == to, kept verbatim)` : ""}`,
+      `#   mandate_status: ${status.length} line(s) printed by PATCH /api/mandates/[id] (pause / resume / revoke)${noop ? `, of which ${noop} no-op (from == to, nothing changed; kept verbatim)` : ""}`,
       `#   decision:       ${decisions.length} line(s) printed by POST /api/chat — ${stop} STOP (${notActive} with MANDATE_NOT_ACTIVE), ${approve} APPROVE`,
       "# THESE ARE SERVER LOG LINES, NOT HASHED RECORDS. They are console output of the running app, copied verbatim;",
       "# no mandate hash, receipt hash, on-chain anchor or scripts/verify.ts check covers them. The hashed records show a",
