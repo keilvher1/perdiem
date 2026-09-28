@@ -1,7 +1,8 @@
 /**
  * GET /api/health → HealthResponse.
  * Calls Kiln GET /models directly (never assertModelAvailable, which throws) and reads the agent
- * wallet balance. Partial failures still answer 200 with the reason in `errors[]`.
+ * wallet balance, and probes Supabase (no retries). Partial failures still answer 200 with the
+ * reason in `errors[]` (`ok` = model available && balance known, per the contract).
  * The layout calls this on every page, so results are cached in module scope for 60 s
  * (15 s when something failed, so a transient outage does not stick for a whole minute).
  */
@@ -9,6 +10,7 @@ import { NextResponse } from "next/server";
 import type { HealthResponse, Hex } from "@/contracts/api";
 import { kiln, KILN_MODEL } from "@/lib/kiln";
 import { agentAccount, agentBalanceUsd, DEMO_ETH_USD } from "@/lib/chain";
+import { dbProbe } from "@/lib/db";
 import { errorMessage } from "../_lib/http";
 
 export const runtime = "nodejs";
@@ -37,10 +39,12 @@ async function compute(): Promise<HealthResponse> {
     errors.push(describe("wallet", err));
   }
 
-  const [modelsRes, balanceRes] = await Promise.allSettled([
+  const [modelsRes, balanceRes, dbRes] = await Promise.allSettled([
     kiln.models.list(),
     agentAddress ? agentBalanceUsd() : Promise.reject(new Error("no agent wallet")),
+    dbProbe(),
   ]);
+  if (dbRes.status === "rejected") errors.push(describe("db", dbRes.reason));
 
   let models: string[] = [];
   if (modelsRes.status === "fulfilled") {
