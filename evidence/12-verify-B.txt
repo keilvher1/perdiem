@@ -1,0 +1,7 @@
+mandate man_B_ev1 — recomputed hash 0x2b1e4653ecdf3f074a1ecc3ff28fe55506004815d8a4b048de7efe7739589933
+✅ anchor 0x99757f7890107e1be3ae4af40d731d14a5aba0cd453b332bb27e1eb4ff83f4d7 memo matches recomputed hash
+✅ anchor sent by the mandate's agent wallet 0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF
+✅ led_1790595213468_o37s: entry carries the mandate hash
+✅ led_1790595213468_o37s: stored STOP == recomputed STOP (OVER_BUDGET_WITH_FEES)
+
+ALL RECORDS VERIFIED

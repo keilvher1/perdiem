@@ -1,0 +1,27 @@
+mandate man_A_ev1 — recomputed hash 0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c
+✅ anchor 0x00bfdf66bcc42c3628c09644fd0d280eed98257cde9617f0d6e26986b989edaf memo matches recomputed hash
+✅ anchor sent by the mandate's agent wallet 0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF
+✅ led_1790595191309_pnhq: entry carries the mandate hash
+✅ led_1790595191309_pnhq: stored APPROVE == recomputed APPROVE
+✅ led_1790595209483_q377: entry carries the mandate hash
+✅ led_1790595209483_q377: stored STOP == recomputed STOP (OVER_PER_TX_CAP)
+✅ led_1790595211709_t7b5: entry carries the mandate hash
+✅ led_1790595211709_t7b5: stored STOP == recomputed STOP (MERCHANT_NOT_ALLOWED, CATEGORY_NOT_ALLOWED, BLOCKED_KEYWORD)
+✅ led_1790595219097_gdx0: entry carries the mandate hash
+✅ led_1790595219097_gdx0: stored STOP == recomputed STOP (MANDATE_NOT_ACTIVE)
+✅ led_1790595224476_xr4a: entry carries the mandate hash
+✅ led_1790595224476_xr4a: stored APPROVE == recomputed APPROVE
+✅ led_1790595191309_pnhq: receipt hash recomputed from the entry == stored
+✅ led_1790595191309_pnhq: calldata memo == recomputed hashes
+✅ led_1790595191309_pnhq: paid to the catalog wallet of Yangjae Kitchen
+✅ led_1790595191309_pnhq: on-chain value $12.00 == ledger amount $12.00
+✅ led_1790595191309_pnhq: sent by the mandate's agent wallet
+✅ led_1790595191309_pnhq: tx mined and succeeded
+✅ led_1790595224476_xr4a: receipt hash recomputed from the entry == stored
+✅ led_1790595224476_xr4a: calldata memo == recomputed hashes
+✅ led_1790595224476_xr4a: paid to the catalog wallet of Starbucks aT Center
+✅ led_1790595224476_xr4a: on-chain value $5.00 == ledger amount $5.00
+✅ led_1790595224476_xr4a: sent by the mandate's agent wallet
+✅ led_1790595224476_xr4a: tx mined and succeeded
+
+ALL RECORDS VERIFIED

@@ -1,0 +1,155 @@
+[
+  {
+    "id": "led_1790595191309_pnhq",
+    "mandateId": "man_A_ev1",
+    "mandateHash": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "proposal": {
+      "memo": "Order a bibimbap lunch",
+      "amountUsd": 12,
+      "merchantId": "m1",
+      "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+      "requestedAt": "2026-09-28T11:33:11.309Z"
+    },
+    "merchantName": "Yangjae Kitchen",
+    "decision": "APPROVE",
+    "reasons": [],
+    "feeUsd": 0.122532285336672,
+    "feeSource": "estimate",
+    "totalUsd": 12.122532285336671,
+    "status": "settled",
+    "txHash": "0x23ab6a82cc836aa21b838642b41ad8e4b73301d710d0490aac0158ff52ffffa4",
+    "receiptHash": "0x07a39198cec2674e8f6faa51d3ef38c64d2d7fe6519ab0c54e00386bd53e4568",
+    "actualFeeUsd": 0.12064081943232,
+    "settledAt": "2026-09-28T11:33:29.125Z",
+    "kilnResponseId": "chat-6a02916dade74d85b7bcd80493cab52b",
+    "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+    "at": "2026-09-28T11:33:11.309Z"
+  },
+  {
+    "id": "led_1790595209483_q377",
+    "mandateId": "man_A_ev1",
+    "mandateHash": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "proposal": {
+      "memo": "Taxi to Incheon airport",
+      "amountUsd": 85,
+      "merchantId": "m2",
+      "sourceText": "Taxi to Incheon airport, about $85",
+      "requestedAt": "2026-09-28T11:33:29.483Z"
+    },
+    "merchantName": "Kakao T Taxi",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "OVER_PER_TX_CAP",
+        "limit": 40,
+        "message": "Single payment cap is $40.",
+        "observed": 85
+      }
+    ],
+    "feeUsd": 0.122198643827392,
+    "feeSource": "estimate",
+    "totalUsd": 85.12219864382739,
+    "status": "stopped",
+    "receiptHash": "0x99dafb87f02f1bc77d60a89e90981349bcd913ff7958e91e3f3e6521e670bb59",
+    "kilnResponseId": "chat-d7b6d11667a84d1e8430d56643ff4351",
+    "toolArgsRaw": "{\"amount_usd\": 85, \"memo\": \"Taxi to Incheon airport\", \"merchant_id\": \"m2\"}",
+    "at": "2026-09-28T11:33:29.483Z"
+  },
+  {
+    "id": "led_1790595211709_t7b5",
+    "mandateId": "man_A_ev1",
+    "mandateHash": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "proposal": {
+      "memo": "Buy a bottle of wine as a gift for the client",
+      "amountUsd": 30,
+      "merchantId": "m5",
+      "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+      "requestedAt": "2026-09-28T11:33:31.709Z"
+    },
+    "merchantName": "Wine & Co",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "MERCHANT_NOT_ALLOWED",
+        "limit": "m1, m2, m3, m4, m7",
+        "message": "Wine & Co is not on the permitted list.",
+        "observed": "m5"
+      },
+      {
+        "code": "CATEGORY_NOT_ALLOWED",
+        "limit": "meal, transport, supplies",
+        "message": "Category \"alcohol\" is not permitted.",
+        "observed": "alcohol"
+      },
+      {
+        "code": "BLOCKED_KEYWORD",
+        "message": "Request mentions a blocked item (\"wine\").",
+        "observed": "wine"
+      }
+    ],
+    "feeUsd": 0.122198643827392,
+    "feeSource": "estimate",
+    "totalUsd": 30.122198643827392,
+    "status": "stopped",
+    "receiptHash": "0x574cff511f64b48063b19b8485fde06fbef0d8127ae13687c5f5b80713e69cc5",
+    "kilnResponseId": "chat-fad51633c544439faeb3f7bf8d1678d6",
+    "toolArgsRaw": "{\"amount_usd\": 30, \"memo\": \"Buy a bottle of wine as a gift for the client\", \"merchant_id\": \"m5\"}",
+    "at": "2026-09-28T11:33:31.709Z"
+  },
+  {
+    "id": "led_1790595219097_gdx0",
+    "mandateId": "man_A_ev1",
+    "mandateHash": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "proposal": {
+      "memo": "Coffee at Starbucks",
+      "amountUsd": 5,
+      "merchantId": "m7",
+      "sourceText": "Coffee at Starbucks, $5",
+      "requestedAt": "2026-09-28T11:33:39.097Z"
+    },
+    "merchantName": "Starbucks aT Center",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "MANDATE_NOT_ACTIVE",
+        "limit": "active",
+        "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+        "observed": "paused"
+      }
+    ],
+    "feeUsd": 0.11545858926608,
+    "feeSource": "estimate",
+    "totalUsd": 5.11545858926608,
+    "status": "stopped",
+    "receiptHash": "0xe4782a319c955f14cc2b77afa935e21dc75d0d0aa3c750f00bcb680311a8d1af",
+    "kilnResponseId": "chat-7f06d578ae3c425fac536b0f8678d0c7",
+    "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+    "at": "2026-09-28T11:33:39.097Z"
+  },
+  {
+    "id": "led_1790595224476_xr4a",
+    "mandateId": "man_A_ev1",
+    "mandateHash": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "proposal": {
+      "memo": "Coffee at Starbucks",
+      "amountUsd": 5,
+      "merchantId": "m7",
+      "sourceText": "Coffee at Starbucks, $5",
+      "requestedAt": "2026-09-28T11:33:44.476Z"
+    },
+    "merchantName": "Starbucks aT Center",
+    "decision": "APPROVE",
+    "reasons": [],
+    "feeUsd": 0.11545858926608,
+    "feeSource": "estimate",
+    "totalUsd": 5.11545858926608,
+    "status": "settled",
+    "txHash": "0x3f9ce20147dbf275bc791710ca6df1e81b9d058e02c700c7786f62d3f4c0dfff",
+    "receiptHash": "0x77d970aba195f7bbe9c367047dde00ac4c2148aa106ff91c5a806a31926e0da1",
+    "actualFeeUsd": 0.11049819482303999,
+    "settledAt": "2026-09-28T11:33:52.951Z",
+    "kilnResponseId": "chat-3058728bdda0476087983bb638af2df0",
+    "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+    "at": "2026-09-28T11:33:44.476Z"
+  }
+]

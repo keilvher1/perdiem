@@ -1,0 +1,28 @@
+{
+  "A": "man_A_ev1",
+  "B": "man_B_ev1",
+  "C": "man_C_ev1",
+  "anchors": {
+    "A": {
+      "txHash": "0x00bfdf66bcc42c3628c09644fd0d280eed98257cde9617f0d6e26986b989edaf",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x00bfdf66bcc42c3628c09644fd0d280eed98257cde9617f0d6e26986b989edaf"
+    },
+    "B": {
+      "txHash": "0x99757f7890107e1be3ae4af40d731d14a5aba0cd453b332bb27e1eb4ff83f4d7",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x99757f7890107e1be3ae4af40d731d14a5aba0cd453b332bb27e1eb4ff83f4d7"
+    },
+    "C": {
+      "txHash": "0xd8cb1734c26f68152e4a6f8cbf832c82020e86ae653fba099da8d1498fb10750",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0xd8cb1734c26f68152e4a6f8cbf832c82020e86ae653fba099da8d1498fb10750"
+    }
+  },
+  "hashes": {
+    "A": "0xab2cdb8822d3174a1b29a1825730bea9d317ad72e3bf29b0897180b94c9e215c",
+    "B": "0x2b1e4653ecdf3f074a1ecc3ff28fe55506004815d8a4b048de7efe7739589933",
+    "C": "0x96f22b62070c45efe608b23a4a60ee1cb1cfe4638c30cfe1b54589526760724c"
+  },
+  "window": "now",
+  "suffix": "ev1",
+  "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+  "at": "2026-09-28T11:32:58.885Z"
+}

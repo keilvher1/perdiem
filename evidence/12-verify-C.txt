@@ -1,0 +1,7 @@
+mandate man_C_ev1 — recomputed hash 0x96f22b62070c45efe608b23a4a60ee1cb1cfe4638c30cfe1b54589526760724c
+✅ anchor 0xd8cb1734c26f68152e4a6f8cbf832c82020e86ae653fba099da8d1498fb10750 memo matches recomputed hash
+✅ anchor sent by the mandate's agent wallet 0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF
+✅ led_1790595221963_zreu: entry carries the mandate hash
+✅ led_1790595221963_zreu: stored STOP == recomputed STOP (EXPIRED)
+
+ALL RECORDS VERIFIED
