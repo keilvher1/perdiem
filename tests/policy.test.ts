@@ -200,4 +200,4 @@ const M = (id: string) => findMerchant(mandate, id);
   assert.equal(receiptHash(view), receiptHash(e));
 }
 
-console.log("policy tests: OK (17 blocks)");
+console.log("policy tests: OK (16 blocks)");
