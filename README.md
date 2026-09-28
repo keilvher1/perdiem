@@ -57,7 +57,7 @@ The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledg
 
 ## The boundary and where it is enforced
 
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs six suites — policy engine (17 blocks), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs nine suites — policy engine (16 blocks; its last line still prints a hard-coded `OK (17 blocks)`), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4), audit check count equals the `verify.ts` count (9), decision and status log lines (6), Evidence download byte-identical to `npm run export` (7).
 
 | Code | Rule |
 |---|---|
@@ -80,18 +80,19 @@ The mandate hash covers the terms (budget, caps, allowlists, window, catalog sna
 
 The eight scripted requests (`DEMO_SCRIPT` in [`contracts/api.ts`](contracts/api.ts)) are run by `npm run scenario` against the live app. Every STOP is a ledger row with `status: "stopped"`, its reasons and a receipt hash, and a `"kind":"decision"` server-log line.
 
-**Recorded run:** backend verification run, 2026-09-28 18:16–18:18 KST, mandates `man_A_mul19mde`, `man_B_mul19mde`, `man_C_mul19mde` — the same eight requests sent with `curl` to the live app, every request and response captured verbatim in [`evidence/be-phase3-20260928T0916Z.txt`](evidence/be-phase3-20260928T0916Z.txt); decision log lines of the five STOPs in [`evidence/be-logs-stop.txt`](evidence/be-logs-stop.txt) (all decisions, with mandate status changes and settlements: [`evidence/be-decisions.txt`](evidence/be-decisions.txt)).
-<!-- OPTIONAL(lead): replace with the evidence run (evidence/scenario-*.json → steps[n].chat.response.entry.id) and keep the run label in sync -->
+**Recorded run:** evidence run, 2026-09-28 20:33 KST, mandates `man_A_ev1`, `man_B_ev1`, `man_C_ev1` (anchored at 20:32 KST, [`evidence/seed-1.json`](evidence/seed-1.json)) — `npm run scenario` against the live app on Kiln and Sepolia, one server, database cleaned first; **8/8 outcomes as expected**. Every request and full response (ledger entry, usage rows, confirm polls) is in [`evidence/scenario-20260928-2033.json`](evidence/scenario-20260928-2033.json); the decision log lines are in [`evidence/logs-stop.txt`](evidence/logs-stop.txt), and the order pause → stopped request → resume → approval of runs 4 and 6 is in [`evidence/logs-status.txt`](evidence/logs-status.txt) (server log lines, not hashed records).
 
 | # | Request | Mandate | Decision | Reasons | Ledger id |
 |---|---|---|---|---|---|
-| 1 | Taxi to Incheon airport, about $85 | A ($150, cap $40) | STOP | `OVER_PER_TX_CAP` (85 > 40) | `led_1790587078158_8ra4` |
-| 2 | Buy a bottle of wine as a gift for the client, $30 | A | STOP | `MERCHANT_NOT_ALLOWED`, `CATEGORY_NOT_ALLOWED`, `BLOCKED_KEYWORD` | `led_1790587081310_lqcc` |
-| 3 | Dinner from Yangjae Kitchen, $10 | B ($10 budget) | STOP | `OVER_BUDGET_WITH_FEES` ($10 + fee $0.156829 = $10.156829 > $10.00; fees are never rounded before comparing) | `led_1790587083179_anyn` |
-| 4 | Coffee at Starbucks, $5 — while paused | A | STOP | `MANDATE_NOT_ACTIVE` | `led_1790587094496_55dm` |
-| 5 | Coffee at Starbucks, $5 | C (deadline passed) | STOP | `EXPIRED` | `led_1790587107865_z1kk` |
+| 1 | Taxi to Incheon airport, about $85 | A ($150, cap $40) | STOP | `OVER_PER_TX_CAP` (85 > 40) | `led_1790595209483_q377` |
+| 2 | Buy a bottle of wine as a gift for the client, $30 | A | STOP | `MERCHANT_NOT_ALLOWED`, `CATEGORY_NOT_ALLOWED`, `BLOCKED_KEYWORD` | `led_1790595211709_t7b5` |
+| 3 | Dinner from Yangjae Kitchen, $10 | B ($10 budget) | STOP | `OVER_BUDGET_WITH_FEES` ($10 + fee $0.122199 = $10.122199 > $10.00; fees are never rounded before comparing) | `led_1790595213468_o37s` |
+| 4 | Coffee at Starbucks, $5 — while paused | A | STOP | `MANDATE_NOT_ACTIVE` | `led_1790595219097_gdx0` |
+| 5 | Coffee at Starbucks, $5 | C (deadline passed) | STOP | `EXPIRED` | `led_1790595221963_zreu` |
 
-Runs 1, 2 and 4 are also in the exported ledger of mandate A ([`evidence/ledger-man_A_mul19mde.json`](evidence/ledger-man_A_mul19mde.json)) and replayed by the verifier ([`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt)). Only mandate A was exported in this run, so runs 3 (mandate B) and 5 (mandate C) are proven by their verbatim chat responses in `be-phase3-20260928T0916Z.txt` and their decision log lines in `be-logs-stop.txt`.
+The same run approved #0 (lunch $12, `led_1790595191309_pnhq`) and #6 (coffee $5 after resume, `led_1790595224476_xr4a`), both settled on Sepolia ([Proof of API usage](#proof-of-api-usage)), and answered #7 ("How much do I have left?") from the ledger with 0 tokens and no ledger entry. All three mandates were exported and replayed by the verifier from the records alone, each ending `ALL RECORDS VERIFIED`: A (runs 1, 2, 4 and both payments) in [`evidence/12-verify.txt`](evidence/12-verify.txt) with 24 checks, B (run 3) in [`evidence/12-verify-B.txt`](evidence/12-verify-B.txt) and C (run 5) in [`evidence/12-verify-C.txt`](evidence/12-verify-C.txt) with 4 checks each.
+
+**Chat screenshots** need a set of their own, because a receipt or stop card exists only for a request typed into that page: `man_*_ev3`, 2026-09-28 22:10 KST ([`evidence/seed-3.json`](evidence/seed-3.json)), the same eight requests typed into `/traveler` by `scripts/capture.ts` → [`01-approve.png`](evidence/01-approve.png), [`02-merchant-not-allowed.png`](evidence/02-merchant-not-allowed.png), [`03-over-budget-with-fees.png`](evidence/03-over-budget-with-fees.png), [`10-paused.png`](evidence/10-paused.png), [`04-expired.png`](evidence/04-expired.png); their ledger ids and tx hashes are in [`evidence/capture-log.json`](evidence/capture-log.json). A first take on `man_*_ev2` (22:07 KST, [`evidence/seed-2.json`](evidence/seed-2.json)) cut off the card headlines and was replaced; its calls stay in the logs and the database. The earlier backend verification run (`man_*_mul19mde`, 18:16–18:18 KST) is kept as supplementary evidence ([Evidence index](#evidence-index)).
 
 ## Kiln integration & efficiency
 
@@ -100,17 +101,16 @@ Runs 1, 2 and 4 are also in the exported ledger of mandate A ([`evidence/ledger-
 
 **Model note.** The challenge brief text names `gpt-oss-120b`, but Kiln serves only `qwen3-32b` and `deepseek-v4.1-flash`; the track uses **`qwen3-32b`** (organizer announcement: <!-- FILL(lead): announcement link --> `<announcement link>`).
 
-**Tokens by flow** (`/metrics`, `GET /api/usage`, `evidence/metrics.md`) counts every `usage_records` row in the project database — development, integration, the evidence run and video takes alike — not one run. The snapshot below is `GET /api/usage` at 2026-09-28 18:18 KST, at the end of the backend verification run (verbatim in [`evidence/be-phase3-20260928T0916Z.txt`](evidence/be-phase3-20260928T0916Z.txt), step 8a). The database then held that run's 13 rows (7 `propose`, 5 `stop_template`, 1 `status_fastpath`) plus 5 rows of an earlier backend development run at 18:13 KST (2 `propose`, 2 `stop_template`, 1 `status_fastpath`, mandates `man_*_devbe1`).
-<!-- OPTIONAL(lead): replace with the "Tokens by flow" table from evidence/metrics.md after the evidence run, and update the time and the scope sentence above -->
+**Tokens by flow** (`/metrics`, `GET /api/usage`, [`evidence/metrics.md`](evidence/metrics.md)) counts every `usage_records` row in the project database. Before tonight's evidence run the database was backed up and cleaned (`scripts/db-clean.ts --backup <dir outside the repo> --usage --apply`, full command in [`docs/EVIDENCE-RUN.md`](docs/EVIDENCE-RUN.md#2-back-up-and-clean-the-database-no-server-running) step 2: a full backup is written first, then every earlier usage row is deleted; the kept backend-run mandates `man_*_mul19mde` have no usage rows left), so the snapshot below, `GET /api/usage` at 2026-09-28 22:11 KST, covers exactly tonight's three demo sets on one server: `man_*_ev1` (the recorded run, 20:33 KST), `man_*_ev2` (first chat-screenshot take, 22:07 KST) and `man_*_ev3` (chat screenshots, 22:10 KST), each 7 `propose` + 5 `stop_template` + 1 `status_fastpath` rows. Video takes recorded later add rows to `/metrics`, not to this snapshot. [`evidence/07-metrics.png`](evidence/07-metrics.png) was taken at 22:06 KST, after `ev1` only: 13 calls and 3,599 tokens, the same 3,276 prompt + 323 completion tokens as the seven `ev1` calls in the Kiln log below.
 
 | Flow | What it is | Calls | Prompt | Completion | Total | Cost (USD) | Avg latency |
 |---|---|---|---|---|---|---|---|
-| `propose` | one model call per purchase request | 9 | 4,209 | 413 | 4,622 | $0.000284 | 1,657 ms |
-| `status_fastpath` | no model — answered from the ledger | 2 | 0 | 0 | 0 | 0 | — |
-| `stop_template` | no model — refusal templated from reasons | 7 | 0 | 0 | 0 | 0 | — |
-| **Total** | | **18** | **4,209** | **413** | **4,622** | **$0.000284** | |
+| `propose` | one model call per purchase request | 21 | 9,828 | 969 | 10,797 | $0.000685 | 1,287 ms |
+| `status_fastpath` | no model — answered from the ledger | 3 | 0 | 0 | 0 | 0 | — |
+| `stop_template` | no model — refusal templated from reasons | 15 | 0 | 0 | 0 | 0 | — |
+| **Total** | | **39** | **9,828** | **969** | **10,797** | **$0.000685** | |
 
-The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not** in `usage_records`: it runs outside the server and writes [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json) (it adds database rows only with `npm run compare -- --save`). That run: 10 calls, 4,676 prompt + 1,007 completion = 5,683 tokens, $0.000471, 2,109 ms average latency (details below).
+The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not** in `usage_records`: it runs outside the server and writes [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json) (it adds database rows only with `npm run compare -- --save`). That run: 10 calls, 4,676 prompt + 1,007 completion = 5,683 tokens, $0.000471, 2,109 ms average latency (details below). The same comparison table is in `evidence/metrics.md`, and its 10 Kiln calls are in the per-flow call log under [Proof of API usage](#proof-of-api-usage).
 
 **Design choices that reduce inference** (fast-path and templated refusals show as 0-token rows in the table above; thinking off is measured below; the compact catalog and one tool call per turn are design choices, not separately measured): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog lines instead of JSON; one tool call per turn, no parallel calls; **thinking switched off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`).
 
@@ -127,8 +127,7 @@ The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not
 
 Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). (A pre-event run on 2026-09-27 measured 180 → 47; its raw data is not in this repo, so only the run above is cited.)
 
-**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600`. For the 4,622 tokens of the snapshot above: 4,622 × 0.429 ÷ 3600 ≈ **0.55 Wh** for all recorded calls at that time; one thinking-off proposal (517 tokens) ≈ 222 J ≈ 0.06 Wh.
-<!-- OPTIONAL(lead): after the evidence run, replace the total with the "Energy" line of evidence/metrics.md -->
+**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600`. For the 10,797 tokens of the snapshot above: 10,797 × 0.429 ÷ 3600 ≈ **1.29 Wh** for all 21 model calls of tonight's three demo sets ([`evidence/metrics.md`](evidence/metrics.md): "Energy estimate: ≈ 1.29 Wh for 10,797 tokens"); one thinking-off proposal (517 tokens) ≈ 222 J ≈ 0.06 Wh.
 
 **Assumption:** `ENERGY_J_PER_TOKEN = 0.429` J per processed (prompt + completion) token. It is an estimate that assumes one FuriosaAI RNGD card (TDP 180 W, [furiosa.ai/renegade-spec](https://furiosa.ai/renegade-spec)) is busy for the client-measured latency of one request: 180 W × 1.233 s (mean thinking-off proposal latency) ÷ 517 tokens (mean prompt + completion per thinking-off proposal) = 0.429 J/token, both inputs from [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json). It can be off in either direction: multi-card serving (BF16 Qwen3-32B weights, about 65 GB, would not fit one 48 GB card) or host power would raise it; batching and the network time inside the client latency would lower it. Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
 
@@ -148,8 +147,22 @@ Two-step settlement: broadcast → ledger `pending` with the tx hash → the cli
 
 ### On-chain transactions (Sepolia)
 
-Backend verification run, 2026-09-28 18:16–18:18 KST, mandates `*_mul19mde`; all five transactions are sent by the agent wallet `0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF`. Anchors: [`evidence/be-seed-mul19mde.json`](evidence/be-seed-mul19mde.json); payments: [`evidence/be-decisions.txt`](evidence/be-decisions.txt) (decision + settlement lines) and [`evidence/ledger-man_A_mul19mde.json`](evidence/ledger-man_A_mul19mde.json).
-<!-- OPTIONAL(lead): replace with the evidence run (evidence/seed-latest.json anchors, evidence/scenario-*.json steps 0 and 6) and keep the run label in sync -->
+Evidence run `man_*_ev1`, 2026-09-28 20:32–20:33 KST; all five transactions are sent by the agent wallet `0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF`. Anchors: [`evidence/seed-1.json`](evidence/seed-1.json); payments: [`evidence/scenario-20260928-2033.json`](evidence/scenario-20260928-2033.json) (steps 0 and 6: tx hash, ledger entry, confirm with block number) and the exported ledger [`evidence/ledger-man_A_ev1.json`](evidence/ledger-man_A_ev1.json).
+
+| What | Tx hash | Matching record |
+|---|---|---|
+| Mandate A anchor — 0-value self-tx, calldata `PERDIEM-MANDATE\|<mandateHash>` | [`0x00bfdf66bcc42c3628c09644fd0d280eed98257cde9617f0d6e26986b989edaf`](https://sepolia.etherscan.io/tx/0x00bfdf66bcc42c3628c09644fd0d280eed98257cde9617f0d6e26986b989edaf) | mandate `man_A_ev1`, hash `0xab2cdb88…9e215c` ([`mandate-man_A_ev1.json`](evidence/mandate-man_A_ev1.json)); memo and sender checked in [`12-verify.txt`](evidence/12-verify.txt) |
+| Mandate B anchor ($10 budget) | [`0x99757f7890107e1be3ae4af40d731d14a5aba0cd453b332bb27e1eb4ff83f4d7`](https://sepolia.etherscan.io/tx/0x99757f7890107e1be3ae4af40d731d14a5aba0cd453b332bb27e1eb4ff83f4d7) | mandate `man_B_ev1`, hash `0x2b1e4653…589933` ([`mandate-man_B_ev1.json`](evidence/mandate-man_B_ev1.json)); [`12-verify-B.txt`](evidence/12-verify-B.txt) |
+| Mandate C anchor (expired window) | [`0xd8cb1734c26f68152e4a6f8cbf832c82020e86ae653fba099da8d1498fb10750`](https://sepolia.etherscan.io/tx/0xd8cb1734c26f68152e4a6f8cbf832c82020e86ae653fba099da8d1498fb10750) | mandate `man_C_ev1`, hash `0x96f22b62…60724c` ([`mandate-man_C_ev1.json`](evidence/mandate-man_C_ev1.json)); [`12-verify-C.txt`](evidence/12-verify-C.txt) |
+| Payment #0 — lunch $12 to Yangjae Kitchen, calldata `PERDIEM\|<mandateHash>\|<receiptHash>` | [`0x23ab6a82cc836aa21b838642b41ad8e4b73301d710d0490aac0158ff52ffffa4`](https://sepolia.etherscan.io/tx/0x23ab6a82cc836aa21b838642b41ad8e4b73301d710d0490aac0158ff52ffffa4) | ledger `led_1790595191309_pnhq` (settled, block 11800240), receipt hash `0x07a39198…3e4568` |
+| Payment #6 — coffee $5 to Starbucks aT Center, after resume | [`0x3f9ce20147dbf275bc791710ca6df1e81b9d058e02c700c7786f62d3f4c0dfff`](https://sepolia.etherscan.io/tx/0x3f9ce20147dbf275bc791710ca6df1e81b9d058e02c700c7786f62d3f4c0dfff) | ledger `led_1790595224476_xr4a` (settled, block 11800242), receipt hash `0x77d970ab…6e0da1` |
+
+Sets `ev2` and `ev3` (chat-screenshot takes) sent six more anchors and four more payments: [`evidence/seed-2.json`](evidence/seed-2.json), [`evidence/seed-3.json`](evidence/seed-3.json), and the payment tx hashes in [`evidence/logs-stop.txt`](evidence/logs-stop.txt) and [`evidence/capture-log.json`](evidence/capture-log.json).
+
+Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As UTF-8* → the two hashes equal the ledger entry's `mandateHash` and `receiptHash`. [`evidence/08-tx-and-ledger.png`](evidence/08-tx-and-ledger.png) shows the ledger of `man_A_ev1` next to both payments' decoded calldata (Etherscan blocks headless Chrome, so the screenshot uses the audit page's decode of the same transactions). The verifier does the same from the exported records of mandate A (anchor memo and sender; both payments' receipt hash, calldata, recipient, amount, payer and receipt status; a replay of all five entries): [`evidence/12-verify.txt`](evidence/12-verify.txt), 24 ✅ and `ALL RECORDS VERIFIED`. Mandates B and C: [`12-verify-B.txt`](evidence/12-verify-B.txt), [`12-verify-C.txt`](evidence/12-verify-C.txt), 4 ✅ each (anchor memo and sender, one STOP entry). `/audit/man_A_ev1` shows the same 24 of 24 ([`evidence/11-audit.png`](evidence/11-audit.png)), and the Evidence-button download of mandate A was byte-identical to the exported files (`cmp`) and verified 24 of 24 as well.
+
+<details>
+<summary>Supplementary: the backend verification run (<code>man_*_mul19mde</code>, 2026-09-28 18:16–18:18 KST), five more transactions</summary>
 
 | What | Tx hash | Matching record |
 |---|---|---|
@@ -159,36 +172,37 @@ Backend verification run, 2026-09-28 18:16–18:18 KST, mandates `*_mul19mde`; a
 | Payment #0 — lunch $12 to Yangjae Kitchen, calldata `PERDIEM\|<mandateHash>\|<receiptHash>` | [`0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c`](https://sepolia.etherscan.io/tx/0x8d135fec45e8cc7aedb78f0ab826d46301323cacb56ecb8d5361e8136f221e0c) | ledger `led_1790587057888_ptkn` (settled, block 11799563), receipt hash `0x6e935e44…02262d` |
 | Payment #6 — coffee $5 to Starbucks aT Center, after resume | [`0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0`](https://sepolia.etherscan.io/tx/0x85aafbb13e8d4abed36d958faf47db1bb8caf8c0967976ec7c83cd376be478a0) | ledger `led_1790587097419_yn90` (settled, block 11799566), receipt hash `0x6859207f…1087dd` |
 
-Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As UTF-8* → the two hashes equal the ledger entry's `mandateHash` and `receiptHash`. The verifier does the same from the exported records of mandate A — anchor memo, both payments' calldata, recipient and amount, and a replay of all five entries: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) (`ALL RECORDS VERIFIED`, 19 checks with the verifier of that time). The current `scripts/verify.ts` also checks that the anchor and each payment were sent by the mandate's agent wallet and that each payment was mined and succeeded; on the same two files it prints 24 ✅ and `ALL RECORDS VERIFIED` (re-run 2026-09-28, read-only).
+Anchors: [`evidence/be-seed-mul19mde.json`](evidence/be-seed-mul19mde.json); payments: [`evidence/be-decisions.txt`](evidence/be-decisions.txt) and [`evidence/ledger-man_A_mul19mde.json`](evidence/ledger-man_A_mul19mde.json). Verified from the exported records of mandate A: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) (`ALL RECORDS VERIFIED`, 19 checks with the verifier of that time; the current `scripts/verify.ts` prints 24 ✅ on the same two files, and `npm test` re-checks that count).
+
+</details>
 
 ### Kiln API call logs, per flow
 
 Every call through `chatWithUsage()` prints one JSON line (`"kind":"kiln"`: Kiln response id, tool calls, finish reason, the `usage` block Kiln returned). `npm run metrics` collects them into [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md) (per flow: calls, response ids, tool calls, prompt / cached / completion / reasoning tokens, cost); raw lines: [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt).
 
-Scope: these are the calls logged by one server session — here the backend verification run ([`evidence/be-kiln-calls.txt`](evidence/be-kiln-calls.txt)); after the evidence run, `logs/dev-server.log` of the evidence-run server — plus the compare run, which runs outside the server. The counts differ from the database totals under [Tokens by flow](#kiln-integration--efficiency) by design: the database keeps every call ever made against it, a log covers one server session.
+Scope: the calls logged by the evidence-run server (`logs/dev-server.log` of the one server on port 3000 that served sets `ev1`, `ev2` and `ev3`), plus the compare run, which runs outside the server. Because the database was cleaned just before that server's run, the log and `usage_records` agree tonight: 21 `propose` calls and 10,797 tokens in both ([Tokens by flow](#kiln-integration--efficiency)). They can differ by design: the database keeps every call made against it, a log covers one server session.
 
 | Flow | Kiln calls | What the calls did | Log |
 |---|---|---|---|
-| `propose` | 7 (backend verification run) | one `propose_payment` tool call per purchase request of the scripted runs | [`evidence/be-kiln-calls.txt`](evidence/be-kiln-calls.txt) |
+| `propose` | 21 (7 per set: `ev1`, `ev2`, `ev3`) | one `propose_payment` tool call per purchase request of the scripted runs | [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt) |
 | `compare` | 10 | thinking on vs off measurement (below) | [`docs/reasoning-comparison.kiln.jsonl`](docs/reasoning-comparison.kiln.jsonl) |
-| `status_fastpath` | 0 (by design) | answered from the ledger; recorded as 0-token usage rows | `/metrics` |
-| `stop_template` | 0 (by design) | refusal text templated from the stop reasons; 0-token usage rows | `/metrics` |
+| `status_fastpath` | 0 (by design; 3 requests) | answered from the ledger; recorded as 0-token usage rows | `/metrics`, [`evidence/metrics.md`](evidence/metrics.md) |
+| `stop_template` | 0 (by design; 15 refusals) | refusal text templated from the stop reasons; 0-token usage rows | `/metrics`, [`evidence/metrics.md`](evidence/metrics.md) |
 
-<!-- OPTIONAL(lead): replace with the "Flow `propose`" table from evidence/kiln-calls-by-flow.md after the evidence run -->
-**Flow `propose`** — all 7 Kiln calls of the backend verification run (2026-09-28 18:17–18:18 KST), raw lines in [`evidence/be-kiln-calls.txt`](evidence/be-kiln-calls.txt). Each call's response id is stored on the ledger entry it produced (`kilnResponseId` in [`evidence/be-decisions.txt`](evidence/be-decisions.txt) and the exported ledger), so every decision traces back to the model call that proposed it. Rows are in time order; that run sent #6 before #5.
+**Flow `propose`** — the 7 Kiln calls of the recorded run `man_*_ev1` (2026-09-28 20:33 KST), rows 1–7 of [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md); raw lines in [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt). Each call's response id is stored on the ledger entry it produced (`kilnResponseId` in the scenario file, in [`evidence/logs-stop.txt`](evidence/logs-stop.txt) and in the exported ledgers), so every decision traces back to the model call that proposed it. The first call found the prompt cache cold (5 cached tokens).
 
 | Run | Kiln response id | Tool call (arguments) | Ledger id → decision | Prompt | Cached | Completion | Reasoning |
 |---|---|---|---|---:|---:|---:|---:|
-| #0 lunch (A) | `chat-094eb94e3bd846f0b2ca5b0bcb61bb0d` | `propose_payment` `{"amount_usd": 12, "memo": "Order a bibimbap lunch", "merchant_id": "m1"}` | `led_1790587057888_ptkn` → APPROVE, settled | 473 | 472 | 47 | 1 |
-| #1 taxi (A) | `chat-6a8e5e60f8564db58d82461ffc3eadb7` | `propose_payment` `{"amount_usd": 85, "memo": "Taxi to Incheon airport", "merchant_id": "m2"}` | `led_1790587078158_8ra4` → STOP `OVER_PER_TX_CAP` | 469 | 468 | 47 | 1 |
-| #2 wine gift (A) | `chat-663ad444e1eb46b58ca50120088fe985` | `propose_payment` `{"amount_usd": 30, "memo": "Buy a bottle of wine as a gift for the client", "merchant_id": "m5"}` | `led_1790587081310_lqcc` → STOP, 3 reasons | 473 | 472 | 52 | 1 |
-| #3 dinner (B) | `chat-ca7729fa2bf141c8b05b6933dad21c29` | `propose_payment` `{"amount_usd": 10, "memo": "Dinner from Yangjae Kitchen", "merchant_id": "m1"}` | `led_1790587083179_anyn` → STOP `OVER_BUDGET_WITH_FEES` | 469 | 468 | 48 | 1 |
-| #4 coffee, A paused | `chat-b534745823014a3ab13ae26947fc3043` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790587094496_55dm` → STOP `MANDATE_NOT_ACTIVE` | 464 | 463 | 43 | 1 |
-| #6 coffee, A resumed | `chat-7dc9d448a93a43fb8ec559a363a82dbb` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790587097419_yn90` → APPROVE, settled | 464 | 463 | 43 | 1 |
-| #5 coffee (C) | `chat-9bc12813a3f7463e976615358488c178` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790587107865_z1kk` → STOP `EXPIRED` | 464 | 463 | 43 | 1 |
-| **7 calls** | | | 2 APPROVE, 5 STOP | **3,276** | **3,269** | **323** | **7** |
+| #0 lunch (A) | `chat-6a02916dade74d85b7bcd80493cab52b` | `propose_payment` `{"amount_usd": 12, "memo": "Order a bibimbap lunch", "merchant_id": "m1"}` | `led_1790595191309_pnhq` → APPROVE, settled | 473 | 5 | 47 | 1 |
+| #1 taxi (A) | `chat-d7b6d11667a84d1e8430d56643ff4351` | `propose_payment` `{"amount_usd": 85, "memo": "Taxi to Incheon airport", "merchant_id": "m2"}` | `led_1790595209483_q377` → STOP `OVER_PER_TX_CAP` | 469 | 468 | 47 | 1 |
+| #2 wine gift (A) | `chat-fad51633c544439faeb3f7bf8d1678d6` | `propose_payment` `{"amount_usd": 30, "memo": "Buy a bottle of wine as a gift for the client", "merchant_id": "m5"}` | `led_1790595211709_t7b5` → STOP, 3 reasons | 473 | 472 | 52 | 1 |
+| #3 dinner (B) | `chat-396acb73283d4496b2aa299a0b0965f9` | `propose_payment` `{"amount_usd": 10, "memo": "Dinner from Yangjae Kitchen", "merchant_id": "m1"}` | `led_1790595213468_o37s` → STOP `OVER_BUDGET_WITH_FEES` | 469 | 468 | 48 | 1 |
+| #4 coffee, A paused | `chat-7f06d578ae3c425fac536b0f8678d0c7` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790595219097_gdx0` → STOP `MANDATE_NOT_ACTIVE` | 464 | 449 | 43 | 1 |
+| #5 coffee (C) | `chat-33f545e950354a5397b4172f8d9b1895` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790595221963_zreu` → STOP `EXPIRED` | 464 | 463 | 43 | 1 |
+| #6 coffee, A resumed | `chat-3058728bdda0476087983bb638af2df0` | `propose_payment` `{"amount_usd": 5, "memo": "Coffee at Starbucks", "merchant_id": "m7"}` | `led_1790595224476_xr4a` → APPROVE, settled | 464 | 463 | 43 | 1 |
+| **7 calls** | | | 2 APPROVE, 5 STOP | **3,276** | **2,788** | **323** | **7** |
 
-Gateway cost of the seven calls: $0.00022176. Run #7 ("How much do I have left?") made no Kiln call (`status_fastpath`, 0 tokens), and none of the five STOPs made a second call (`stop_template`, 0 tokens).
+Gateway cost of the seven calls: $0.000241. Run #7 ("How much do I have left?") made no Kiln call (`status_fastpath`, 0 tokens), and none of the five STOPs made a second call (`stop_template`, 0 tokens). Rows 8–21 of `kiln-calls-by-flow.md` are the same seven requests on sets `ev2` and `ev3` (the chat-screenshot takes); their ledger ids are in `logs-stop.txt` and, for `ev3`, in `capture-log.json`.
 
 **Flow `compare`** — all 10 calls of the run in `docs/reasoning-comparison.json` (2026-09-28 18:12 KST):
 
@@ -210,11 +224,11 @@ Note how the model proposes the wine gift at `m5` (Wine & Co) even though it is 
 ## Approval & evidence
 
 - **Grant:** `/principal` creates the mandate and anchors its hash on Sepolia.
-- **Follow:** live spend gauge and ledger on `/principal` (a pending payment counts as committed).
+- **Follow:** live spend gauge and ledger on `/principal` (a pending payment counts as committed; [`evidence/09-principal.png`](evidence/09-principal.png)).
 - **Stop:** Pause / Resume / Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE` ([`evidence/10-paused.png`](evidence/10-paused.png)). The order of events — paused, the stopped request, resumed, the next approval — is in [`evidence/logs-status.txt`](evidence/logs-status.txt): the server's `"kind":"mandate_status"` and `"kind":"decision"` log lines merged by time (`npm run metrics`).
 - **Receipt:** the traveler's receipt card shows amount, fee, decision, the traveler's words, the tx / receipt / mandate hashes and the Etherscan link ([`evidence/01-approve.png`](evidence/01-approve.png)).
-- **Evidence button:** on `/traveler`, `/principal` and `/audit/<mandateId>` a floating **Evidence** button opens a drawer for the selected mandate ([`evidence/14-evidence-drawer.png`](evidence/14-evidence-drawer.png)): status and money summary, the latest receipt, counts of settled / pending / stopped / failed entries, **Download records** (`mandate-<id>.json` and `ledger-<id>.json`, byte-identical to what `npm run export` writes), **Copy verify command**, **Run checks now** (one `GET /api/audit/<id>` → "P of T checks passed"), and links to the audit page and to a printable A4 trip statement, `/audit/<mandateId>/report` (parties and terms, boundary, the recomputed checks, the ledger annex with a running balance; [`evidence/13-trip-statement.pdf`](evidence/13-trip-statement.pdf)). The audit page's *Verify it yourself* panel has the same download buttons. In mock mode the downloads are disabled: placeholder hashes never verify.
-- **Reconstruct from records alone:** get the two files — **Download records** in the Evidence drawer or on the audit page (no database access needed), or `npm run export -- <mandateId>` (needs the service-role key) — then `npx tsx scripts/verify.ts ~/Downloads/mandate-<id>.json ~/Downloads/ledger-<id>.json` (from a clone after `npm ci`; any Node 20+, no `.env.local` needed). It uses only those files and a public Sepolia RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, check that the anchor was sent by the mandate's agent wallet, replay every entry through `evaluate()` rebuilding spend-so-far, and for every entry with a tx hash recompute the receipt hash and match it to the calldata, the recipient, the amount, the payer (the mandate's agent wallet) and the receipt status (mined and succeeded). It converts on-chain value at `DEMO_ETH_USD` (default 4000, the rate the app uses); an auditor who sets a different rate will see the amount checks fail. Number of checks = **2 + 2 × ledger entries + 6 × entries with a tx hash** (2 for the anchor; 2 per entry: carries the mandate hash, stored decision == recomputed; 6 per payment: receipt hash, calldata memo, recipient, amount, payer, mined) — without an anchor tx the anchor counts as one failed check. Mandate A of the scripted run has 5 entries and 2 payments: 2 + 10 + 12 = **24**. `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)) and `GET /api/audit/<id>` counts them with the same formula, so its "P of T" equals the ✅ count of `verify.ts` on the same records. Neither trusts the stored decision. Download or export only after every payment has settled: an unmined payment fails "mined and succeeded" until it is mined.
+- **Evidence button:** on `/traveler`, `/principal` and `/audit/<mandateId>` a floating **Evidence** button opens a drawer for the selected mandate ([`evidence/14-evidence-drawer.png`](evidence/14-evidence-drawer.png)): status and money summary, the latest receipt, counts of settled / pending / stopped / failed entries, **Download records** (`mandate-<id>.json` and `ledger-<id>.json`, byte-identical to what `npm run export` writes; checked with `cmp` on `man_A_ev1`, and by `npm test`), **Copy verify command**, **Run checks now** (one `GET /api/audit/<id>` → "P of T checks passed"), and links to the audit page and to a printable A4 trip statement, `/audit/<mandateId>/report` (parties and terms, boundary, the recomputed checks, the ledger annex with a running balance; [`evidence/13-trip-statement.pdf`](evidence/13-trip-statement.pdf)). The audit page's *Verify it yourself* panel has the same download buttons. In mock mode the downloads are disabled: placeholder hashes never verify.
+- **Reconstruct from records alone:** get the two files — **Download records** in the Evidence drawer or on the audit page (no database access needed), or `npm run export -- <mandateId>` (needs the service-role key) — then `npx tsx scripts/verify.ts ~/Downloads/mandate-<id>.json ~/Downloads/ledger-<id>.json` (from a clone after `npm ci`; any Node 20+, no `.env.local` needed). It uses only those files and a public Sepolia RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, check that the anchor was sent by the mandate's agent wallet, replay every entry through `evaluate()` rebuilding spend-so-far, and for every entry with a tx hash recompute the receipt hash and match it to the calldata, the recipient, the amount, the payer (the mandate's agent wallet) and the receipt status (mined and succeeded). It converts on-chain value at `DEMO_ETH_USD` (default 4000, the rate the app uses); an auditor who sets a different rate will see the amount checks fail. Number of checks = **2 + 2 × ledger entries + 6 × entries with a tx hash** (2 for the anchor; 2 per entry: carries the mandate hash, stored decision == recomputed; 6 per payment: receipt hash, calldata memo, recipient, amount, payer, mined) — without an anchor tx the anchor counts as one failed check. Mandate A of the recorded run (`man_A_ev1`) has 5 entries and 2 payments: 2 + 10 + 12 = **24** ([`evidence/12-verify.txt`](evidence/12-verify.txt)). `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)) and `GET /api/audit/<id>` counts them with the same formula, so its "P of T" equals the ✅ count of `verify.ts` on the same records. Neither trusts the stored decision. Download or export only after every payment has settled: an unmined payment fails "mined and succeeded" until it is mined.
 - **Limitation — pause and resume are log evidence, not records:** the status is not part of the mandate hash and a pause is not written on-chain, so a pause or resume is visible only as server log lines ([`evidence/logs-status.txt`](evidence/logs-status.txt)) and as the `MANDATE_NOT_ACTIVE` entries it caused — not as hashed records. The records alone cannot prove when a mandate was paused, or that it was active when a payment was approved: replay treats every entry that is not a `MANDATE_NOT_ACTIVE` stop as made while active. A pause can only ever stop a payment, never allow one.
 - **Limitation — stopped entries are not on-chain:** paid entries are bound to the chain by the receipt hash in their calldata. Stopped entries are not: the verifier replays them from their own fields (proposal, time, fee, and the `MANDATE_NOT_ACTIVE` reason for the pause state), so it catches a changed decision, but a consistent rewrite or the deletion of a stopped row is not detectable from the records alone. Next step: anchor a ledger root on-chain.
 
@@ -235,7 +249,8 @@ mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log   # http://localhost
 Then, in a second terminal:
 
 ```bash
-npm test                          # six suites: policy engine, view mapping, mandate requests, ledger write, DB errors, JSON-only
+npm test                          # nine suites: policy engine, view mapping, mandate requests, ledger write, DB errors,
+                                  # JSON-only, audit count, log lines, download == export
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
 npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
                                   # or: Evidence button → Download records → verify.ts on the two downloaded files
@@ -248,7 +263,59 @@ The `tee` keeps the server log that `npm run metrics` turns into the per-flow Ki
 
 ## Evidence index
 
-Committed now — backend verification run, 2026-09-28 18:16–18:18 KST, mandates `*_mul19mde`:
+Headline evidence: the evidence run of 2026-09-28 KST, one server on port 3000, database backed up and cleaned first (runbook: [`docs/EVIDENCE-RUN.md`](docs/EVIDENCE-RUN.md)). Set `man_*_ev1` is the recorded API run; set `man_*_ev3` produced the chat screenshots; set `man_*_ev2` was a screenshot take that was replaced (its calls stay in the logs and the database).
+
+**Recorded run `man_*_ev1` (20:32–20:33 KST; pages captured 22:05–22:06 KST, GET requests only)**
+
+| File | Shows |
+|---|---|
+| [`evidence/seed-1.json`](evidence/seed-1.json) | mandate ids A/B/C of `ev1`, their hashes and anchor tx hashes, agent wallet |
+| [`evidence/scenario-20260928-2033.json`](evidence/scenario-20260928-2033.json) | the 8 scripted runs: requests, full responses (ledger entry, usage rows), confirm polls with block numbers, expected vs actual (8/8) |
+| [`evidence/mandate-man_A_ev1.json`](evidence/mandate-man_A_ev1.json), [`evidence/ledger-man_A_ev1.json`](evidence/ledger-man_A_ev1.json) | exported records of mandate A (`npm run export`): 5 entries, 2 payments |
+| [`evidence/mandate-man_B_ev1.json`](evidence/mandate-man_B_ev1.json), [`evidence/ledger-man_B_ev1.json`](evidence/ledger-man_B_ev1.json) | exported records of mandate B ($10 budget): run 3 |
+| [`evidence/mandate-man_C_ev1.json`](evidence/mandate-man_C_ev1.json), [`evidence/ledger-man_C_ev1.json`](evidence/ledger-man_C_ev1.json) | exported records of mandate C (expired window): run 5 |
+| [`evidence/12-verify.txt`](evidence/12-verify.txt) | `npm run verify` on A's two files, from records alone: 24 ✅, `ALL RECORDS VERIFIED` |
+| [`evidence/12-verify-B.txt`](evidence/12-verify-B.txt), [`evidence/12-verify-C.txt`](evidence/12-verify-C.txt) | the same for B and C: 4 ✅ each, `ALL RECORDS VERIFIED` |
+| [`evidence/05-health.json`](evidence/05-health.json) | `GET /api/health`: Kiln `GET /models` (`deepseek-v4.1-flash`, `qwen3-32b`), `modelAvailable: true`, agent wallet, Sepolia via PublicNode, demo rate 4000 |
+| [`evidence/07-metrics.png`](evidence/07-metrics.png) | `/metrics` after `ev1` (22:06 KST): tokens by flow with the 0-token rows (13 calls, 3,599 tokens), thinking on vs off, energy card with its assumption |
+| [`evidence/08-tx-and-ledger.png`](evidence/08-tx-and-ledger.png) | the ledger of `man_A_ev1` next to both payments' decoded calldata from `/audit` (recipient, amount, receipt hash, memo: Match); Etherscan blocks headless Chrome |
+| [`evidence/09-principal.png`](evidence/09-principal.png) | `/principal` on `man_A_ev1`: the grant form, the spend summary (budget, spent, pending, remaining), mandate hash and anchor tx, Pause / Revoke |
+| [`evidence/11-audit.png`](evidence/11-audit.png) | `/audit/man_A_ev1`: 24 of 24 (Anchor 1/1 + Replay 10/10 + Transactions 8/8 + Payer & mined 5/5) |
+| [`evidence/14-evidence-drawer.png`](evidence/14-evidence-drawer.png) | the Evidence drawer on `/traveler`: latest receipt, Download records, Copy verify command, "24 of 24 checks passed" |
+| [`evidence/13-trip-statement.pdf`](evidence/13-trip-statement.pdf) | the printable trip statement `/audit/man_A_ev1/report`, 2 A4 pages: parties and terms, boundary, recomputed checks, ledger annex |
+| [`evidence/capture-log-pages-drawer.json`](evidence/capture-log-pages-drawer.json), [`evidence/capture-log-report.json`](evidence/capture-log-report.json) | what `scripts/capture.ts` saved for 05, 07, 08, 09, 11, 14 and 13, with its one warning (Etherscan blocked, so 08 uses the decoded calldata); nothing sent |
+
+**Chat screenshots `man_*_ev3` (22:10 KST)**
+
+| File | Shows |
+|---|---|
+| [`evidence/seed-3.json`](evidence/seed-3.json) | mandate ids, hashes and anchor tx hashes of `ev3` |
+| [`evidence/01-approve.png`](evidence/01-approve.png) | run #0: approved, settled, Etherscan link |
+| [`evidence/02-merchant-not-allowed.png`](evidence/02-merchant-not-allowed.png) | run #2: stopped with three reasons |
+| [`evidence/03-over-budget-with-fees.png`](evidence/03-over-budget-with-fees.png) | run #3: stopped, $10 + fee > $10.00 |
+| [`evidence/10-paused.png`](evidence/10-paused.png) | run #4 while paused: `MANDATE_NOT_ACTIVE` |
+| [`evidence/04-expired.png`](evidence/04-expired.png) | run #5: stopped, deadline passed |
+| [`evidence/capture-log.json`](evidence/capture-log.json) | the eight requests `scripts/capture.ts` typed: decision, reason codes, ledger id, tx hash, Kiln response id, usage rows |
+
+**Replaced take `man_*_ev2` (22:07 KST)**
+
+| File | Shows |
+|---|---|
+| [`evidence/seed-2.json`](evidence/seed-2.json) | mandate ids, hashes and anchor tx hashes of the first chat-screenshot take; its screenshots were replaced by `ev3` because the card headlines were cut off |
+
+**Logs and metrics of the whole session (`ev1` + `ev2` + `ev3`), `npm run metrics` at 22:11 KST**
+
+| File | Shows |
+|---|---|
+| [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt) | every `"kind":"kiln"` line: 21 `propose` calls from the server log + the 10 `compare` calls |
+| [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md) | Kiln call log per flow (proof of API usage): 31 calls with response ids, tool calls, tokens, cost |
+| [`evidence/logs-stop.txt`](evidence/logs-stop.txt) | 21 `"kind":"decision"` lines: 15 STOP, 6 APPROVE |
+| [`evidence/logs-status.txt`](evidence/logs-status.txt) | pause / resume timeline: 6 `mandate_status` + 21 `decision` lines merged by time; server log lines, not hashed records |
+| [`evidence/metrics.md`](evidence/metrics.md) | tokens by flow (39 rows, 10,797 tokens), thinking on vs off, energy ≈ 1.29 Wh with the stated assumption |
+
+Not committed: the Evidence-button download of mandate A (checked during the run: `cmp` byte-identical to `mandate-man_A_ev1.json` and `ledger-man_A_ev1.json`, `verify.ts` 24 of 24), `logs/`, and the video.
+
+**Supplementary: backend verification run, 2026-09-28 18:16–18:18 KST, mandates `*_mul19mde`**
 
 | File | Shows |
 |---|---|
@@ -260,31 +327,7 @@ Committed now — backend verification run, 2026-09-28 18:16–18:18 KST, mandat
 | [`evidence/mandate-man_A_mul19mde.json`](evidence/mandate-man_A_mul19mde.json), [`evidence/ledger-man_A_mul19mde.json`](evidence/ledger-man_A_mul19mde.json) | exported records of mandate A (`npm run export`) |
 | [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt) | `npm run verify` on those two files → `ALL RECORDS VERIFIED` (19 checks with the verifier of that time; the current one prints 24 for the same files) |
 
-Produced by the lead's evidence run (`docs/EVIDENCE-RUN.md`):
-
-| File | Shows |
-|---|---|
-| `evidence/01-approve.png` | run #0 approved, settled, Etherscan link |
-| `evidence/02-merchant-not-allowed.png` | run #2 stopped with three reasons |
-| `evidence/03-over-budget-with-fees.png` | run #3 stopped: $10 + fee > $10.00 |
-| `evidence/04-expired.png` | run #5 stopped: deadline passed |
-| `evidence/05-health.json` | Kiln `GET /models` incl. `qwen3-32b`, agent wallet |
-| `evidence/06-kiln-calls.txt` | every Kiln call log line |
-| `evidence/07-metrics.png` | tokens by flow, 0-token rows, comparison, energy |
-| `evidence/08-tx-and-ledger.png` | ledger row next to its transaction |
-| `evidence/09-principal.png` | grant, spend gauge, ledger |
-| `evidence/10-paused.png` | kill switch: `MANDATE_NOT_ACTIVE` |
-| `evidence/11-audit.png` | audit page, all checks |
-| `evidence/12-verify.txt` | `ALL RECORDS VERIFIED` from records alone (24 checks for mandate A) |
-| `evidence/14-evidence-drawer.png` | the Evidence drawer on `/traveler`: latest receipt, Download records, Copy verify command, "P of T checks passed" |
-| `evidence/13-trip-statement.pdf` | the printable trip statement `/audit/<A>/report` (only if that route shipped) |
-| `evidence/logs-stop.txt` | decision log lines (STOP and APPROVE) |
-| `evidence/logs-status.txt` | pause / resume timeline: `mandate_status` and `decision` server log lines merged by time — log lines, not hashed records |
-| `evidence/scenario-*.json` | the 8 scripted runs, requests and full responses |
-| `evidence/metrics.md` | tokens by flow, comparison, energy text |
-| `evidence/kiln-calls-by-flow.md` | Kiln call log per flow (proof of API usage) |
-
-Screenshots are taken with `scripts/capture.ts` (Playwright from a separate tools folder; see the header of the script). It hides the Evidence button in the nine checklist screenshots; `--only drawer` and `--only report` take `14-evidence-drawer.png` and `13-trip-statement.pdf`.
+Screenshots are taken with `scripts/capture.ts` (Playwright from a separate tools folder; see the header of the script). It hides the Evidence button in the nine checklist screenshots and uses a 1280×1000 viewport for the chat, scrolling the newest card to the top; `--only drawer` and `--only report` take `14-evidence-drawer.png` and `13-trip-statement.pdf`.
 
 ## Repository map
 
@@ -297,7 +340,7 @@ lib/chain.ts            viem on Sepolia: fee estimate, broadcast, settlement, an
 lib/db.ts, lib/view.ts  Supabase persistence and API view mapping
 app/api/**              route handlers (health, merchants, mandates, chat, ledger, confirm, usage, audit)
 app/{traveler,principal,audit,metrics}/  the UI
-scripts/                seed, scenario, export, verify, compare-reasoning, metrics, capture, deck, spike
+scripts/                seed, scenario, export, verify, compare-reasoning, metrics, capture, deck, db-clean, spike
 tests/                  policy tests (npm test) and the contract type check
 docs/                   PRD, plan, pitch, deck, video script, schema, seed data, fixtures
 ```
@@ -308,9 +351,9 @@ The track allows existing code; this lists exactly what existed before the event
 
 **Built before kickoff (2026-09-26 – 09-27):** the API contract `contracts/api.ts`; `docs/` design material (PRD, acceptance checklist, pitch kit, prompts guide, seed data `docs/seed.json`, frontend fixtures `docs/fixtures/`, `docs/schema.sql`, this README's template); the agent prompts in `prompts/`; the reference modules `lib/kiln.ts`, `lib/policy.ts`, `lib/chain.ts`, `lib/agent.ts`; `scripts/spike.ts` and `scripts/verify.ts`; `tests/policy.test.ts` and `tests/contract.check.ts`; `CLAUDE.md` and `AGENTS.md`. Accounts and infrastructure: a funded Sepolia dev wallet, a Kiln API key, and the Supabase project with its schema and row-level security (created 2026-09-27). The pre-built modules were typechecked, unit-tested and smoke-tested against Kiln and Sepolia on 2026-09-27.
 
-**Built during the event:** the Next.js scaffold; `lib/db.ts` and `lib/view.ts`; everything in `app/` (API routes and UI); `scripts/seed.ts`, `export.ts`, `scenario.ts`, `compare-reasoning.ts`, `metrics.ts`, `capture.ts`, `deck.ts`; the delivery plan, the documentation updates, the measured comparison, the evidence, the deck and the video script.
+**Built during the event:** the Next.js scaffold; `lib/db.ts` and `lib/view.ts`; everything in `app/` (API routes and UI); `scripts/seed.ts`, `export.ts`, `scenario.ts`, `compare-reasoning.ts`, `metrics.ts`, `capture.ts`, `deck.ts`, `db-clean.ts`; the delivery plan, the documentation updates, the measured comparison, the evidence, the deck and the video script.
 
-**How the git history separates the two:** commit `8bb7235` (2026-09-28 17:54 KST) imports the pre-built files above together with the in-event Next.js scaffold (create-next-app, shadcn components, `package.json`, configs) and the `lib/db.ts` / `lib/view.ts` interface stubs; its commit message lists which is which. Everything after `8bb7235` was written during the event. The scaffold settings (tsconfig target, typecheck script, tsx conditions, fonts) were rehearsed in a throwaway dry run on 2026-09-27. Two pre-built files changed during the event: `lib/agent.ts` in `5e46c19` (the pending ledger entry is saved outside the broadcast try/catch) and in `d1c8c76` (reply wording: "$" in the approval reply, the expiry in KST, a broadcast error no longer claims "not paid"); and `scripts/verify.ts` in `d1c8c76` (new checks: the anchor and every payment were sent by the mandate's agent wallet, and every payment was mined and succeeded). `git diff --stat 8bb7235 HEAD -- lib/kiln.ts lib/policy.ts lib/chain.ts lib/agent.ts contracts/ scripts/verify.ts scripts/spike.ts tests/policy.test.ts tests/contract.check.ts` lists only those two files.
+**How the git history separates the two:** commit `8bb7235` (2026-09-28 17:54 KST) imports the pre-built files above together with the in-event Next.js scaffold (create-next-app, shadcn components, `package.json`, configs) and the `lib/db.ts` / `lib/view.ts` interface stubs; its commit message lists which is which. Everything after `8bb7235` was written during the event. The scaffold settings (tsconfig target, typecheck script, tsx conditions, fonts) were rehearsed in a throwaway dry run on 2026-09-27. Three pre-built files other than documentation changed during the event: `lib/agent.ts` in `5e46c19` (the pending ledger entry is saved outside the broadcast try/catch) and in `d1c8c76` (reply wording: "$" in the approval reply, the expiry in KST, a broadcast error no longer claims "not paid"); `scripts/verify.ts` in `d1c8c76` (new checks: the anchor and every payment were sent by the mandate's agent wallet, and every payment was mined and succeeded); and `docs/schema.sql` in `aa3b529` (a `usage_records.response_id` column and an idempotent migration that adds it) and in `08265c8` (the file now enables row-level security on the four tables and creates the `usage_by_flow_v` view with `security_invoker`). `git diff --stat 8bb7235 HEAD -- lib/kiln.ts lib/policy.ts lib/chain.ts lib/agent.ts contracts/ scripts/verify.ts scripts/spike.ts tests/policy.test.ts tests/contract.check.ts docs/schema.sql docs/seed.json docs/fixtures/ prompts/ AGENTS.md` lists only those three files. The other pre-built documents (`CLAUDE.md` and the design material in `docs/`) changed as documentation updates.
 
 **Tools:** AI coding assistants — Claude Code, run as three parallel developer roles (frontend, backend, planner/full-stack) in separate git worktrees against the one typed contract, merged by the builder. Design decisions, the boundary rules and what counts as evidence are the builder's.
 

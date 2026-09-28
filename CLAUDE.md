@@ -54,7 +54,7 @@ lib/agent.ts   handleTravelerMessage(): fast-path → propose (/no_think) → ev
 lib/db.ts      Supabase helpers (getMandate merges status column, listLedger, saveEntry, updateEntry, saveUsage, usageByFlow)
 lib/view.ts    LedgerEntry → LedgerEntryView, Mandate → MandateSummary/Detail (backend-owned)
 lib/api-client.ts  FRONTEND-owned: mock|live client over ENDPOINTS
-scripts/spike.ts, scripts/verify.ts (prepared) | scripts/seed.ts, export.ts (BE) | scripts/scenario.ts, compare-reasoning.ts, metrics.ts, capture.ts, deck.ts (FS) — built during the event
+scripts/spike.ts, scripts/verify.ts (prepared) | scripts/seed.ts, export.ts, db-clean.ts (BE) | scripts/scenario.ts, compare-reasoning.ts, metrics.ts, capture.ts, deck.ts (FS) — built during the event
 docs/seed.json agent address, 7 merchants with Sepolia addresses, complete Mandate objects A ($150), B ($10, fee scenario), C (expired)
 tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts — typecheck proves contract == lib
 ```
@@ -64,7 +64,7 @@ tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts �
 npm run dev                       # lead only (port 3000); devs: npm run dev -- -p <your port>
 npm run typecheck                 # next typegen && tsc --noEmit (includes tests/contract.check.ts)
 npm run lint                      # eslint (next build does NOT run lint)
-npm test                          # 6 suites: policy engine (17 blocks), view (10), mandate-request (5), ledger-write (8), db-error (4), http-json (4)
+npm test                          # 9 suites: policy engine (16 blocks; prints a stale "17"), view (10), mandate-request (5), ledger-write (8), db-error (4), http-json (4), audit (9), events (6), evidence-records (7)
 npm run spike -- kiln             # model + tool-call smoke test (5 prompts)
 npm run spike -- chain            # SPENDS test ETH (anchor tx) — backend dev only
 npm run seed -- --window now      # new A/B/C demo set + 3 anchor txs → evidence/seed-latest.json (spends test ETH)
@@ -93,7 +93,7 @@ The npm scripts that touch secrets run `tsx --conditions=react-server --env-file
 - zod 4: `z.string().datetime()` rejects `datetime-local` strings and `+09:00` offsets (use `z.iso.datetime({ offset: true, local: true })` or parse yourself); error details live in `.issues` (not `.errors`).
 - supabase-js 2.117 retries failed GETs 3 times (1 s + 2 s + 4 s); use `.retry(false)` for fast probes.
 - This Mac has a global shell hook: any command containing `rm` with `-r` or `-f` is denied, and so are privilege-escalation (superuser) commands. Delete with `find <path> -delete` or `mv <path> ~/.Trash/`.
-- Money is compared **unrounded** in `evaluate()` (Sepolia fees can be sub-cent). Use `fmtUsd()` for display only; never add `toFixed`/rounding before a comparison. Run 3 = request exactly $10 on mandate B ($10).
+- Money is compared **unrounded** in `evaluate()` (any positive fee must count, however small). Use `fmtUsd()` for display only; never add `toFixed`/rounding before a comparison. Run 3 = request exactly $10 on mandate B ($10).
 - Re-running the same request within 5 minutes trips `DUPLICATE` — use a fresh mandate per demo take (`npm run seed` recreates A/B/C).
 - `<tool_call>` text in `content` is handled by `extractToolCall`; `<think>` blocks by `stripThink`.
 

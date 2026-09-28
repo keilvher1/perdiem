@@ -10,7 +10,7 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 
 | # | Title | On the slide | Say (≈ seconds) |
 |---|---|---|---|
-| 1 | **PerDiem** — an AI agent that spends your per-diem and cannot cross the line | product name, one-sentence declared function, "Challenge B | Kiln qwen3-32b | Sepolia" | 20 |
+| 1 | **PerDiem** — an AI agent that spends your per-diem and cannot cross the line | product name, one-sentence declared function, byline "Mingyu Lee · MICEMore", "Challenge B | Kiln qwen3-32b | Sepolia" | 20 |
 | 2 | The moment after delegation | one line: "Payment rails record who paid whom, not who authorized it or under what conditions." Photo: a traveler, a finance manager, a receipt | 30 |
 | 3 | Who it is for | finance manager at a small company sending staff to a 2-day conference; wants delegation without losing control. Strip: "I have settled government startup-grant expenses by hand" — rules in prose, boxes ticked by hand, refusals weeks later as free text → PerDiem: rules in code before money moves, each refusal with code / observed / limit, checks recomputed from the records | 30 |
 | 4 | How it works | diagram: traveler → agent (Kiln) *proposes* → policy engine (code) *decides* → Sepolia *settles* → ledger + receipt → auditor *replays* | 45 |
@@ -20,14 +20,14 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 | 8 | Efficient on the NPU | tokens by flow table; "status questions: 0 tokens; refusals: 0 tokens"; thinking off for proposals, 5/5 tool calls both ways: in-event run Sep 28 154 → 47 completion tokens (−69%), 3.0 s → 1.2 s, cost −48% (`docs/reasoning-comparison.json`); energy estimate with stated assumption | 35 |
 | 9 | What's next | stablecoin settlement, multi-traveler mandates, a receipt format finance teams can import; repo URL + "Challenge B" | 10 |
 
-Total ≈ 4:50 (slide 3 carries the grant-settlement story; if the clock is tight, drop the MICE sentence on slide 3 first). Leave slide 8 up during Q&A.
+The per-slide timings add up to 5:00 (300 s), the whole slot; the script below reads in ≈ 4:50 at 150 words per minute, leaving about eight seconds of slack (slide 3 carries the grant-settlement story; if the clock is tight, drop the MICE sentence on slide 3 first). Leave slide 8 up during Q&A.
 
 ---
 
-## Script (≈ 720 words, ≈ 4:50 at 150 words per minute)
+## Script (≈ 730 words, ≈ 4:50 at 150 words per minute)
 
 **[Slide 1]**
-Hi, I'm Mingyu. I built PerDiem for Challenge B. <!-- use the same name as your Luma registration --> In one sentence: PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.
+Hi, I'm Mingyu Lee. I built PerDiem for Challenge B. In one sentence: PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.
 
 **[Slide 2]**
 The brief says it well: payment rails record who paid whom, but not who authorized it, or under what conditions. So an agent that stays within budget does so only because someone built it that way. I wanted to build exactly that — and prove it.
@@ -43,7 +43,7 @@ The traveler chats with the agent. The agent runs on Kiln — Qwen3-32B on Furio
 This is the boundary. Twelve checks: is the mandate active, is the trip window open, is the merchant on the list, is the category permitted, any blocked keywords, per-transaction cap, and — the one I like most — does the amount plus the *real* network fee still fit the remaining budget. It's a pure function with unit tests. Stopping is a correct outcome here, and it is recorded, not silent.
 
 **[Slide 6]**
-Real runs. First, lunch for twelve dollars: approved, settled, here's the Etherscan link. Second, a taxi to the airport for eighty-five: stopped, over the per-transaction cap. Third, "a bottle of wine as a client gift": stopped with three reasons at once — merchant not on the list, category not permitted, blocked keyword. And fourth, on a ten-dollar budget, a ten-dollar dinner: stopped, because once the real network fee is added — even a fraction of a cent — it exceeds the budget. We never round the fee away. The finance manager can also pause the agent at any time — every request after that stops with "mandate not active".
+Real runs. First, lunch for twelve dollars: approved, settled, here's the Etherscan link. Second, a taxi to the airport for eighty-five: stopped, over the per-transaction cap. Third, "a bottle of wine as a client gift": stopped with three reasons at once — merchant not on the list, category not permitted, blocked keyword. And fourth, on a ten-dollar budget, a ten-dollar dinner: stopped, because once the real network fee is added — about twelve cents on this card, but any fee at all would do — it exceeds the budget. We never round the fee away. The finance manager can also pause the agent at any time — every request after that stops with "mandate not active".
 
 **[Slide 7]**
 Now the part for the auditor. This page does not trust my database. It takes the mandate, re-computes its hash, and compares it with the hash anchored on-chain when the budget was granted. Then it replays every ledger entry through the same policy function and compares the recomputed decision with the stored one. Finally it opens each transaction and decodes the calldata — you can see the same receipt hash there — and checks that it came from the agent wallet and was mined. Anyone can press Evidence, download the two record files, and run the same checks as a standalone script with only a public RPC — no access to my app. If I edit one decision by hand, it turns red.

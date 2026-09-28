@@ -37,7 +37,7 @@ sequenceDiagram
 ```
 
 ## The boundary and where it is enforced
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code), all reported when failing. Tests: `npm test` (17 blocks).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code), all reported when failing. Tests: `npm test` (16 blocks).
 
 | Code | Rule |
 |---|---|
@@ -103,7 +103,7 @@ cp .env.example .env.local   # fill KILN_API_KEY, AGENT_PRIVATE_KEY, Supabase
 npm ci
 npm run seed -- --window now   # merchants + fresh mandates A/B/C, anchored on Sepolia → evidence/seed-latest.json
 npm run dev                    # http://localhost:3000
-npm test                       # policy engine, 17 blocks
+npm test                       # policy engine, 16 blocks
 npm run scenario               # the 8 scripted runs → evidence/scenario-*.json
 ```
 

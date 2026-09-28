@@ -88,7 +88,7 @@ Each merchant gets a fresh Sepolia address (generated once, stored in `docs/seed
 | 6 | Resume A → "Coffee at Starbucks, $5" | APPROVE → tx | second on-chain payment |
 | 7 | "How much do I have left?" | answered from ledger, **0 tokens** | `status_fastpath` row on /metrics |
 
-Run 3 asks for exactly the remaining budget. Fees are compared **unrounded**, so any positive network fee — even a fraction of a cent on Sepolia — stops it (covered by tests). Use a fresh mandate per video take (DUPLICATE window is 5 min); `npm run seed` (optional `--suffix <s>`) creates and anchors a new A/B/C set.
+Run 3 asks for exactly the remaining budget. Fees are compared **unrounded**, so any positive network fee stops it, however small (covered by tests). The fees recorded in the evidence run were about 12 cents at the demo rate ($0.122199 in `ev1`, $0.11556 on the `ev3` screenshot). Use a fresh mandate per video take (DUPLICATE window is 5 min); `npm run seed` (optional `--suffix <s>`) creates and anchors a new A/B/C set.
 
 ## 8. On-chain design (Sepolia)
 - **Anchor:** on mandate creation, 0-value self-tx with calldata `PERDIEM-MANDATE|<keccak256(canonical mandate JSON)>`.
