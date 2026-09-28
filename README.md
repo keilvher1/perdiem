@@ -208,11 +208,11 @@ Note how the model proposes the wine gift at `m5` (Wine & Co) even though it is 
 - **Follow:** live spend gauge and ledger on `/principal` (a pending payment counts as committed).
 - **Stop:** Pause / Resume / Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE` ([`evidence/10-paused.png`](evidence/10-paused.png)).
 - **Receipt:** the traveler's receipt card shows amount, fee, decision, hashes and the Etherscan link ([`evidence/01-approve.png`](evidence/01-approve.png)).
-- **Reconstruct from records alone:** `npm run export -- <mandateId>` writes `evidence/mandate-<id>.json` and `evidence/ledger-<id>.json`; then `npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json` uses only those files and a public RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, replay every entry through `evaluate()` rebuilding spend-so-far, recompute each receipt hash and match it to the tx calldata, the recipient and the amount (output for mandate A of the backend verification run: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt)). `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)). Neither trusts the stored decision.
+- **Reconstruct from records alone:** `npm run export -- <mandateId>` writes `evidence/mandate-<id>.json` and `evidence/ledger-<id>.json`; then `npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json` (any Node 20+, no `.env.local` needed) uses only those files and a public RPC — no database, no API — to recompute the mandate hash and compare it with the on-chain anchor, replay every entry through `evaluate()` rebuilding spend-so-far, recompute each receipt hash and match it to the tx calldata, the recipient and the amount (output for mandate A of the backend verification run: [`evidence/be-verify-man_A_mul19mde.txt`](evidence/be-verify-man_A_mul19mde.txt)). `/audit/<mandateId>` shows the same checks in the UI ([`evidence/11-audit.png`](evidence/11-audit.png)). Neither trusts the stored decision.
 
 ## Run locally
 
-Prerequisites: Node.js 20+ (tested with 24), a Supabase project, a Kiln API key, and a **Sepolia** dev wallet with a little test ETH (never a personal key).
+Prerequisites: Node.js 22 LTS or 24 (tested with 24.7; on Node 20 use ≥ 20.20 — older 20.x releases reject the `--env-file-if-exists` flag that `npm run verify` passes), a Supabase project, a Kiln API key, and a **Sepolia** dev wallet with a little test ETH (never a personal key).
 
 ```bash
 git clone https://github.com/keilvher1/perdiem && cd perdiem
@@ -229,7 +229,7 @@ Then, in a second terminal:
 ```bash
 npm test                          # policy engine, 17 blocks
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
-npm run export -- <mandate A id> && npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json
+npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
 npm run compare                   # thinking on vs off, 10 Kiln calls → docs/reasoning-comparison.json
 npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 06-kiln-calls.txt, logs-stop.txt
 ```
