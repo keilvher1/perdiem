@@ -93,7 +93,7 @@ The npm scripts that touch secrets run `tsx --conditions=react-server --env-file
 - zod 4: `z.string().datetime()` rejects `datetime-local` strings and `+09:00` offsets (use `z.iso.datetime({ offset: true, local: true })` or parse yourself); error details live in `.issues` (not `.errors`).
 - supabase-js 2.117 retries failed GETs 3 times (1 s + 2 s + 4 s); use `.retry(false)` for fast probes.
 - This Mac has a global shell hook: any command containing `rm` with `-r` or `-f` is denied, and so are privilege-escalation (superuser) commands. Delete with `find <path> -delete` or `mv <path> ~/.Trash/`.
-- Money is compared **unrounded** in `evaluate()` (Sepolia fees can be sub-cent). Use `fmtUsd()` for display only; never add `toFixed`/rounding before a comparison. Run 3 = request exactly $10 on mandate B ($10).
+- Money is compared **unrounded** in `evaluate()` (any positive fee must count, however small). Use `fmtUsd()` for display only; never add `toFixed`/rounding before a comparison. Run 3 = request exactly $10 on mandate B ($10).
 - Re-running the same request within 5 minutes trips `DUPLICATE` — use a fresh mandate per demo take (`npm run seed` recreates A/B/C).
 - `<tool_call>` text in `content` is handled by `extractToolCall`; `<think>` blocks by `stripThink`.
 

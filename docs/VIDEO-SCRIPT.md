@@ -38,7 +38,7 @@ The finance manager grants a mandate once: a hundred and fifty dollars, forty pe
 Now the traveler talks to the agent. It runs on Kiln — Qwen3 32B on Furiosa NPUs — and can do exactly one thing: propose a payment through a tool call. Code checks the proposal; only then does the payment go out. Settled: twelve dollars for lunch, on-chain.
 
 **[1:03–1:35] Pushed outside the line**
-A taxi to the airport for eighty-five dollars: stopped — over the per-payment cap. A bottle of wine as a client gift: stopped, with three reasons at once — merchant not on the list, category not allowed, a blocked word. And on a ten-dollar budget, a ten-dollar dinner: stopped, because the real network fee is added, and ten dollars plus a fraction of a cent is over budget. Every refusal is written to the ledger, without a second model call.
+A taxi to the airport for eighty-five dollars: stopped — over the per-payment cap. A bottle of wine as a client gift: stopped, with three reasons at once — merchant not on the list, category not allowed, a blocked word. And on a ten-dollar budget, a ten-dollar dinner: stopped, because the real network fee is added, and ten dollars plus any fee at all is over budget. Every refusal is written to the ledger, without a second model call.
 
 **[1:35–1:50] Kill switch and deadline**
 The manager can stop the agent at any moment. Pause — the next coffee is stopped. Resume — the same coffee goes through. And a mandate whose deadline has passed stops everything.
@@ -74,7 +74,7 @@ The finance manager grants a mandate once: a hundred and fifty dollars, forty pe
 Now the traveler talks to the agent. It runs on Kiln, Qwen three, thirty-two B, on Furiosa N P Us, and can do exactly one thing: propose a payment through a tool call. Code checks the proposal. Only then does the payment go out. <break time="0.6s" /> Settled. Twelve dollars for lunch, on chain.
 ```
 ```
-A taxi to the airport for eighty-five dollars: <break time="0.3s" /> stopped. Over the per payment cap. <break time="0.4s" /> A bottle of wine as a client gift: <break time="0.3s" /> stopped, with three reasons at once. Merchant not on the list, category not allowed, a blocked word. <break time="0.4s" /> And on a ten dollar budget, a ten dollar dinner: <break time="0.3s" /> stopped, because the real network fee is added, and ten dollars plus a fraction of a cent is over budget. Every refusal is written to the ledger, without a second model call.
+A taxi to the airport for eighty-five dollars: <break time="0.3s" /> stopped. Over the per payment cap. <break time="0.4s" /> A bottle of wine as a client gift: <break time="0.3s" /> stopped, with three reasons at once. Merchant not on the list, category not allowed, a blocked word. <break time="0.4s" /> And on a ten dollar budget, a ten dollar dinner: <break time="0.3s" /> stopped, because the real network fee is added, and ten dollars plus any fee at all is over budget. Every refusal is written to the ledger, without a second model call.
 ```
 ```
 The manager can stop the agent at any moment. Pause. <break time="0.3s" /> The next coffee is stopped. Resume. <break time="0.3s" /> The same coffee goes through. And a mandate whose deadline has passed stops everything.
