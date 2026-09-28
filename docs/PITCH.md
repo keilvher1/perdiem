@@ -10,7 +10,7 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 
 | # | Title | On the slide | Say (≈ seconds) |
 |---|---|---|---|
-| 1 | **PerDiem** — an AI agent that spends your per-diem and cannot cross the line | product name, one-sentence declared function, "Challenge B | Kiln qwen3-32b | Sepolia" | 20 |
+| 1 | **PerDiem** — an AI agent that spends your per-diem and cannot cross the line | product name, one-sentence declared function, byline "Mingyu Lee · MICEMore", "Challenge B | Kiln qwen3-32b | Sepolia" | 20 |
 | 2 | The moment after delegation | one line: "Payment rails record who paid whom, not who authorized it or under what conditions." Photo: a traveler, a finance manager, a receipt | 30 |
 | 3 | Who it is for | finance manager at a small company sending staff to a 2-day conference; wants delegation without losing control. Strip: "I have settled government startup-grant expenses by hand" — rules in prose, boxes ticked by hand, refusals weeks later as free text → PerDiem: rules in code before money moves, each refusal with code / observed / limit, checks recomputed from the records | 30 |
 | 4 | How it works | diagram: traveler → agent (Kiln) *proposes* → policy engine (code) *decides* → Sepolia *settles* → ledger + receipt → auditor *replays* | 45 |
@@ -27,7 +27,7 @@ Total ≈ 4:50 (slide 3 carries the grant-settlement story; if the clock is tigh
 ## Script (≈ 720 words, ≈ 4:50 at 150 words per minute)
 
 **[Slide 1]**
-Hi, I'm Mingyu. I built PerDiem for Challenge B. <!-- use the same name as your Luma registration --> In one sentence: PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.
+Hi, I'm Mingyu Lee. I built PerDiem for Challenge B. In one sentence: PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.
 
 **[Slide 2]**
 The brief says it well: payment rails record who paid whom, but not who authorized it, or under what conditions. So an agent that stays within budget does so only because someone built it that way. I wanted to build exactly that — and prove it.

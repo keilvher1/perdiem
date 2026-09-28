@@ -55,6 +55,8 @@
   /* 1 — title */
   .title-wrap { margin-top: 40px; }
   .title-sub { font-size: 30px; color: var(--ink-2); margin-top: 18px; letter-spacing: -.01em; }
+  .byline { font-size: 18px; color: var(--ink-3); margin-top: 16px; letter-spacing: .01em; }
+  .byline b { color: var(--ink); font-weight: 600; }
   .declared { margin-top: 44px; padding: 26px 30px; border-left: 4px solid var(--accent); background: var(--card); border-radius: 0 12px 12px 0; font-size: 22px; line-height: 1.5; color: var(--ink); max-width: 1060px; }
   .chips { display: flex; gap: 12px; margin-top: auto; flex-wrap: wrap; }
 
@@ -185,6 +187,7 @@
   <div class="title-wrap">
     <h1>PerDiem</h1>
     <p class="title-sub">An AI agent that spends your per-diem — and cannot cross the line.</p>
+    <p class="byline"><b>Mingyu Lee</b> · MICEMore</p>
   </div>
   <p class="declared">PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.</p>
   <div class="chips">
@@ -400,7 +403,7 @@ npm run scenario                # the 8 scripted runs</div>
     </div>
   </div>
   <div class="thanks"><span class="big">Thank you.</span><span class="small"><!--@generated-->Template — render with npx tsx scripts/deck.ts<!--/@generated--></span></div>
-  <div class="foot"><span>PerDiem · Challenge B · github.com/keilvher1/perdiem</span><span>9 / 9</span></div>
+  <div class="foot"><span>PerDiem · Challenge B · Mingyu Lee · github.com/keilvher1/perdiem</span><span>9 / 9</span></div>
 </section>
 
 </body>
