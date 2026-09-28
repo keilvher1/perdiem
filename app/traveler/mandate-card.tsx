@@ -89,7 +89,9 @@ export function MandateCard({ summary, now }: { summary: MandateSummary; now: nu
             Spent {fmtUsd(summary.spentUsd)}
             {summary.pendingUsd > 0 && <> · {fmtUsd(summary.pendingUsd)} pending</>}
           </span>
-          <span>{summary.entryCount} ledger entries</span>
+          <span>
+            {summary.entryCount} ledger {summary.entryCount === 1 ? "entry" : "entries"}
+          </span>
         </div>
       </div>
 
