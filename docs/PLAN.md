@@ -1,6 +1,6 @@
 # PerDiem — delivery plan (Challenge B, GWDC 2026 Korea)
 
-Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) evening KST.
+Owner of this file: planner + full-stack dev (FS). Last updated: 2026-09-28 (Mon) 18:50 KST.
 Deadline: **2026-09-30 (Wed) 12:00 KST, submission closes.** Everything below serves that one date.
 
 Legend for status: ☐ todo · ◐ in progress · ✅ done (on a branch) · 🔒 needs the lead's live evidence run.
@@ -32,45 +32,45 @@ Brief lines are quoted from `docs/ACCEPTANCE-CHECKLIST.md` (left column) and `do
 |---|---|---|---|---|---|
 | A1 | "Declare in one sentence, in your README, the function you built" | README line 1 = PRD §1 declared sentence | FS | `README.md` line 1 | ✅ (FS, README.md) |
 | A2 | "Identify the intended user and the problem being solved" | README "Problem & user" | FS | `README.md` | ✅ (FS, README.md) |
-| A3 | "Demonstrate the workflow from user input to a usable outcome" | `/traveler` chat → receipt card (approved → pending → settled, tx link) | FE (UI) + BE (`/api/chat`, confirm) | `evidence/01-approve.png`, video 0:30–0:55 | ◐ |
+| A3 | "Demonstrate the workflow from user input to a usable outcome" | `/traveler` chat → receipt card (approved → pending → settled, tx link) | FE (UI) + BE (`/api/chat`, confirm) | `evidence/01-approve.png`, video 0:30–0:55 | ✅ built (dry run 09-28) · 🔒 final evidence |
 | A4 | "Explain which task the AI agent performs and which parts you kept in code" | README table "model proposes / code decides" | FS | `README.md` | ✅ (FS, README.md) |
 
 ### B. Boundaries & Stopping
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
 | B1 | "State the boundary the agent must not cross and where in your system it is enforced" | `lib/policy.ts::evaluate()`, **12 stop checks**, called in `lib/agent.ts` before any `lib/chain.ts` call; `npm test` (17 blocks) | pre-built; FS documents | `README.md` boundary table, `tests/policy.test.ts` | ✅ |
-| B2 | "Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added" | Run 3: mandate B ($10) asks for exactly $10 → `OVER_BUDGET_WITH_FEES` (fee never rounded) | BE (route) + FE (stop card) | `evidence/03-over-budget-with-fees.png`, `evidence/scenario-*.json` | ◐ |
-| B3 | "— a merchant that is not on the list" | Run 2: wine gift → `MERCHANT_NOT_ALLOWED` + `CATEGORY_NOT_ALLOWED` + `BLOCKED_KEYWORD` | BE + FE | `evidence/02-merchant-not-allowed.png` | ◐ |
-| B4 | "— a deadline already past" | Run 5: mandate C (window 9/20–9/25) → `EXPIRED` | BE + FE | `evidence/04-expired.png` | ◐ |
-| B5 | "show through logs or history that it stopped" | ledger rows `status=stopped` with `reasons[]`; server prints one `"kind":"decision"` JSON line per decision; `scripts/metrics.ts` extracts them | BE (log line in `/api/chat`), FS (extractor) | `evidence/logs-stop.txt` | ◐ |
-| B6 | "Stopping is a correct outcome, and it should be recorded rather than silent" | STOP entries carry a `receiptHash` and appear in `/audit` replay; 0-token `stop_template` usage row | BE + FE | `evidence/11-audit.png`, `evidence/metrics.md` | ◐ |
+| B2 | "Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added" | Run 3: mandate B ($10) asks for exactly $10 → `OVER_BUDGET_WITH_FEES` (fee never rounded) | BE (route) + FE (stop card) | `evidence/03-over-budget-with-fees.png`, `evidence/scenario-*.json` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| B3 | "— a merchant that is not on the list" | Run 2: wine gift → `MERCHANT_NOT_ALLOWED` + `CATEGORY_NOT_ALLOWED` + `BLOCKED_KEYWORD` | BE + FE | `evidence/02-merchant-not-allowed.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| B4 | "— a deadline already past" | Run 5: mandate C (window 9/20–9/25) → `EXPIRED` | BE + FE | `evidence/04-expired.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| B5 | "show through logs or history that it stopped" | ledger rows `status=stopped` with `reasons[]`; server prints one `"kind":"decision"` JSON line per decision; `scripts/metrics.ts` extracts them | BE (log line in `/api/chat`), FS (extractor) | `evidence/logs-stop.txt` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| B6 | "Stopping is a correct outcome, and it should be recorded rather than silent" | STOP entries carry a `receiptHash` and appear in `/audit` replay; 0-token `stop_template` usage row | BE + FE | `evidence/11-audit.png`, `evidence/metrics.md` | ✅ built (dry run 09-28) · 🔒 final evidence |
 
 ### C. Kiln API Integration & Efficiency
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
-| C1 | "The resulting AI agent must operate using the NPU-based Kiln API with (Qwen3-32B)" | `lib/kiln.ts` (base URL `api.bricksum.com/v1`, `qwen3-32b`), `/api/health` lists `GET /models` | pre-built + BE (health route) | `evidence/05-health.json` | ◐ |
-| C2 | "Demonstrate actual API calls within the selected workflow" | `chatWithUsage` prints one `"kind":"kiln"` JSON line per call; ledger rows keep `kilnResponseId` + `toolArgsRaw` | pre-built; FS extractor | `evidence/06-kiln-calls.txt`, `evidence/kiln-calls-by-flow.md` | ◐ |
+| C1 | "The resulting AI agent must operate using the NPU-based Kiln API with (Qwen3-32B)" | `lib/kiln.ts` (base URL `api.bricksum.com/v1`, `qwen3-32b`), `/api/health` lists `GET /models` | pre-built + BE (health route) | `evidence/05-health.json` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| C2 | "Demonstrate actual API calls within the selected workflow" | `chatWithUsage` prints one `"kind":"kiln"` JSON line per call; ledger rows keep `kilnResponseId` + `toolArgsRaw` | pre-built; FS extractor | `evidence/06-kiln-calls.txt`, `evidence/kiln-calls-by-flow.md` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | C3 | "show how the responses inform the agent's decisions or actions" | tool-call args → `Proposal` → `evaluate()`; README sequence diagram | FS (README) | `README.md` workflow diagram | ✅ (FS, README.md) |
-| C4 | "Report token usage broken down by flow rather than as a single total" | `/api/usage` + `/metrics` by flow: `propose`, `status_fastpath` (0), `stop_template` (0), `compare` | BE (route) + FE (page) + FS (`metrics.ts`) | `evidence/07-metrics.png`, `evidence/metrics.md` | ◐ |
-| C5 | "explain how the design reduces unnecessary inference and energy consumption" | fast-path, templated STOP, compact catalog, one tool call, thinking off for `propose` (measured by `scripts/compare-reasoning.ts`) | FS | `docs/reasoning-comparison.json`, `README.md` | ◐ (P4) |
-| C6 | "supporting energy estimates with available measurements or clearly stated assumptions" | energy card: `total_tokens × ENERGY_J_PER_TOKEN / 3600`, assumption + source shown, or "assumption not set" | BE (usage route) + FE (card) + FS (`metrics.md` text) | `evidence/07-metrics.png`, `evidence/metrics.md` | ◐ |
+| C4 | "Report token usage broken down by flow rather than as a single total" | `/api/usage` + `/metrics` by flow: `propose`, `status_fastpath` (0), `stop_template` (0), `compare` | BE (route) + FE (page) + FS (`metrics.ts`) | `evidence/07-metrics.png`, `evidence/metrics.md` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| C5 | "explain how the design reduces unnecessary inference and energy consumption" | fast-path, templated STOP, compact catalog, one tool call, thinking off for `propose` (measured by `scripts/compare-reasoning.ts`) | FS | `docs/reasoning-comparison.json`, `README.md` | ✅ measured 2026-09-28 (5/5, −69.2%) |
+| C6 | "supporting energy estimates with available measurements or clearly stated assumptions" | energy card: `total_tokens × ENERGY_J_PER_TOKEN / 3600`, assumption + source shown, or "assumption not set" | BE (usage route) + FE (card) + FS (`metrics.md` text) | `evidence/07-metrics.png`, `evidence/metrics.md` | ◐ built; `ENERGY_J_PER_TOKEN` not set yet |
 
 ### D. Blockchain Integration
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
 | D1 | "Demonstrate the selected functionality on a devnet or testnet" | Ethereum Sepolia only | pre-built (`lib/chain.ts`) | `README.md` | ✅ |
 | D2 | "An end-to-end run of the workflow should produce at least one on-chain transaction — a payment, a settlement, or a record written on-chain" | mandate anchor tx (seed / POST mandates) + payment txs #0 and #6 | BE (seed, chat) | README "Proof of API usage" tx table | 🔒 |
-| D3 | "provide its transaction hash with the matching log or history entry" | ledger row `txHash` + `receiptHash`; calldata `PERDIEM|mandateHash|receiptHash` | BE + FE | `evidence/08-tx-and-ledger.png` | ◐ |
+| D3 | "provide its transaction hash with the matching log or history entry" | ledger row `txHash` + `receiptHash`; calldata `PERDIEM|mandateHash|receiptHash` | BE + FE | `evidence/08-tx-and-ledger.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
 | D4 | "Show how the chain is used by the workflow: which state the agent reads, writes, or settles" | README reads / writes / settles table | FS | `README.md` | ✅ (FS, README.md) |
 
 ### E. Approval & Evidence
 | # | Brief line (quoted) | Feature | Owner | Evidence artifact | Status |
 |---|---|---|---|---|---|
-| E1 | "how a person grants a budget" | `/principal` mandate form → anchor tx | FE + BE (`POST /api/mandates`) | video 0:15–0:30, `evidence/09-principal.png` | ◐ |
-| E2 | "follows what is being spent" | `/principal` spend gauge + live ledger | FE | `evidence/09-principal.png` | ◐ |
-| E3 | "stops the agent" | Pause / Resume / Revoke → `MANDATE_NOT_ACTIVE` | FE + BE (`PATCH /api/mandates/[id]`) | `evidence/10-paused.png` | ◐ |
-| E4 | "receives a receipt" | receipt card (amount, fee, hashes, Etherscan link) | FE | `evidence/01-approve.png` | ◐ |
-| E5 | "another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed" | `scripts/export.ts` → `scripts/verify.ts` (records + RPC only); `/audit/[id]` shows the same checks | BE (export, audit route) + FE (audit page) + pre-built verify | `evidence/12-verify.txt`, `evidence/11-audit.png` | ◐ |
+| E1 | "how a person grants a budget" | `/principal` mandate form → anchor tx | FE + BE (`POST /api/mandates`) | video 0:15–0:30, `evidence/09-principal.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E2 | "follows what is being spent" | `/principal` spend gauge + live ledger | FE | `evidence/09-principal.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E3 | "stops the agent" | Pause / Resume / Revoke → `MANDATE_NOT_ACTIVE` | FE + BE (`PATCH /api/mandates/[id]`) | `evidence/10-paused.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E4 | "receives a receipt" | receipt card (amount, fee, hashes, Etherscan link) | FE | `evidence/01-approve.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
+| E5 | "another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed" | `scripts/export.ts` → `scripts/verify.ts` (records + RPC only); `/audit/[id]` shows the same checks | BE (export, audit route) + FE (audit page) + pre-built verify | `evidence/12-verify.txt`, `evidence/11-audit.png` | ✅ built (dry run 09-28) · 🔒 final evidence |
 
 ---
 
@@ -128,7 +128,7 @@ Nine PNGs: 01, 02, 03, 04, 07, 08, 09, 10, 11. Non-image: 05, 06, 12, logs-stop,
 | Mon 9/28 18:00–00:30 | BE | health, `lib/db.ts`, `lib/view.ts`, seed, all routes, export; one `"kind":"decision"` log line per chat decision | curls of Phase 3 green; `npm run build` green |
 | Mon 9/28 18:00–00:30 | FS | P1–P10: plan, doc fixes, scenario/compare/metrics/capture/deck scripts, README, video script, cross-review | each task pushed; `docs/reasoning-comparison.json` measured live |
 | Tue 9/29 06:00–08:30 | lead | merge `feat/backend` → `feat/frontend` → `feat/fullstack` into `main` (see `docs/REVIEW-NOTES.md`), `NEXT_PUBLIC_API_MODE=live`, `npm run seed -- --window now`, `npm run scenario` | build green; scenario 8/8 |
-| Tue 9/29 19:00–21:00 | lead | **evidence run** on port 3000 with `npm run dev 2>&1 \| tee logs/dev-server.log`: fresh seed → scenario → `npm run compare -- --save` → capture PNGs → export + verify → `npm run metrics` | all files of §4 present |
+| Tue 9/29 19:00–21:00 | lead | **evidence run** on port 3000 — one server only, `ENERGY_J_PER_TOKEN` set — with `npm run dev 2>&1 \| tee logs/dev-server.log`: seed 1 → scenario → export + verify → capture `--only pages`; seed 2 → capture `--only chat`; `npm run metrics` (exact order: `docs/REVIEW-NOTES.md` §6; keep the committed `docs/reasoning-comparison.json` unless README/deck are regenerated) | all files of §4 present |
 | Tue 9/29 21:00–22:00 | lead + FS | fill README "Proof of API usage", re-render deck with screenshots (`npx tsx scripts/deck.ts`) | README has no `<!-- FILL` markers left |
 | Tue 9/29 22:00–00:30 | lead | video take 1 (fresh seed per take; DUPLICATE window 5 min) following `docs/VIDEO-SCRIPT.md` | ≤ 3:00 cut |
 | Wed 9/30 07:00–10:00 | lead | video take 2 if needed, upload unlisted, README links, repo Public, incognito check of every link | checklist §F all ✅ |
@@ -154,6 +154,8 @@ Rule: do not seed more than five demo sets. Reuse the same set when retrying a s
 ---
 
 ## 7. Integration order for the lead (details in `docs/REVIEW-NOTES.md`)
+
+Dry run done on 2026-09-28 18:45 KST (backend `ba8eb82`, frontend `0f93822`, fullstack `3bc0528`): no conflicts; typecheck, lint, test and build pass on the merged tree.
 
 1. `feat/backend` first (it owns `lib/db.ts`, `lib/view.ts`, `app/api/**`, seed/export).
 2. `feat/frontend` second (UI; only touches FE paths).

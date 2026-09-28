@@ -92,7 +92,8 @@ Suggested voice settings: a calm, neutral English voice; stability ≈ 0.5, simi
 - [ ] Browser: one window at 1920×1080 (or 1280×800 at 125% zoom), bookmarks bar hidden, notifications off (macOS Focus), no other tabs with personal data. Pre-open tabs: `/principal?m=<A>`, `/traveler?m=<A>`, `/audit/<A>`, `/metrics`.
 - [ ] Terminal: large font (≥ 18 pt), dark theme, prompt without the user/host name, commands ready: `npm run export -- <A>` and `npm run verify -- evidence/mandate-<A>.json evidence/ledger-<A>.json`.
 - [ ] Energy assumption set (`ENERGY_J_PER_TOKEN`, `ENERGY_SOURCE`) — or be ready to show the "assumption not set" state honestly.
-- [ ] `npm run compare -- --save` already run once for this database, so `/metrics` shows the compare row and the comparison table.
+- [ ] `/metrics` shows the thinking on/off table (read from the committed `docs/reasoning-comparison.json`). Do not re-run `npm run compare` unless you also update the README tables and re-render the deck (it overwrites the measurement).
+- [ ] Only this one server is running against the shared database and wallet (stop the FE/BE/FS dev servers on 3100/3001/3200).
 
 **During the take**
 - [ ] Record clip by clip (section 1 rows). Move the mouse slowly; pause 1 s on each STOP card so the reasons can be read.
