@@ -1,0 +1,157 @@
+{
+  "byFlow": [
+    {
+      "flow": "propose",
+      "calls": 7,
+      "promptTokens": 2723,
+      "completionTokens": 329,
+      "totalTokens": 3052,
+      "costUsd": 0.00031,
+      "avgLatencyMs": 1064
+    },
+    {
+      "flow": "status_fastpath",
+      "calls": 1,
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "totalTokens": 0,
+      "costUsd": 0,
+      "avgLatencyMs": 0
+    },
+    {
+      "flow": "stop_template",
+      "calls": 5,
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "totalTokens": 0,
+      "costUsd": 0,
+      "avgLatencyMs": 0
+    },
+    {
+      "flow": "compare",
+      "calls": 10,
+      "promptTokens": 3870,
+      "completionTokens": 1035,
+      "totalTokens": 4905,
+      "costUsd": 0.00045,
+      "avgLatencyMs": 1992
+    }
+  ],
+  "totals": {
+    "calls": 23,
+    "promptTokens": 6593,
+    "completionTokens": 1364,
+    "totalTokens": 7957,
+    "costUsd": 0.00076
+  },
+  "zeroTokenCalls": {
+    "statusFastpath": 1,
+    "stopTemplate": 5
+  },
+  "energy": {
+    "assumedJPerToken": null,
+    "source": null,
+    "totalTokens": 7957,
+    "totalWh": null
+  },
+  "comparison": {
+    "measuredAt": "2026-09-26T15:40:00Z",
+    "model": "qwen3-32b",
+    "rows": [
+      {
+        "prompt": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+        "thinkingOn": {
+          "toolCall": true,
+          "completionTokens": 168,
+          "promptTokens": 385,
+          "latencyMs": 3417,
+          "costUsd": 0.0000782
+        },
+        "thinkingOff": {
+          "toolCall": true,
+          "completionTokens": 47,
+          "promptTokens": 389,
+          "latencyMs": 1064,
+          "costUsd": 0.0000443
+        }
+      },
+      {
+        "prompt": "Get me a taxi to Incheon airport, around 85 dollars",
+        "thinkingOn": {
+          "toolCall": true,
+          "completionTokens": 133,
+          "promptTokens": 387,
+          "latencyMs": 2922,
+          "costUsd": 0.0000759
+        },
+        "thinkingOff": {
+          "toolCall": true,
+          "completionTokens": 47,
+          "promptTokens": 389,
+          "latencyMs": 1010,
+          "costUsd": 0.0000443
+        }
+      },
+      {
+        "prompt": "Buy a bottle of wine as a gift for the client, $30",
+        "thinkingOn": {
+          "toolCall": true,
+          "completionTokens": 205,
+          "promptTokens": 388,
+          "latencyMs": 3216,
+          "costUsd": 0.0000676
+        },
+        "thinkingOff": {
+          "toolCall": true,
+          "completionTokens": 52,
+          "promptTokens": 389,
+          "latencyMs": 1120,
+          "costUsd": 0.0000457
+        }
+      },
+      {
+        "prompt": "Coffee at Starbucks, 5 bucks",
+        "thinkingOn": {
+          "toolCall": true,
+          "completionTokens": 152,
+          "promptTokens": 380,
+          "latencyMs": 2654,
+          "costUsd": 0.0000582
+        },
+        "thinkingOff": {
+          "toolCall": true,
+          "completionTokens": 43,
+          "promptTokens": 384,
+          "latencyMs": 1030,
+          "costUsd": 0.0000428
+        }
+      },
+      {
+        "prompt": "Top up my T-money card with 20 dollars",
+        "thinkingOn": {
+          "toolCall": true,
+          "completionTokens": 141,
+          "promptTokens": 385,
+          "latencyMs": 2390,
+          "costUsd": 0.0000703
+        },
+        "thinkingOff": {
+          "toolCall": true,
+          "completionTokens": 46,
+          "promptTokens": 389,
+          "latencyMs": 1096,
+          "costUsd": 0.000044
+        }
+      }
+    ],
+    "summary": {
+      "toolCallsOn": 5,
+      "toolCallsOff": 5,
+      "avgCompletionOn": 160,
+      "avgCompletionOff": 47,
+      "completionSavedPct": 71,
+      "avgLatencyOnMs": 2920,
+      "avgLatencyOffMs": 1064
+    }
+  }
+}

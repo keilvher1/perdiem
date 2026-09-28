@@ -1,0 +1,455 @@
+{
+  "rules": [
+    {
+      "match": "bibimbap|lunch",
+      "mandateId": "man_A",
+      "response": {
+        "reply": "Approved. Paying Yangjae Kitchen $12.00 for \"Order a bibimbap lunch\" (est. network fee $0.1006). Tx: https://sepolia.etherscan.io/tx/0x0001f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+        "entry": {
+          "id": "led_001",
+          "mandateId": "man_A",
+          "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+          "proposal": {
+            "merchantId": "m1",
+            "amountUsd": 12,
+            "memo": "Order a bibimbap lunch",
+            "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+            "requestedAt": "2026-09-29T03:00:00.000Z"
+          },
+          "merchantName": "Yangjae Kitchen",
+          "decision": "APPROVE",
+          "reasons": [],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 12.1006,
+          "kilnResponseId": "chatcmpl-mock-1",
+          "toolArgsRaw": "{\"merchant_id\":\"m1\",\"amount_usd\":12,\"memo\":\"Order a bibimbap lunch\"}",
+          "at": "2026-09-29T03:00:00.000Z",
+          "status": "pending",
+          "txHash": "0x0001f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+          "receiptHash": "0xc66be0c9243496332a6d848e438924c539df1658e19785f55fc21537f4fd62d9",
+          "merchantCategory": "meal",
+          "explorerUrl": "https://sepolia.etherscan.io/tx/0x0001f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-1",
+            "at": "2026-09-29T03:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "taxi|airport",
+      "mandateId": "man_A",
+      "response": {
+        "reply": "Stopped. I did not pay Kakao T Taxi $85.00.\n• [OVER_PER_TX_CAP] Single payment cap is $40.",
+        "entry": {
+          "id": "led_002",
+          "mandateId": "man_A",
+          "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+          "proposal": {
+            "merchantId": "m2",
+            "amountUsd": 85,
+            "memo": "Taxi to Incheon airport",
+            "sourceText": "Taxi to Incheon airport, about $85",
+            "requestedAt": "2026-09-29T03:03:00.000Z"
+          },
+          "merchantName": "Kakao T Taxi",
+          "decision": "STOP",
+          "reasons": [
+            {
+              "code": "OVER_PER_TX_CAP",
+              "message": "Single payment cap is $40.",
+              "observed": 85,
+              "limit": 40
+            }
+          ],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 85.1006,
+          "kilnResponseId": "chatcmpl-mock-2",
+          "toolArgsRaw": "{\"merchant_id\":\"m2\",\"amount_usd\":85,\"memo\":\"Taxi to Incheon airport\"}",
+          "at": "2026-09-29T03:03:00.000Z",
+          "status": "stopped",
+          "receiptHash": "0x631d9d3d3980047acd41365be44820c5f35a62e9e90ee3ea0402e7c5fbd5e823",
+          "merchantCategory": "transport"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-2",
+            "at": "2026-09-29T03:03:00.000Z"
+          },
+          {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:03:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "wine|gift",
+      "mandateId": "man_A",
+      "response": {
+        "reply": "Stopped. I did not pay Wine & Co $30.00.\n• [MERCHANT_NOT_ALLOWED] Wine & Co is not on the permitted list.\n• [CATEGORY_NOT_ALLOWED] Category \"alcohol\" is not permitted.\n• [BLOCKED_KEYWORD] Request mentions a blocked item (\"wine\").",
+        "entry": {
+          "id": "led_003",
+          "mandateId": "man_A",
+          "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+          "proposal": {
+            "merchantId": "m5",
+            "amountUsd": 30,
+            "memo": "Buy a bottle of wine as a gift for the client",
+            "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+            "requestedAt": "2026-09-29T03:06:00.000Z"
+          },
+          "merchantName": "Wine & Co",
+          "decision": "STOP",
+          "reasons": [
+            {
+              "code": "MERCHANT_NOT_ALLOWED",
+              "message": "Wine & Co is not on the permitted list.",
+              "observed": "m5",
+              "limit": "m1, m2, m3, m4, m7"
+            },
+            {
+              "code": "CATEGORY_NOT_ALLOWED",
+              "message": "Category \"alcohol\" is not permitted.",
+              "observed": "alcohol",
+              "limit": "meal, transport, supplies"
+            },
+            {
+              "code": "BLOCKED_KEYWORD",
+              "message": "Request mentions a blocked item (\"wine\").",
+              "observed": "wine"
+            }
+          ],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 30.1006,
+          "kilnResponseId": "chatcmpl-mock-3",
+          "toolArgsRaw": "{\"merchant_id\":\"m5\",\"amount_usd\":30,\"memo\":\"Buy a bottle of wine as a gift for the client\"}",
+          "at": "2026-09-29T03:06:00.000Z",
+          "status": "stopped",
+          "receiptHash": "0x9a7201ed3b63c97bf17e3a86144530b054787da7abb3ca85688430b7533e101d",
+          "merchantCategory": "alcohol"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-3",
+            "at": "2026-09-29T03:06:00.000Z"
+          },
+          {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:06:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "dinner",
+      "mandateId": "man_B",
+      "response": {
+        "reply": "Stopped. I did not pay Yangjae Kitchen $10.00.\n• [OVER_BUDGET_WITH_FEES] Amount $10.00 + network fee $0.1006 = $10.1006 exceeds remaining budget $10.00.",
+        "entry": {
+          "id": "led_004",
+          "mandateId": "man_B",
+          "mandateHash": "0x6978696ef9f1c1bc6b4aeb70955399f5852f421efda671bebc575a9e60809451",
+          "proposal": {
+            "merchantId": "m1",
+            "amountUsd": 10,
+            "memo": "Dinner from Yangjae Kitchen",
+            "sourceText": "Dinner from Yangjae Kitchen, $10",
+            "requestedAt": "2026-09-29T03:09:00.000Z"
+          },
+          "merchantName": "Yangjae Kitchen",
+          "decision": "STOP",
+          "reasons": [
+            {
+              "code": "OVER_BUDGET_WITH_FEES",
+              "message": "Amount $10.00 + network fee $0.1006 = $10.1006 exceeds remaining budget $10.00.",
+              "observed": 10.1006,
+              "limit": 10
+            }
+          ],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 10.1006,
+          "kilnResponseId": "chatcmpl-mock-4",
+          "toolArgsRaw": "{\"merchant_id\":\"m1\",\"amount_usd\":10,\"memo\":\"Dinner from Yangjae Kitchen\"}",
+          "at": "2026-09-29T03:09:00.000Z",
+          "status": "stopped",
+          "receiptHash": "0x93ec9ddcd83ef4c336b6fdad0f173f2a7b5b1126d93ebd74d6538d1be3834a0a",
+          "merchantCategory": "meal"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-4",
+            "at": "2026-09-29T03:09:00.000Z"
+          },
+          {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:09:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "coffee|starbucks",
+      "mandateId": "man_A:paused",
+      "response": {
+        "reply": "Stopped. I did not pay Starbucks aT Center $5.00.\n• [MANDATE_NOT_ACTIVE] Mandate is paused; the principal must resume it before the agent can spend.",
+        "entry": {
+          "id": "led_005",
+          "mandateId": "man_A",
+          "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+          "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-29T03:12:00.000Z"
+          },
+          "merchantName": "Starbucks aT Center",
+          "decision": "STOP",
+          "reasons": [
+            {
+              "code": "MANDATE_NOT_ACTIVE",
+              "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+              "observed": "paused",
+              "limit": "active"
+            }
+          ],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 5.1006,
+          "kilnResponseId": "chatcmpl-mock-5",
+          "toolArgsRaw": "{\"merchant_id\":\"m7\",\"amount_usd\":5,\"memo\":\"Coffee at Starbucks\"}",
+          "at": "2026-09-29T03:12:00.000Z",
+          "status": "stopped",
+          "receiptHash": "0xa7c8068690963fefc03295ab04f1baadc4a39c8d8ee0708fbf4fd00eb6a9f95a",
+          "merchantCategory": "meal"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-5",
+            "at": "2026-09-29T03:12:00.000Z"
+          },
+          {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:12:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "coffee|starbucks",
+      "mandateId": "man_C",
+      "response": {
+        "reply": "Stopped. I did not pay Starbucks aT Center $5.00.\n• [EXPIRED] Mandate deadline has passed.",
+        "entry": {
+          "id": "led_006",
+          "mandateId": "man_C",
+          "mandateHash": "0x54948384a5cabf06d804e47d1fbfd43e82b41300d9a2eb953b377fb23decd813",
+          "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-29T03:15:00.000Z"
+          },
+          "merchantName": "Starbucks aT Center",
+          "decision": "STOP",
+          "reasons": [
+            {
+              "code": "EXPIRED",
+              "message": "Mandate deadline has passed.",
+              "observed": "2026-09-29T03:15:00.000Z",
+              "limit": "2026-09-25T00:00:00Z"
+            }
+          ],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 5.1006,
+          "kilnResponseId": "chatcmpl-mock-6",
+          "toolArgsRaw": "{\"merchant_id\":\"m7\",\"amount_usd\":5,\"memo\":\"Coffee at Starbucks\"}",
+          "at": "2026-09-29T03:15:00.000Z",
+          "status": "stopped",
+          "receiptHash": "0xdca8485a1f6ce40c6d999954ecd2716e064f22bc1ef0a01a8721232409f667ab",
+          "merchantCategory": "meal"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-6",
+            "at": "2026-09-29T03:15:00.000Z"
+          },
+          {
+            "flow": "stop_template",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:15:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "coffee|starbucks",
+      "mandateId": "man_A",
+      "response": {
+        "reply": "Approved. Paying Starbucks aT Center $5.00 for \"Coffee at Starbucks\" (est. network fee $0.1006). Tx: https://sepolia.etherscan.io/tx/0x0007f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+        "entry": {
+          "id": "led_007",
+          "mandateId": "man_A",
+          "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+          "proposal": {
+            "merchantId": "m7",
+            "amountUsd": 5,
+            "memo": "Coffee at Starbucks",
+            "sourceText": "Coffee at Starbucks, $5",
+            "requestedAt": "2026-09-29T03:18:00.000Z"
+          },
+          "merchantName": "Starbucks aT Center",
+          "decision": "APPROVE",
+          "reasons": [],
+          "feeUsd": 0.1006,
+          "feeSource": "estimate",
+          "totalUsd": 5.1006,
+          "kilnResponseId": "chatcmpl-mock-7",
+          "toolArgsRaw": "{\"merchant_id\":\"m7\",\"amount_usd\":5,\"memo\":\"Coffee at Starbucks\"}",
+          "at": "2026-09-29T03:18:00.000Z",
+          "status": "pending",
+          "txHash": "0x0007f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+          "receiptHash": "0xc924242a7703d56e3d968f97bbf1b79fc2850099328cb6a7637efaef8e02a06f",
+          "merchantCategory": "meal",
+          "explorerUrl": "https://sepolia.etherscan.io/tx/0x0007f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7"
+        },
+        "usage": [
+          {
+            "flow": "propose",
+            "model": "qwen3-32b",
+            "promptTokens": 389,
+            "completionTokens": 47,
+            "totalTokens": 436,
+            "costUsd": 0.00004428,
+            "latencyMs": 1064,
+            "responseId": "chatcmpl-mock-7",
+            "at": "2026-09-29T03:18:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "match": "left|remaining|balance|how much|status|spent",
+      "mandateId": "*",
+      "response": {
+        "reply": "Spent $17.20 of $150.00. Remaining $132.80. Mandate active, expires 2026-09-30T09:00:00Z.",
+        "entry": null,
+        "usage": [
+          {
+            "flow": "status_fastpath",
+            "model": "none",
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "costUsd": 0,
+            "latencyMs": 0,
+            "responseId": null,
+            "at": "2026-09-29T03:21:00.000Z"
+          }
+        ]
+      }
+    }
+  ],
+  "fallback": {
+    "reply": "I did not understand a purchase in that request. Try: \"Order a bibimbap lunch from Yangjae Kitchen, $12\".",
+    "entry": null,
+    "usage": [
+      {
+        "flow": "propose",
+        "model": "qwen3-32b",
+        "promptTokens": 372,
+        "completionTokens": 41,
+        "totalTokens": 413,
+        "costUsd": 0.00004124,
+        "latencyMs": 980,
+        "responseId": "chatcmpl-mock-x",
+        "at": "2026-09-29T03:24:00.000Z"
+      }
+    ]
+  }
+}

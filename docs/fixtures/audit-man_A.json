@@ -1,0 +1,193 @@
+{
+  "mandate": {
+    "id": "man_A",
+    "budgetUsd": 150,
+    "startsAt": "2026-09-28T08:00:00Z",
+    "expiresAt": "2026-09-30T09:00:00Z",
+    "principal": "MICEMore Finance",
+    "traveler": "Mingyu",
+    "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+    "perTxCapUsd": 40,
+    "allowedMerchantIds": [
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m7"
+    ],
+    "allowedCategories": [
+      "meal",
+      "transport",
+      "supplies"
+    ],
+    "blockedKeywords": [
+      "alcohol",
+      "wine",
+      "gift"
+    ],
+    "catalog": [
+      {
+        "id": "m1",
+        "name": "Yangjae Kitchen",
+        "category": "meal",
+        "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+      },
+      {
+        "id": "m2",
+        "name": "Kakao T Taxi",
+        "category": "transport",
+        "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+      },
+      {
+        "id": "m3",
+        "name": "T-money Top-up",
+        "category": "transport",
+        "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+      },
+      {
+        "id": "m4",
+        "name": "Daiso Yangjae",
+        "category": "supplies",
+        "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+      },
+      {
+        "id": "m5",
+        "name": "Wine & Co",
+        "category": "alcohol",
+        "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+      },
+      {
+        "id": "m6",
+        "name": "Lotte Duty Free",
+        "category": "gift",
+        "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+      },
+      {
+        "id": "m7",
+        "name": "Starbucks aT Center",
+        "category": "meal",
+        "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+      }
+    ],
+    "status": "active",
+    "hash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+    "anchorTx": "0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+    "anchorUrl": "https://sepolia.etherscan.io/tx/0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+    "spentUsd": 17.2012,
+    "pendingUsd": 0,
+    "remainingUsd": 132.7988,
+    "createdAt": "2026-09-28T11:05:00Z"
+  },
+  "mandateHash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+  "anchor": {
+    "txHash": "0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+    "explorerUrl": "https://sepolia.etherscan.io/tx/0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+    "memo": "PERDIEM-MANDATE|0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+    "matches": true
+  },
+  "replay": [
+    {
+      "entryId": "led_001",
+      "storedDecision": "APPROVE",
+      "recomputedDecision": "APPROVE",
+      "consistent": true,
+      "mandateHashMatches": true,
+      "recomputedReasons": []
+    },
+    {
+      "entryId": "led_002",
+      "storedDecision": "STOP",
+      "recomputedDecision": "STOP",
+      "consistent": true,
+      "mandateHashMatches": true,
+      "recomputedReasons": [
+        {
+          "code": "OVER_PER_TX_CAP",
+          "message": "Single payment cap is $40.",
+          "observed": 85,
+          "limit": 40
+        }
+      ]
+    },
+    {
+      "entryId": "led_003",
+      "storedDecision": "STOP",
+      "recomputedDecision": "STOP",
+      "consistent": true,
+      "mandateHashMatches": true,
+      "recomputedReasons": [
+        {
+          "code": "MERCHANT_NOT_ALLOWED",
+          "message": "Wine & Co is not on the permitted list.",
+          "observed": "m5",
+          "limit": "m1, m2, m3, m4, m7"
+        },
+        {
+          "code": "CATEGORY_NOT_ALLOWED",
+          "message": "Category \"alcohol\" is not permitted.",
+          "observed": "alcohol",
+          "limit": "meal, transport, supplies"
+        },
+        {
+          "code": "BLOCKED_KEYWORD",
+          "message": "Request mentions a blocked item (\"wine\").",
+          "observed": "wine"
+        }
+      ]
+    },
+    {
+      "entryId": "led_005",
+      "storedDecision": "STOP",
+      "recomputedDecision": "STOP",
+      "consistent": true,
+      "mandateHashMatches": true,
+      "recomputedReasons": [
+        {
+          "code": "MANDATE_NOT_ACTIVE",
+          "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+          "observed": "paused",
+          "limit": "active"
+        }
+      ]
+    },
+    {
+      "entryId": "led_007",
+      "storedDecision": "APPROVE",
+      "recomputedDecision": "APPROVE",
+      "consistent": true,
+      "mandateHashMatches": true,
+      "recomputedReasons": []
+    }
+  ],
+  "transactions": [
+    {
+      "entryId": "led_001",
+      "txHash": "0x0001f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x0001f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "memo": "PERDIEM|0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573|0xc66be0c9243496332a6d848e438924c539df1658e19785f55fc21537f4fd62d9",
+      "memoMatches": true,
+      "receiptHashMatches": true,
+      "recipientMatches": true,
+      "amountMatches": true,
+      "valueUsd": 12,
+      "to": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+    },
+    {
+      "entryId": "led_007",
+      "txHash": "0x0007f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x0007f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "memo": "PERDIEM|0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573|0xc924242a7703d56e3d968f97bbf1b79fc2850099328cb6a7637efaef8e02a06f",
+      "memoMatches": true,
+      "receiptHashMatches": true,
+      "recipientMatches": true,
+      "amountMatches": true,
+      "valueUsd": 5,
+      "to": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+    }
+  ],
+  "summary": {
+    "passed": 19,
+    "total": 19,
+    "allVerified": true
+  }
+}

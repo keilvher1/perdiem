@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "model": "qwen3-32b",
+  "models": [
+    "deepseek-v4.1-flash",
+    "qwen3-32b"
+  ],
+  "modelAvailable": true,
+  "agentAddress": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+  "balanceEth": "0.05",
+  "balanceUsd": 200,
+  "demoEthUsd": 4000,
+  "chain": "sepolia",
+  "rpc": "publicnode",
+  "errors": []
+}

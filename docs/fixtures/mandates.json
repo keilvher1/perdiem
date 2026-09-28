@@ -1,0 +1,58 @@
+{
+  "mandates": [
+    {
+      "id": "man_C",
+      "principal": "MICEMore Finance",
+      "traveler": "Mingyu",
+      "budgetUsd": 150,
+      "perTxCapUsd": 40,
+      "status": "active",
+      "startsAt": "2026-09-20T00:00:00Z",
+      "expiresAt": "2026-09-25T00:00:00Z",
+      "hash": "0x54948384a5cabf06d804e47d1fbfd43e82b41300d9a2eb953b377fb23decd813",
+      "anchorTx": "0x00c0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "anchorUrl": "https://sepolia.etherscan.io/tx/0x00c0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "spentUsd": 0,
+      "pendingUsd": 0,
+      "remainingUsd": 150,
+      "entryCount": 1,
+      "createdAt": "2026-09-28T11:05:00Z"
+    },
+    {
+      "id": "man_B",
+      "principal": "MICEMore Finance",
+      "traveler": "Mingyu",
+      "budgetUsd": 10,
+      "perTxCapUsd": 40,
+      "status": "active",
+      "startsAt": "2026-09-28T08:00:00Z",
+      "expiresAt": "2026-09-30T09:00:00Z",
+      "hash": "0x6978696ef9f1c1bc6b4aeb70955399f5852f421efda671bebc575a9e60809451",
+      "anchorTx": "0x00b0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "anchorUrl": "https://sepolia.etherscan.io/tx/0x00b0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "spentUsd": 0,
+      "pendingUsd": 0,
+      "remainingUsd": 10,
+      "entryCount": 1,
+      "createdAt": "2026-09-28T11:05:00Z"
+    },
+    {
+      "id": "man_A",
+      "principal": "MICEMore Finance",
+      "traveler": "Mingyu",
+      "budgetUsd": 150,
+      "perTxCapUsd": 40,
+      "status": "active",
+      "startsAt": "2026-09-28T08:00:00Z",
+      "expiresAt": "2026-09-30T09:00:00Z",
+      "hash": "0x9b11dc8de177bbbdfc92e54782bc78b1d442f62aec0867f51715658615e51573",
+      "anchorTx": "0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "anchorUrl": "https://sepolia.etherscan.io/tx/0x00a0f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7f1x7",
+      "spentUsd": 17.2012,
+      "pendingUsd": 0,
+      "remainingUsd": 132.7988,
+      "entryCount": 5,
+      "createdAt": "2026-09-28T11:05:00Z"
+    }
+  ]
+}
