@@ -54,6 +54,7 @@ export function StatTile({
   tone = "default",
   icon,
   className,
+  labelClassName,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -61,6 +62,7 @@ export function StatTile({
   tone?: "default" | "emerald" | "amber" | "rose" | "indigo";
   icon?: ReactNode;
   className?: string;
+  labelClassName?: string;
 }) {
   const toneCls = {
     default: "text-zinc-900",
@@ -71,9 +73,9 @@ export function StatTile({
   }[tone];
   return (
     <div className={cn("rounded-xl border border-zinc-200 bg-white px-4 py-3.5", className)}>
-      <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+      <div className={cn("flex items-start gap-1.5 text-xs font-medium text-zinc-500 [&>svg]:mt-0.5 [&>svg]:shrink-0", labelClassName)}>
         {icon}
-        {label}
+        <span>{label}</span>
       </div>
       <div className={cn("mt-1 text-2xl font-semibold tracking-tight tabular-nums", toneCls)}>{value}</div>
       {hint && <div className="mt-0.5 text-xs text-zinc-500">{hint}</div>}
