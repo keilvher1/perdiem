@@ -61,6 +61,7 @@ interface PwPage {
   screenshot(o?: { path?: string; fullPage?: boolean; type?: "png" }): Promise<Buffer>;
   setContent(html: string, o?: { waitUntil?: "load" }): Promise<void>;
   setViewportSize(s: { width: number; height: number }): Promise<void>;
+  addStyleTag(o: { content: string }): Promise<unknown>;
   close(): Promise<void>;
 }
 interface PwContext {
@@ -133,6 +134,12 @@ async function shot(page: PwPage, file: string, fullPage = false) {
   console.log(`  saved ${path}`);
 }
 
+/** Opens an app page and hides the Next.js dev-mode indicator so screenshots stay clean. */
+async function openApp(page: PwPage, path: string, timeout = 60_000) {
+  await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle", timeout });
+  await page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+}
+
 async function patchStatus(id: string, status: MandateStatus) {
   const res = await fetch(`${BASE_URL}${ENDPOINTS.mandate(id)}`, {
     method: "PATCH",
@@ -144,7 +151,7 @@ async function patchStatus(id: string, status: MandateStatus) {
 }
 
 async function openTraveler(page: PwPage, mandateId: string) {
-  await page.goto(`${BASE_URL}/traveler?m=${encodeURIComponent(mandateId)}`, { waitUntil: "networkidle", timeout: 60_000 });
+  await openApp(page, `/traveler?m=${encodeURIComponent(mandateId)}`);
   await page.waitForTimeout(800);
 }
 
@@ -258,7 +265,7 @@ async function pagesPart(page: PwPage, ids: Record<Key, string>) {
   saved.push(hpath);
   console.log(`  saved ${hpath} (modelAvailable=${hj.modelAvailable}, models=${hj.models?.join(",")})`);
 
-  await page.goto(`${BASE_URL}/principal?m=${encodeURIComponent(ids.A)}`, { waitUntil: "networkidle", timeout: 60_000 });
+  await openApp(page, `/principal?m=${encodeURIComponent(ids.A)}`);
   await page.waitForTimeout(2500);
   await shot(page, "09-principal.png");
 
@@ -281,7 +288,7 @@ async function pagesPart(page: PwPage, ids: Record<Key, string>) {
       warnings.push(`08: Etherscan not captured (${(e as Error).message}); using the audit page's decoded transaction instead`);
     }
   }
-  await page.goto(`${BASE_URL}/audit/${encodeURIComponent(ids.A)}`, { waitUntil: "networkidle", timeout: 90_000 });
+  await openApp(page, `/audit/${encodeURIComponent(ids.A)}`, 90_000);
   await page.waitForTimeout(3000);
   const auditFull = await page.screenshot({ type: "png", fullPage: true });
   saved.push(join(OUT_DIR, "11-audit.png"));
@@ -296,7 +303,7 @@ async function pagesPart(page: PwPage, ids: Record<Key, string>) {
   await composeSideBySide(page, ledger, right, `Ledger — mandate ${ids.A}`, rightLabel, "08-tx-and-ledger.png");
   await page.setViewportSize(VIEWPORT);
 
-  await page.goto(`${BASE_URL}/metrics?m=${encodeURIComponent(ids.A)}`, { waitUntil: "networkidle", timeout: 60_000 });
+  await openApp(page, `/metrics?m=${encodeURIComponent(ids.A)}`);
   await page.waitForTimeout(2000);
   await shot(page, "07-metrics.png", true);
 }
