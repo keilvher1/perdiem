@@ -35,6 +35,12 @@ function Banner({ audit }: { audit: AuditResponse }) {
     (a, t) => a + Number(t.memoMatches) + Number(t.receiptHashMatches) + Number(t.recipientMatches) + Number(t.amountMatches),
     0,
   );
+  // The server also counts checks that have no per-row field in the contract: the anchor's sender,
+  // and each payment's sender and "mined and succeeded" (same as scripts/verify.ts). Show them as
+  // their own group so the groups always add up to the headline.
+  const anchorOk = Number(audit.anchor.matches);
+  const extraChecks = total - (1 + replayChecks + txChecks);
+  const extraOk = passed - (anchorOk + replayOk + txOk);
   return (
     <div
       role="status"
@@ -73,6 +79,14 @@ function Banner({ audit }: { audit: AuditResponse }) {
             {txOk} / {txChecks}
           </dd>
         </div>
+        {extraChecks > 0 && (
+          <div>
+            <dt className="text-xs text-zinc-500">Payer &amp; mined</dt>
+            <dd className="font-medium text-zinc-900">
+              {extraOk} / {extraChecks}
+            </dd>
+          </div>
+        )}
       </dl>
     </div>
   );

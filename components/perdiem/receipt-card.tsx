@@ -56,7 +56,9 @@ export function ReceiptCard({ entry, className }: { entry: LedgerEntryView; clas
  * the transaction revert on-chain.
  */
 function failedHeadline(entry: LedgerEntryView): string {
-  return entry.txHash ? "Transaction failed on-chain" : "Broadcast did not confirm — nothing recorded on-chain";
+  return entry.txHash
+    ? "Transaction failed on-chain"
+    : "Broadcast did not confirm — no tx hash recorded; check Etherscan for the agent wallet before retrying";
 }
 
 function ApprovedCard({ entry, className }: { entry: LedgerEntryView; className?: string }) {

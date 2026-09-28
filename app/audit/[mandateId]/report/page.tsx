@@ -81,7 +81,8 @@ function statusLabel(e: LedgerEntryView): string {
   }
 }
 
-/** The audit Banner's math, plus the settlement checks the route adds for not-yet-settled txs. */
+/** The audit Banner's math, plus the checks the server counts without a per-row contract field:
+ *  the anchor's sender and each payment's sender and "mined and succeeded" (same as scripts/verify.ts). */
 function checkBreakdown(audit: AuditResponse) {
   const anchor = { ok: Number(audit.anchor.matches), of: 1 };
   const replay = {
@@ -95,11 +96,11 @@ function checkBreakdown(audit: AuditResponse) {
     ),
     of: audit.transactions.length * 4,
   };
-  const settlement = {
+  const payerMined = {
     ok: audit.summary.passed - anchor.ok - replay.ok - tx.ok,
     of: audit.summary.total - anchor.of - replay.of - tx.of,
   };
-  return { anchor, replay, tx, settlement };
+  return { anchor, replay, tx, payerMined };
 }
 
 function Statement({
@@ -266,18 +267,19 @@ function Statement({
             <p className="mt-0.5 text-[11px] text-zinc-600 tabular-nums">
               Anchor {breakdown.anchor.ok} / {breakdown.anchor.of} · Replay {breakdown.replay.ok} / {breakdown.replay.of} · Transactions{" "}
               {breakdown.tx.ok} / {breakdown.tx.of}
-              {breakdown.settlement.of > 0 && (
+              {breakdown.payerMined.of > 0 && (
                 <>
                   {" "}
-                  · Settlement {breakdown.settlement.ok} / {breakdown.settlement.of}
+                  · Payer &amp; mined {breakdown.payerMined.ok} / {breakdown.payerMined.of}
                 </>
               )}
             </p>
             <p className="mt-1 text-[10px] leading-4 text-zinc-500">
               Anchor: the recomputed mandate hash equals the memo of the anchor transaction. Replay: every entry re-run through the
               policy with spend rebuilt from earlier entries (2 checks each). Transactions: memo, receipt hash, recipient and amount
-              read back from Sepolia (4 each). Replay cannot show whether the mandate was paused when a payment was approved; pause and
-              resume are in the server log.
+              read back from Sepolia (4 each). Payer &amp; mined: the anchor and every payment were sent by the mandate&apos;s agent
+              wallet, and each payment was mined and succeeded (1 + 2 per payment). Replay cannot show whether the mandate was paused
+              when a payment was approved; pause and resume are in the server log.
             </p>
           </div>
         ) : (

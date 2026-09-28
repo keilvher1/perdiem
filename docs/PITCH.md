@@ -16,7 +16,7 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 | 4 | How it works | diagram: traveler → agent (Kiln) *proposes* → policy engine (code) *decides* → Sepolia *settles* → ledger + receipt → auditor *replays* | 45 |
 | 5 | The boundary, in code | the 12 checks as a compact list; "enforced in `policy.ts` before any chain call; the model never holds keys" | 30 |
 | 6 | Live evidence | 3 screenshots: APPROVED receipt with tx link; STOPPED card with 3 reasons; STOPPED "$10 + fee > $10 budget" | 60 |
-| 7 | Verifiable by a stranger | audit screenshot: mandate hash = on-chain anchor ✅, N/N entries replayed ✅, calldata decoded, payer = agent wallet, tx mined; "Evidence → Download records → `verify.ts`"; checks = 2 + 2/entry + 6/payment (24 for mandate A), `/audit` shows the same count | 40 |
+| 7 | Verifiable by a stranger | audit screenshot: mandate hash = on-chain anchor ✅, N/N entries replayed ✅, calldata decoded, payer and mined counted in the 24 (Payer & mined group); "Evidence → Download records → `verify.ts`"; checks = 2 + 2/entry + 6/payment (24 for mandate A), `/audit` shows the same count | 40 |
 | 8 | Efficient on the NPU | tokens by flow table; "status questions: 0 tokens; refusals: 0 tokens"; thinking off for proposals, 5/5 tool calls both ways: in-event run Sep 28 154 → 47 completion tokens (−69%), 3.0 s → 1.2 s, cost −48% (`docs/reasoning-comparison.json`); energy estimate with stated assumption | 35 |
 | 9 | What's next | stablecoin settlement, multi-traveler mandates, a receipt format finance teams can import; repo URL + "Challenge B" | 10 |
 
