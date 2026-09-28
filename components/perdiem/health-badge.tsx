@@ -31,7 +31,7 @@ export function HealthBadge() {
           <span className="hidden px-2.5 sm:block">Sepolia</span>
           <span className="hidden h-4 w-px bg-zinc-200 md:block" />
           <span className="hidden px-2.5 tabular-nums md:block">
-            1 ETH = {data ? `$${fmtInt(data.demoEthUsd)}` : "…"} demo rate
+            1 ETH = {data ? `$${fmtInt(data.demoEthUsd)}` : error ? "—" : "…"} demo rate
           </span>
         </button>
       </TooltipTrigger>
