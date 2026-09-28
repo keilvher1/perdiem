@@ -18,7 +18,7 @@ PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-
 | Traveler | `/traveler` | chat ("order lunch…", "taxi…"), see receipt cards (APPROVED → pending → settled, or STOPPED with reasons), ask status (no LLM call) |
 | Agent (PerDiem on Kiln qwen3-32b) | — | propose one payment per request via tool call; never holds keys |
 | Auditor | `/audit/[mandateId]` | verify mandate hash vs on-chain anchor, replay every ledger entry through the policy, open each tx and decode the memo |
-| Judge | `/metrics` | tokens and cost by flow, high-vs-low reasoning comparison, energy estimate with assumptions |
+| Judge | `/metrics` | tokens and cost by flow, thinking on vs off (`/no_think`) comparison, energy estimate with assumptions |
 
 No auth: a role switcher in the header (demo simplification, stated in README).
 
@@ -30,14 +30,14 @@ traveler text
         ├─ no tool call → reply text, nothing spent
         └─ propose_payment{merchant_id, amount_usd, memo}
               → lookup merchant → estimateFeeUsd (real gas × demo rate)
-              → policy.evaluate()  ← THE BOUNDARY (code, 11 checks)
+              → policy.evaluate()  ← THE BOUNDARY (code, 12 checks)
                     ├─ STOP  → ledger(stopped, reasons[]) ; templated reply ; no chain call ; no LLM call
                     └─ APPROVE → sendPaymentNoWait (calldata = PERDIEM|mandateHash|receiptHash)
                                  → ledger(pending, txHash) → client polls → settled/failed
 ```
 
 ## 5. The boundary (what the agent must not cross) and where it is enforced
-Enforced in `lib/policy.ts::evaluate()` — pure function, unit-tested, called in `lib/agent.ts` before any call into `lib/chain.ts`. The model never holds keys. Checks, all reported when failing:
+Enforced in `lib/policy.ts::evaluate()` — pure function, unit-tested, called in `lib/agent.ts` before any call into `lib/chain.ts`. The model never holds keys. Twelve checks (one per `StopCode`), all reported when failing:
 
 | Code | Rule |
 |---|---|
@@ -88,14 +88,14 @@ Each merchant gets a fresh Sepolia address (generated once, stored in `docs/seed
 | 6 | Resume A → "Coffee at Starbucks, $5" | APPROVE → tx | second on-chain payment |
 | 7 | "How much do I have left?" | answered from ledger, **0 tokens** | `status_fastpath` row on /metrics |
 
-Run 3 asks for exactly the remaining budget. Fees are compared **unrounded**, so any positive network fee — even a fraction of a cent on Sepolia — stops it (covered by tests). Use a fresh mandate per video take (DUPLICATE window is 5 min); `scripts/seed.ts --suffix` creates and anchors a new A/B/C set.
+Run 3 asks for exactly the remaining budget. Fees are compared **unrounded**, so any positive network fee — even a fraction of a cent on Sepolia — stops it (covered by tests). Use a fresh mandate per video take (DUPLICATE window is 5 min); `npm run seed` (optional `--suffix <s>`) creates and anchors a new A/B/C set.
 
 ## 8. On-chain design (Sepolia)
 - **Anchor:** on mandate creation, 0-value self-tx with calldata `PERDIEM-MANDATE|<keccak256(canonical mandate JSON)>`.
 - **Payment:** transfer of `amountUsd / DEMO_ETH_USD` ETH to the merchant address with calldata `PERDIEM|<mandateHash>|<receiptHash>`; `receiptHash = keccak256(canonical ledger entry without tx fields)`.
 - **Fee:** `estimateGas × gasPrice` (fallback: intrinsic gas × gasPrice), converted at the demo rate, included in the budget check; actual fee recorded after mining in a separate field so the receipt hash stays stable.
 - **Two-step:** broadcast → `pending` → client polls → `settled | failed`. No waiting inside request handlers.
-- **Verification path for an auditor:** `npx tsx scripts/verify.ts mandate.json ledger.json` (records + RPC only), or `/audit/[id]`; manually: open tx → Input Data → "View as UTF-8" → compare hashes.
+- **Verification path for an auditor:** `npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json` (records + RPC only), or `/audit/[id]`; manually: open tx → Input Data → "View as UTF-8" → compare hashes.
 
 Stretch: pay in Circle test USDC (ERC-20 `transfer`) instead of ETH.
 
@@ -103,8 +103,10 @@ Stretch: pay in Circle test USDC (ERC-20 `transfer`) instead of ETH.
 - Model `qwen3-32b`, `reasoning_effort: "low"`, `max_tokens 300`, `temperature 0.2`, one tool.
 - Usage record per call: `{flow, promptTokens, completionTokens, totalTokens, costUsd, latencyMs}` from `usage` (+ gateway `cost`).
 - Flows: `propose` (1 call per purchase request); `status_fastpath` and `stop_template` are recorded as 0-token rows via `zeroUsage()` so avoided inference is visible; `compare` for the reasoning-effort script. `explain`/`audit` LLM flows are out of scope for the hackathon.
-- Evidence of real calls: every `chatWithUsage` prints one JSON line (`"kind":"kiln"`, response id, tool_calls, usage) → `evidence/06-kiln-calls.txt`; each ledger entry stores `kilnResponseId` and `toolArgsRaw`.
-- Design choices that cut inference, each measured: (a) rule fast-path for status questions → 0 tokens; (b) templated STOP explanations → 0 tokens; (c) compact catalog line instead of JSON → prompt tokens −X%; (d) **thinking off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`) — measured before kickoff on Kiln qwen3-32b with the same 5 purchase prompts: tool calls 5/5 both ways, completion tokens per proposal **160 → 47 (−71%)**, latency **2.9 s → 1.1 s**, cost −52%; re-measure on the final prompt with `scripts/compare-reasoning.ts` (thinking on vs off; optional `low` vs `high` with `max_tokens 2000` for `high`); (e) one tool call per turn, no parallel calls, early exit.
+- Evidence of real calls: every `chatWithUsage` prints one JSON line (`"kind":"kiln"`, response id, tool_calls, usage) → `evidence/06-kiln-calls.txt` and the per-flow summary `evidence/kiln-calls-by-flow.md`; each ledger entry stores `kilnResponseId` and `toolArgsRaw`.
+- Design choices that cut inference, each measured: (a) rule fast-path for status questions → 0 tokens; (b) templated STOP explanations → 0 tokens; (c) compact catalog line instead of JSON → prompt tokens −X%; (d) **thinking off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`) — measured on 2026-09-27 on Kiln qwen3-32b with the production prompt and the same 5 purchase prompts: tool calls **5/5 both ways**, completion tokens per proposal **180 → 47 (−74%)**, latency **2.9 s → 0.9 s**, cost **−50%** (the earlier pre-kickoff spike with a shorter prompt measured 160 → 47, −71%, 2.9 s → 1.1 s); re-measured during the event by `npm run compare` (`scripts/compare-reasoning.ts`, thinking on vs off) → `docs/reasoning-comparison.json` — 2026-09-28 18:12 KST: tool calls 5/5 both ways, completion 154 → 47.4 (−69.2%), latency 2986 → 1233 ms, cost −47.5%, reasoning tokens 108 → 1 per call (raw call lines with response ids: `docs/reasoning-comparison.kiln.jsonl`). Kiln's `usage` also returns `completion_tokens_details.reasoning_tokens` and `prompt_tokens_details.cached_tokens`, which `scripts/metrics.ts` reports per flow; (e) one tool call per turn, no parallel calls, early exit.
+- **Model note:** the challenge brief text names `gpt-oss-120b`, but Kiln serves only `qwen3-32b` and `deepseek-v4.1-flash`; the track uses `qwen3-32b` (organizer announcement).
+- **README proof (organizer requirement, 2026-09-28):** on-chain tx hashes and Kiln API call logs **per flow** — `evidence/kiln-calls-by-flow.md` (built from the `"kind":"kiln"` lines by `scripts/metrics.ts`) plus `evidence/06-kiln-calls.txt`.
 - **Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN / 3600`. `ENERGY_J_PER_TOKEN` is an env-configured, clearly labeled assumption with a cited source. Fallback if Bricksum gives no figure: `J/token ≈ card_W × latency_s ÷ completion_tokens` using the NPU card's published power draw, labeled "conservative upper bound (assumes a dedicated card)". Never present the energy number without the assumption next to it.
 
 ## 10. Data model (`docs/schema.sql`)

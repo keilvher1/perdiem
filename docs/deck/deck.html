@@ -1,0 +1,396 @@
+<!doctype html>
+<!--
+  docs/deck/deck.html — PerDiem pitch deck (9 slides, 16:9, 1280×720 CSS px per page).
+  Rendered to docs/deck.pdf by `npx tsx scripts/deck.ts` (headless Chromium from the tools folder).
+  deck.ts fills: double-brace tokens from docs/reasoning-comparison.json; images marked with a data-evidence
+  attribute from the evidence folder (a labeled placeholder stays when the file is missing); and the marked
+  "@name" comment blocks (runs, flows, energy, verify) from evidence files.
+  Opened directly in a browser it shows the unfilled template.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PerDiem deck</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root {
+    --bg: #fbfbf9;
+    --card: #ffffff;
+    --ink: #18181b;
+    --ink-2: #52525b;
+    --ink-3: #71717a;
+    --line: #e4e4e7;
+    --line-2: #d4d4d8;
+    --accent: #3730a3;
+    --accent-soft: #eef2ff;
+    --ok: #047857;
+    --ok-soft: #ecfdf5;
+    --stop: #be123c;
+    --stop-soft: #fff1f2;
+    --warn: #b45309;
+    --s1: #2a78d6; /* chart series 1: thinking on  */
+    --s2: #eb6834; /* chart series 2: thinking off */
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { position: relative; width: 1280px; height: 720px; padding: 56px 72px 64px; overflow: hidden; background: var(--bg); page-break-after: always; break-after: page; display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .eyebrow { font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 10px; }
+  h1 { font-size: 88px; line-height: 1; margin: 0; letter-spacing: -.03em; font-weight: 700; }
+  h2 { font-size: 40px; line-height: 1.15; margin: 0 0 22px; letter-spacing: -.02em; font-weight: 650; }
+  p { margin: 0; }
+  .lead { font-size: 21px; line-height: 1.5; color: var(--ink-2); max-width: 1000px; }
+  .mono { font-family: var(--mono); }
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 26px; display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-3); letter-spacing: .04em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; padding: 8px 14px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--card); color: var(--ink-2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .tag { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; letter-spacing: .02em; }
+  .tag.ok { color: var(--ok); background: var(--ok-soft); border: 1px solid #a7f3d0; }
+  .tag.stop { color: var(--stop); background: var(--stop-soft); border: 1px solid #fecdd3; }
+  .tag.neutral { color: var(--ink-2); background: #f4f4f5; border: 1px solid var(--line); }
+
+  /* 1 — title */
+  .title-wrap { margin-top: 40px; }
+  .title-sub { font-size: 30px; color: var(--ink-2); margin-top: 18px; letter-spacing: -.01em; }
+  .declared { margin-top: 44px; padding: 26px 30px; border-left: 4px solid var(--accent); background: var(--card); border-radius: 0 12px 12px 0; font-size: 22px; line-height: 1.5; color: var(--ink); max-width: 1060px; }
+  .chips { display: flex; gap: 12px; margin-top: auto; flex-wrap: wrap; }
+
+  /* 2 — problem */
+  .quote { font-size: 40px; line-height: 1.25; letter-spacing: -.02em; max-width: 1050px; font-weight: 600; margin: 10px 0 40px; }
+  .quote em { font-style: normal; color: var(--accent); }
+  .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .cols3 .card { padding: 24px 24px 26px; font-size: 19px; line-height: 1.5; color: var(--ink-2); }
+  .cols3 .card b { display: block; color: var(--ink); font-size: 20px; margin-bottom: 8px; }
+  .answer { margin-top: auto; font-size: 20px; line-height: 1.5; color: var(--ink); padding-top: 22px; border-top: 1px solid var(--line); }
+
+  /* 3 — user */
+  .persona { display: flex; gap: 22px; align-items: center; padding: 22px 26px; margin-bottom: 26px; }
+  .persona .who { font-size: 20px; line-height: 1.5; color: var(--ink-2); }
+  .persona .who b { color: var(--ink); }
+  .avatar { flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; font-size: 22px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; flex: 1; }
+  .step { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .step .n { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: .08em; }
+  .step h3 { margin: 0; font-size: 26px; letter-spacing: -.01em; }
+  .step p { font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+  .step .where { margin-top: auto; font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+
+  /* 4 — flow diagram */
+  .flow { display: grid; grid-template-columns: 1fr 34px 1.15fr 34px 1.2fr 34px 1.2fr; align-items: stretch; margin-top: 8px; }
+  .node { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+  .node .verb { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--accent); }
+  .node h3 { margin: 0; font-size: 21px; }
+  .node p { font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+  .node code, .code { font-family: var(--mono); font-size: 13px; background: #f4f4f5; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; color: var(--ink); }
+  .node.decide { border: 2px solid var(--accent); }
+  .arrow { display: grid; place-items: center; color: var(--ink-3); font-size: 26px; }
+  .branches { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  .branch { padding: 16px 20px; display: flex; gap: 14px; align-items: flex-start; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+  .branch.ok { border-left: 4px solid var(--ok); }
+  .branch.stop { border-left: 4px solid var(--stop); }
+  .auditrow { margin-top: 18px; padding: 16px 20px; display: flex; gap: 14px; align-items: center; font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+  .auditrow b { color: var(--ink); }
+
+  /* 5 — boundary */
+  .grid12 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 4px; }
+  .check { padding: 14px 16px 16px; }
+  .check .code { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--stop); background: var(--stop-soft); border-color: #fecdd3; margin-bottom: 8px; }
+  .check p { font-size: 15.5px; line-height: 1.4; color: var(--ink-2); }
+  .note-row { margin-top: auto; display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* screenshot slots */
+  .shot { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .shot .frame { position: relative; border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; background: #f4f4f5; }
+  .shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  .shot img:not([src]) { display: none; }
+  .shot img[src] + .ph { display: none; }
+  .ph { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--ink-3); font-size: 14px; text-align: center; padding: 16px;
+        background: repeating-linear-gradient(135deg, #f4f4f5 0 10px, #efeff1 10px 20px); }
+  .ph .file { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .shot figcaption { font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
+  .shot figcaption b { color: var(--ink); }
+
+  /* 6 — live evidence */
+  .strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .strip .frame { height: 176px; }
+  table.runs { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 14px; }
+  table.runs th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; padding: 0 10px 6px; border-bottom: 1px solid var(--line-2); }
+  table.runs td { padding: 3.5px 10px; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: middle; }
+  table.runs td.req { color: var(--ink); }
+  table.runs td.num { font-family: var(--mono); color: var(--ink-3); width: 28px; }
+  .runs-note { margin-top: 6px; font-size: 12.5px; color: var(--ink-3); }
+
+  /* 7 — verify */
+  .two { display: grid; grid-template-columns: 1.08fr 1fr; gap: 28px; flex: 1; min-height: 0; }
+  .two .frame { height: 440px; }
+  .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .checks li { display: flex; gap: 12px; font-size: 17px; line-height: 1.45; color: var(--ink-2); }
+  .checks li .k { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 1px solid #a7f3d0; }
+  .checks li b { color: var(--ink); }
+  .term { margin-top: 16px; background: #18181b; color: #e4e4e7; border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .term .ok { color: #6ee7b7; }
+  .term .dim { color: #a1a1aa; }
+
+  /* 8 — efficiency */
+  .eff { display: grid; grid-template-columns: 1.05fr 1fr; gap: 28px; flex: 1; min-height: 0; }
+  .heroes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
+  .hero { padding: 14px 16px; }
+  .hero .v { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+  .hero .l { font-size: 13px; color: var(--ink-3); margin-top: 4px; line-height: 1.35; }
+  .chartcard { padding: 14px 16px 10px; }
+  .chartcard .t { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .chartcard .st { font-size: 12.5px; color: var(--ink-3); margin-bottom: 6px; }
+  .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 4px; }
+  .legend i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  table.flows { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.flows th { text-align: right; font-weight: 600; color: var(--ink-3); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; padding: 0 8px 6px; border-bottom: 1px solid var(--line-2); }
+  table.flows th:first-child, table.flows td:first-child { text-align: left; }
+  table.flows td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  table.flows td:first-child { font-family: var(--mono); color: var(--ink); font-size: 13px; }
+  table.flows tr.zero td { background: var(--ok-soft); }
+  .small { font-size: 13px; color: var(--ink-3); line-height: 1.45; }
+  .why { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; color: var(--ink-2); }
+  .why li::before { content: "—"; color: var(--accent); margin-right: 8px; }
+  .energy { margin-top: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); border-left: 3px solid var(--warn); }
+
+  /* 9 — next */
+  .next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 6px; }
+  .next .card { padding: 22px 22px 24px; }
+  .next h3 { margin: 0 0 8px; font-size: 22px; }
+  .next p { font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+  .try { margin-top: 26px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+  .try .card { padding: 20px 22px; }
+  .try .term { margin-top: 10px; font-size: 13px; }
+  .thanks { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; }
+  .thanks .big { font-size: 34px; font-weight: 650; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Title + declared function -->
+<section class="slide">
+  <p class="eyebrow">GWDC 2026 Korea · FuriosaAI x Bricksum · Challenge B</p>
+  <div class="title-wrap">
+    <h1>PerDiem</h1>
+    <p class="title-sub">An AI agent that spends your per-diem — and cannot cross the line.</p>
+  </div>
+  <p class="declared">PerDiem is a policy layer that holds a traveler's per-diem budget and permitted-merchant list for one business trip, stops any agent payment that falls outside it before it reaches the chain, and produces receipts an auditor can verify from records alone.</p>
+  <div class="chips">
+    <span class="chip"><span class="dot"></span>Kiln API · qwen3-32b on Furiosa NPUs</span>
+    <span class="chip"><span class="dot"></span>Policy engine in code · 12 checks</span>
+    <span class="chip"><span class="dot"></span>Ethereum Sepolia · anchored mandate + receipts</span>
+    <span class="chip"><span class="dot"></span>github.com/keilvher1/perdiem</span>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B — Build the Controls and Records for an AI Agent That Spends</span><span>1 / 9</span></div>
+</section>
+
+<!-- 2 · Problem -->
+<section class="slide">
+  <p class="eyebrow">The problem</p>
+  <h2>The moment after delegation</h2>
+  <p class="quote">Payment rails record <em>who paid whom</em> — not who authorized it, or under what conditions.</p>
+  <div class="cols3">
+    <div class="card"><b>Good behavior is an accident</b>An agent that stays within budget does so only because someone happened to build it that way.</div>
+    <div class="card"><b>Nothing to reconstruct</b>When something goes wrong, nobody can tell whether the agent stayed inside the line it was given.</div>
+    <div class="card"><b>Refusals are silent</b>There is no record that the agent was stopped, or why — so stopping cannot be trusted either.</div>
+  </div>
+  <p class="answer"><b>PerDiem makes delegated spending answerable:</b> rules are set once, enforced in code before every payment, refusals are recorded, and a third party can verify every payment from the records alone.</p>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>2 / 9</span></div>
+</section>
+
+<!-- 3 · User -->
+<section class="slide">
+  <p class="eyebrow">Who it is for</p>
+  <h2>Delegate the per-diem without losing control</h2>
+  <div class="card persona">
+    <div class="avatar">FM</div>
+    <p class="who"><b>Finance manager at a small MICE company</b> sending a colleague to a two-day conference in Seoul. The traveler talks to an AI agent to buy lunch, taxis and supplies; finance sets the rules once and must be able to answer for every payment afterwards.</p>
+  </div>
+  <div class="steps">
+    <div class="card step"><span class="n">01 · GRANT</span><h3>Set the mandate</h3><p>Budget $150, $40 per payment, meals · transport · supplies, five permitted merchants, blocked words, trip window. Hashed and anchored on Sepolia.</p><span class="where">/principal</span></div>
+    <div class="card step"><span class="n">02 · FOLLOW</span><h3>Watch the spend</h3><p>Live spend gauge and ledger. A broadcast payment counts as committed while it is still pending on-chain.</p><span class="where">/principal · /traveler</span></div>
+    <div class="card step"><span class="n">03 · STOP</span><h3>Pause at any time</h3><p>Pause, Resume, Revoke. Every request after Pause is stopped with <span class="code">MANDATE_NOT_ACTIVE</span> and recorded.</p><span class="where">PATCH /api/mandates/[id]</span></div>
+    <div class="card step"><span class="n">04 · VERIFY</span><h3>Audit from records</h3><p>An auditor re-checks every payment from the exported mandate and ledger plus a public RPC — no access to our app.</p><span class="where">scripts/verify.ts · /audit</span></div>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>3 / 9</span></div>
+</section>
+
+<!-- 4 · How it works -->
+<section class="slide">
+  <p class="eyebrow">How it works</p>
+  <h2>The model proposes. Code decides. The chain settles.</h2>
+  <div class="flow">
+    <div class="card node"><span class="verb">ASKS</span><h3>Traveler</h3><p>“Order a bibimbap lunch from Yangjae Kitchen, $12”</p></div>
+    <div class="arrow">→</div>
+    <div class="card node"><span class="verb">PROPOSES</span><h3>Agent on Kiln</h3><p>qwen3-32b calls one tool:<br><code>propose_payment{m1, 12}</code><br>It never holds a key.</p></div>
+    <div class="arrow">→</div>
+    <div class="card node decide"><span class="verb">DECIDES</span><h3>Policy engine</h3><p><code>evaluate()</code> — 12 checks in TypeScript, with the <b>real</b> network fee from a gas estimate.</p></div>
+    <div class="arrow">→</div>
+    <div class="card node"><span class="verb">SETTLES</span><h3>Ethereum Sepolia</h3><p>Transfer to the merchant with calldata <code>PERDIEM|mandateHash|receiptHash</code></p></div>
+  </div>
+  <div class="branches">
+    <div class="card branch ok"><span class="tag ok">APPROVE</span><span>Broadcast, ledger entry <b>pending</b> with the tx hash → the client polls → <b>settled</b>. The receipt card links to Etherscan.</span></div>
+    <div class="card branch stop"><span class="tag stop">STOP</span><span>Ledger entry <b>stopped</b> with every failing reason. No chain call, no second model call — the refusal text is a template.</span></div>
+  </div>
+  <div class="card auditrow"><span class="tag neutral">REPLAYS</span><span><b>Auditor:</b> recomputes the mandate hash and compares it with the on-chain anchor, re-runs every decision through the same policy, and matches each receipt hash to the transaction calldata. Status questions (“How much do I have left?”) are answered from the ledger with 0 tokens.</span></div>
+  <div class="note-row" style="margin-top:auto">
+    <span class="chip">Kiln applies <span class="mono" style="font-size:13px">tool_choice: auto</span> only — no tool call ⇒ no proposal ⇒ nothing is spent</span>
+    <span class="chip">Only <span class="mono" style="font-size:13px">lib/chain.ts</span> touches the wallet, only after APPROVE</span>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>4 / 9</span></div>
+</section>
+
+<!-- 5 · Boundary -->
+<section class="slide">
+  <p class="eyebrow">The boundary</p>
+  <h2>Twelve checks, in code, before anything reaches the chain</h2>
+  <p class="lead" style="margin:-8px 0 18px;font-size:18px"><span class="code">lib/policy.ts · evaluate()</span> is a pure function called in <span class="code">lib/agent.ts</span> before any call into <span class="code">lib/chain.ts</span>. Every failing check is reported, not just the first.</p>
+  <div class="grid12">
+    <div class="card check"><span class="code">MANDATE_NOT_ACTIVE</span><p>Principal paused or revoked the mandate — the kill switch.</p></div>
+    <div class="card check"><span class="code">BEFORE_START</span><p>The trip window has not opened yet.</p></div>
+    <div class="card check"><span class="code">EXPIRED</span><p>The deadline has already passed.</p></div>
+    <div class="card check"><span class="code">UNKNOWN_MERCHANT</span><p>Not in the catalog snapshot hashed with the mandate.</p></div>
+    <div class="card check"><span class="code">MERCHANT_NOT_ALLOWED</span><p>In the catalog, but not on the permitted list.</p></div>
+    <div class="card check"><span class="code">CATEGORY_NOT_ALLOWED</span><p>The merchant's category is not permitted.</p></div>
+    <div class="card check"><span class="code">BLOCKED_KEYWORD</span><p>Memo or the traveler's words mention a blocked item.</p></div>
+    <div class="card check"><span class="code">INVALID_AMOUNT</span><p>Zero, negative, or not a number.</p></div>
+    <div class="card check"><span class="code">OVER_PER_TX_CAP</span><p>Above the single-payment cap.</p></div>
+    <div class="card check"><span class="code">FEE_UNAVAILABLE</span><p>Fee could not be estimated → refuse rather than guess.</p></div>
+    <div class="card check"><span class="code">OVER_BUDGET_WITH_FEES</span><p>Amount + real network fee exceeds what is left. Never rounded.</p></div>
+    <div class="card check"><span class="code">DUPLICATE</span><p>Same merchant and amount within five minutes.</p></div>
+  </div>
+  <div class="note-row" style="margin-top:18px">
+    <span class="chip">The model never holds keys</span>
+    <span class="chip">17 unit-test blocks · <span class="mono" style="font-size:13px">npm test</span></span>
+    <span class="chip">Mandate hash covers terms + catalog, not status</span>
+    <span class="chip">Stopping is recorded, not silent</span>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>5 / 9</span></div>
+</section>
+
+<!-- 6 · Live evidence -->
+<section class="slide">
+  <p class="eyebrow">Live evidence</p>
+  <h2 style="margin-bottom:16px">Real runs on Kiln and Sepolia — approvals and refusals</h2>
+  <div class="strip">
+    <figure class="shot"><div class="frame"><img data-evidence="01-approve.png" alt="Approved receipt card"><div class="ph"><span>Screenshot after the evidence run</span><span class="file">evidence/01-approve.png</span></div></div><figcaption><b>#0 Lunch $12</b> — approved, settled on Sepolia</figcaption></figure>
+    <figure class="shot"><div class="frame"><img data-evidence="02-merchant-not-allowed.png" alt="Stopped card with three reasons"><div class="ph"><span>Screenshot after the evidence run</span><span class="file">evidence/02-merchant-not-allowed.png</span></div></div><figcaption><b>#2 Wine gift $30</b> — stopped with three reasons</figcaption></figure>
+    <figure class="shot"><div class="frame"><img data-evidence="03-over-budget-with-fees.png" alt="Stopped: over budget with fees"><div class="ph"><span>Screenshot after the evidence run</span><span class="file">evidence/03-over-budget-with-fees.png</span></div></div><figcaption><b>#3 $10 dinner, $10 budget</b> — $10 + fee &gt; $10.00</figcaption></figure>
+  </div>
+  <table class="runs">
+    <thead><tr><th>#</th><th>Traveler says</th><th>Mandate</th><th>Outcome</th><th>Reasons / transaction</th></tr></thead>
+    <tbody>
+<!--@runs-->
+      <tr><td class="num">0</td><td class="req">Order a bibimbap lunch from Yangjae Kitchen, $12</td><td>A</td><td><span class="tag ok">APPROVE</span></td><td>payment tx on Sepolia</td></tr>
+      <tr><td class="num">1</td><td class="req">Taxi to Incheon airport, about $85</td><td>A</td><td><span class="tag stop">STOP</span></td><td class="mono">OVER_PER_TX_CAP</td></tr>
+      <tr><td class="num">2</td><td class="req">Buy a bottle of wine as a gift for the client, $30</td><td>A</td><td><span class="tag stop">STOP</span></td><td class="mono">MERCHANT_NOT_ALLOWED, CATEGORY_NOT_ALLOWED, BLOCKED_KEYWORD</td></tr>
+      <tr><td class="num">3</td><td class="req">Dinner from Yangjae Kitchen, $10</td><td>B</td><td><span class="tag stop">STOP</span></td><td class="mono">OVER_BUDGET_WITH_FEES</td></tr>
+      <tr><td class="num">4</td><td class="req">Coffee at Starbucks, $5 (while paused)</td><td>A</td><td><span class="tag stop">STOP</span></td><td class="mono">MANDATE_NOT_ACTIVE</td></tr>
+      <tr><td class="num">5</td><td class="req">Coffee at Starbucks, $5</td><td>C</td><td><span class="tag stop">STOP</span></td><td class="mono">EXPIRED</td></tr>
+      <tr><td class="num">6</td><td class="req">Coffee at Starbucks, $5 (after resume)</td><td>A</td><td><span class="tag ok">APPROVE</span></td><td>payment tx on Sepolia</td></tr>
+      <tr><td class="num">7</td><td class="req">How much do I have left?</td><td>A</td><td><span class="tag neutral">0 TOKENS</span></td><td>answered from the ledger, no model call</td></tr>
+<!--/@runs-->
+    </tbody>
+  </table>
+  <p class="runs-note"><!--@runsnote-->Expected outcomes of the scripted runs (contracts/api.ts DEMO_SCRIPT); the rendered deck fills them from evidence/scenario-*.json.<!--/@runsnote--></p>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>6 / 9</span></div>
+</section>
+
+<!-- 7 · Verifiable by a stranger -->
+<section class="slide">
+  <p class="eyebrow">Verifiable by a stranger</p>
+  <h2>The audit does not trust our database</h2>
+  <div class="two">
+    <figure class="shot"><div class="frame"><img data-evidence="11-audit.png" alt="Audit page"><div class="ph"><span>Audit page screenshot after the evidence run</span><span class="file">evidence/11-audit.png</span></div></div><figcaption><b>/audit/&lt;mandate&gt;</b> — the same checks, in the browser</figcaption></figure>
+    <div>
+      <ul class="checks">
+        <li><span class="k">1</span><span><b>Mandate hash</b> recomputed from the exported terms equals the hash anchored on-chain when the budget was granted.</span></li>
+        <li><span class="k">2</span><span><b>Every decision replayed</b> through the same <span class="code">evaluate()</span>, rebuilding spend-so-far from earlier entries.</span></li>
+        <li><span class="k">3</span><span><b>Receipt hash</b> recomputed from the entry equals the stored one and the one in the payment's calldata.</span></li>
+        <li><span class="k">4</span><span><b>Recipient and amount</b> on-chain match the catalog wallet and the ledger amount.</span></li>
+      </ul>
+      <div class="term"><!--@verify--><span class="dim">$ npm run verify -- evidence/mandate-&lt;id&gt;.json \
+    evidence/ledger-&lt;id&gt;.json</span>
+<span class="dim">… ✅ anchor memo matches recomputed hash
+… ✅ stored APPROVE == recomputed APPROVE
+… ✅ calldata memo == recomputed hashes</span>
+<span class="dim">(excerpt of evidence/12-verify.txt after the evidence run)</span><!--/@verify--></div>
+      <p class="small" style="margin-top:10px">Records + a public Sepolia RPC only — no database, no API. Edit one stored decision by hand and it turns red.</p>
+    </div>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>7 / 9</span></div>
+</section>
+
+<!-- 8 · Efficient on the NPU -->
+<section class="slide">
+  <p class="eyebrow">Efficient on the NPU</p>
+  <h2 style="margin-bottom:16px">Only one model call per purchase — and no hidden reasoning</h2>
+  <div class="eff">
+    <div>
+      <div class="heroes">
+        <div class="card hero"><div class="v">{{cmp.on}} → {{cmp.off}}</div><div class="l">completion tokens per proposal, thinking off (−{{cmp.pct}}%)</div></div>
+        <div class="card hero"><div class="v">{{cmp.latOn}} → {{cmp.latOff}} s</div><div class="l">latency per proposal · cost −{{cmp.costPct}}%</div></div>
+        <div class="card hero"><div class="v">{{cmp.toolOn}} / {{cmp.toolOff}}</div><div class="l">correct tool calls, thinking on / off</div></div>
+      </div>
+      <div class="card chartcard">
+        <div class="t">Completion tokens per purchase request</div>
+        <div class="st">Kiln {{cmp.model}}, production prompt and tool, measured {{cmp.measuredAt}} · thinking off = <span class="mono">/no_think</span></div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Thinking on</span><span><i style="background:var(--s2)"></i>Thinking off (production)</span></div>
+        {{chart}}
+      </div>
+    </div>
+    <div>
+      <table class="flows">
+        <thead><tr><th>Flow</th><th>Calls</th><th>Prompt</th><th>Completion</th><th>Cost (USD)</th></tr></thead>
+        <tbody>
+<!--@flows-->
+          <tr><td>propose</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr class="zero"><td>status_fastpath</td><td>—</td><td>0</td><td>0</td><td>0</td></tr>
+          <tr class="zero"><td>stop_template</td><td>—</td><td>0</td><td>0</td><td>0</td></tr>
+<!--/@flows-->
+        </tbody>
+      </table>
+      <p class="small" style="margin-top:6px"><!--@flowsnote-->Tokens by flow from /api/usage — filled by npm run metrics after the evidence run. Green rows never call the model.<!--/@flowsnote--></p>
+      <ul class="why">
+        <li>Status questions answered from the ledger — 0 tokens</li>
+        <li>Refusals explained from a template — 0 tokens</li>
+        <li>Compact <span class="mono" style="font-size:13px">id | name | category</span> catalog, one tool call per turn</li>
+        <li>Thinking switched off for the propose step, same accuracy</li>
+      </ul>
+      <div class="card energy"><!--@energy--><b>Energy:</b> total tokens × an assumed J/token ÷ 3600 = Wh. The assumption and its source are printed next to every number; Kiln does not report per-request energy.<!--/@energy--></div>
+    </div>
+  </div>
+  <div class="foot"><span>PerDiem · Challenge B</span><span>8 / 9</span></div>
+</section>
+
+<!-- 9 · What next -->
+<section class="slide">
+  <p class="eyebrow">What's next</p>
+  <h2>From a test-ETH demo to a finance tool</h2>
+  <div class="next">
+    <div class="card"><h3>Stablecoin settlement</h3><p>The same policy and audit with an ERC-20 transfer (test USDC) and a real FX feed instead of the labeled demo rate.</p></div>
+    <div class="card"><h3>Smart-account mandates</h3><p>The principal signs the mandate; the agent wallet becomes a smart account with a session key scoped to it. Multi-traveler trips.</p></div>
+    <div class="card"><h3>Receipts finance can import</h3><p>Export the verified ledger in a format expense tools accept, with the on-chain proof attached to every line.</p></div>
+  </div>
+  <div class="try">
+    <div class="card">
+      <b>Run it yourself</b>
+      <div class="term">git clone https://github.com/keilvher1/perdiem && cd perdiem
+cp .env.example .env.local      # Kiln key, dev wallet, Supabase
+npm ci && npm run seed -- --window now && npm run dev
+npm run scenario                # the 8 scripted runs</div>
+    </div>
+    <div class="card">
+      <b>Honest scope</b>
+      <p class="small" style="margin-top:8px;font-size:14.5px">Testnet only, no real money, no auth. Pre-kickoff modules (contract, policy engine, Kiln and chain wrappers, verifier) are disclosed in the README; the app, routes, scripts and this deck were built during the event with AI coding agents.</p>
+    </div>
+  </div>
+  <div class="thanks"><span class="big">Thank you.</span><span class="small"><!--@generated-->Template — render with npx tsx scripts/deck.ts<!--/@generated--></span></div>
+  <div class="foot"><span>PerDiem · Challenge B · github.com/keilvher1/perdiem</span><span>9 / 9</span></div>
+</section>
+
+</body>
+</html>

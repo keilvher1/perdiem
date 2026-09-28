@@ -37,7 +37,7 @@ sequenceDiagram
 ```
 
 ## The boundary and where it is enforced
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Tests: `npm test`.
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code), all reported when failing. Tests: `npm test` (17 blocks).
 
 | Code | Rule |
 |---|---|
@@ -72,11 +72,11 @@ Log excerpt: `evidence/logs-stop.txt`.
 | propose | … | … | … | … | … | … ms |
 | status_fastpath (no model) | … | 0 | 0 | 0 | 0 | — |
 | stop_template (no model) | … | 0 | 0 | 0 | 0 | — |
-| compare (reasoning low vs high script) | 10 | … | … | … | … | … ms |
+| compare (thinking on vs off via `/no_think`, `scripts/compare-reasoning.ts`) | 10 | … | … | … | … | … ms |
 
 Every call is also logged as one JSON line (`"kind":"kiln"`, response id, tool_calls, usage): `evidence/06-kiln-calls.txt`. Ledger entries store `kilnResponseId` and the raw tool arguments.
 
-**Design choices that reduce inference** (measured): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog instead of JSON (−…% prompt tokens); one tool call per turn, no parallel calls; **thinking off for the propose step** (Qwen3 `/no_think`): on the same 5 purchase requests, tool calls 5/5 either way, completion tokens per proposal …→… (−…%), latency …→… s (`docs/reasoning-comparison.json`; pre-kickoff measurement: 160 → 47, −71%, 2.9 s → 1.1 s).
+**Design choices that reduce inference** (measured): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog instead of JSON (−…% prompt tokens); one tool call per turn, no parallel calls; **thinking off for the propose step** (Qwen3 `/no_think`): on the same 5 purchase requests, tool calls 5/5 either way, completion tokens per proposal …→… (−…%), latency …→… s (`docs/reasoning-comparison.json`; Sep 27 measurement with the production prompt: 180 → 47, −74%, 2.9 s → 0.9 s, cost −50%, 5/5 tool calls both ways; the earlier pre-kickoff spike measured 160 → 47, −71%).
 
 **Energy estimate:** `total_tokens × ENERGY_J_PER_TOKEN / 3600 = … Wh` for the whole demo session. Assumption: `ENERGY_J_PER_TOKEN = …` (source: …). Kiln does not expose per-request energy today; the assumption is shown next to the number in the UI.
 
@@ -85,7 +85,7 @@ Every call is also logged as one JSON line (`"kind":"kiln"`, response id, tool_c
 |---|---|---|
 | Mandate anchor (calldata `PERDIEM-MANDATE\|<hash>`) | `0x…` | mandate `man_…` |
 | Payment #0 lunch $12 (calldata `PERDIEM\|<mandateHash>\|<receiptHash>`) | `0x…` | `led_…` |
-| Payment #5 coffee $5 after resume | `0x…` | `led_…` |
+| Payment #6 coffee $5 after resume | `0x…` | `led_…` |
 
 State the agent **reads**: agent balance, gas estimate/price | **writes**: mandate anchor, payment calldata with both hashes | **settles**: test-ETH transfer to the merchant address. Demo economics: mandate in USD, settlement at a fixed labeled rate `1 ETH = $4,000`; fees are real gas estimates converted at the same rate.
 
@@ -94,14 +94,17 @@ State the agent **reads**: agent balance, gas estimate/price | **writes**: manda
 - **Follow:** live spend gauge and ledger (pending counts as committed).
 - **Stop:** Pause/Resume/Revoke; every request after Pause stops with `MANDATE_NOT_ACTIVE`.
 - **Receipt:** card with amount, fee, decision, hashes, Etherscan link.
-- **Reconstruct (records alone):** `npx tsx scripts/verify.ts evidence/mandate-A.json evidence/ledger-A.json` — from exported JSON and an RPC only, no database or API: recomputes the mandate hash and compares with the on-chain anchor, replays every entry through `evaluate()` rebuilding spend-so-far, recomputes each receipt hash and matches it to the tx calldata, recipient and amount. Output: `evidence/12-verify.txt`. `/audit/<mandateId>` shows the same checks in the UI. Neither trusts the stored decision.
+- **Reconstruct (records alone):** `npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json` — from exported JSON and an RPC only, no database or API: recomputes the mandate hash and compares with the on-chain anchor, replays every entry through `evaluate()` rebuilding spend-so-far, recomputes each receipt hash and matches it to the tx calldata, recipient and amount. Output: `evidence/12-verify.txt`. `/audit/<mandateId>` shows the same checks in the UI. Neither trusts the stored decision.
 
 ## Run locally
 ```
 cp .env.example .env.local   # fill KILN_API_KEY, AGENT_PRIVATE_KEY, Supabase
 # run docs/schema.sql in Supabase SQL editor
-npm i && npx tsx scripts/seed.ts && npm run dev
-npm test
+npm ci
+npm run seed -- --window now   # merchants + fresh mandates A/B/C, anchored on Sepolia → evidence/seed-latest.json
+npm run dev                    # http://localhost:3000
+npm test                       # policy engine, 17 blocks
+npm run scenario               # the 8 scripted runs → evidence/scenario-*.json
 ```
 
 ## Pre-hackathon preparation (disclosure)
