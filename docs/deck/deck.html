@@ -77,6 +77,15 @@
   .step h3 { margin: 0; font-size: 26px; letter-spacing: -.01em; }
   .step p { font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
   .step .where { margin-top: auto; font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  .whybar { display: flex; gap: 14px; align-items: flex-start; padding: 10px 18px; margin-bottom: 14px; border-left: 4px solid var(--accent); font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+  .s3 .persona { padding: 16px 22px; margin-bottom: 12px; }
+  .s3 .persona .who { font-size: 18px; }
+  .s3 .avatar { width: 54px; height: 54px; font-size: 19px; }
+  .s3 h2 { margin-bottom: 16px; }
+  .s3 .step { padding: 16px 18px 18px; gap: 7px; }
+  .s3 .step h3 { font-size: 22px; }
+  .s3 .step p { font-size: 15px; line-height: 1.45; }
+  .whybar b { color: var(--ink); }
 
   /* 4 — flow diagram */
   .flow { display: grid; grid-template-columns: 1fr 34px 1.15fr 34px 1.2fr 34px 1.2fr; align-items: stretch; margin-top: 8px; }
@@ -126,11 +135,11 @@
   /* 7 — verify */
   .two { display: grid; grid-template-columns: 1.08fr 1fr; gap: 28px; flex: 1; min-height: 0; }
   .two .frame { height: 440px; }
-  .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-  .checks li { display: flex; gap: 12px; font-size: 17px; line-height: 1.45; color: var(--ink-2); }
+  .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .checks li { display: flex; gap: 12px; font-size: 15.5px; line-height: 1.42; color: var(--ink-2); }
   .checks li .k { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 1px solid #a7f3d0; }
   .checks li b { color: var(--ink); }
-  .term { margin-top: 16px; background: #18181b; color: #e4e4e7; border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .term { margin-top: 12px; background: #18181b; color: #e4e4e7; border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
   .term .ok { color: #6ee7b7; }
   .term .dim { color: #a1a1aa; }
 
@@ -202,18 +211,19 @@
 </section>
 
 <!-- 3 · User -->
-<section class="slide">
+<section class="slide s3">
   <p class="eyebrow">Who it is for</p>
   <h2>Delegate the per-diem without losing control</h2>
   <div class="card persona">
     <div class="avatar">FM</div>
-    <p class="who"><b>Finance manager at a small MICE company</b> sending a colleague to a two-day conference in Seoul. The traveler talks to an AI agent to buy lunch, taxis and supplies; finance sets the rules once and must be able to answer for every payment afterwards.</p>
+    <p class="who"><b>Finance manager at a small MICE company</b> sending a colleague to a two-day conference in Seoul. The traveler asks an AI agent for lunch, taxis and supplies; finance sets the rules once and must answer for every payment afterwards.</p>
   </div>
+  <div class="card whybar"><span class="tag neutral" style="margin-top:3px">WHY</span><p><b>I have settled government startup-grant expenses by hand:</b> rules in prose, boxes ticked by hand, refusals weeks later as free text. <b>PerDiem does the opposite:</b> rules enforced in code before money moves, each refusal recorded with its code, observed value and limit, checks recomputed from the records.</p></div>
   <div class="steps">
     <div class="card step"><span class="n">01 · GRANT</span><h3>Set the mandate</h3><p>Budget $150, $40 per payment, meals · transport · supplies, five permitted merchants, blocked words, trip window. Hashed and anchored on Sepolia.</p><span class="where">/principal</span></div>
     <div class="card step"><span class="n">02 · FOLLOW</span><h3>Watch the spend</h3><p>Live spend gauge and ledger. A broadcast payment counts as committed while it is still pending on-chain.</p><span class="where">/principal · /traveler</span></div>
     <div class="card step"><span class="n">03 · STOP</span><h3>Pause at any time</h3><p>Pause, Resume, Revoke. Every request after Pause is stopped with <span class="code">MANDATE_NOT_ACTIVE</span> and recorded.</p><span class="where">PATCH /api/mandates/[id]</span></div>
-    <div class="card step"><span class="n">04 · VERIFY</span><h3>Audit from records</h3><p>An auditor re-checks every payment from the exported mandate and ledger plus a public RPC — no access to our app.</p><span class="where">scripts/verify.ts · /audit</span></div>
+    <div class="card step"><span class="n">04 · VERIFY</span><h3>Audit from records</h3><p>Download the mandate and ledger from the <b>Evidence</b> button; re-check every payment with a public RPC — no access to our app.</p><span class="where">Evidence · verify.ts · /audit</span></div>
   </div>
   <div class="foot"><span>PerDiem · Challenge B</span><span>3 / 9</span></div>
 </section>
@@ -264,7 +274,7 @@
   </div>
   <div class="note-row" style="margin-top:18px">
     <span class="chip">The model never holds keys</span>
-    <span class="chip">32 unit tests · <span class="mono" style="font-size:13px">npm test</span></span>
+    <span class="chip">Unit-tested · <span class="mono" style="font-size:13px">npm test</span> (6 suites)</span>
     <span class="chip">Mandate hash covers terms + catalog, not status</span>
     <span class="chip">Stopping is recorded, not silent</span>
   </div>
@@ -309,8 +319,8 @@
       <ul class="checks">
         <li><span class="k">1</span><span><b>Mandate hash</b> recomputed from the exported terms equals the hash anchored on-chain when the budget was granted.</span></li>
         <li><span class="k">2</span><span><b>Every decision replayed</b> through the same <span class="code">evaluate()</span>, rebuilding spend-so-far from earlier entries.</span></li>
-        <li><span class="k">3</span><span><b>Receipt hash</b> recomputed from the entry equals the stored one and the one in the payment's calldata.</span></li>
-        <li><span class="k">4</span><span><b>Recipient and amount</b> on-chain match the catalog wallet and the ledger amount.</span></li>
+        <li><span class="k">3</span><span><b>Receipt hash, recipient, amount:</b> the recomputed receipt hash is in the payment's calldata; recipient and amount match the catalog and the ledger (at the app's rate, <span class="mono" style="font-size:13px">DEMO_ETH_USD</span> = 4000).</span></li>
+        <li><span class="k">4</span><span><b>Payer and settlement:</b> the anchor and every payment were sent by the mandate's agent wallet; each payment was mined and succeeded.</span></li>
       </ul>
       <div class="term"><!--@verify--><span class="dim">$ npm run verify -- evidence/mandate-&lt;id&gt;.json \
     evidence/ledger-&lt;id&gt;.json</span>
@@ -318,7 +328,7 @@
 … ✅ stored APPROVE == recomputed APPROVE
 … ✅ calldata memo == recomputed hashes</span>
 <span class="dim">(excerpt of evidence/12-verify.txt after the evidence run)</span><!--/@verify--></div>
-      <p class="small" style="margin-top:10px">Records + a public Sepolia RPC only — no database, no API. Edit one stored decision by hand and it turns red.</p>
+      <p class="small" style="margin-top:8px">Records from <b>Evidence → Download records</b> + a public Sepolia RPC — no database, no API. Checks = 2 + 2 per entry + 6 per payment (24 for mandate A); <span class="mono">/audit</span> counts the same. Edit one decision by hand and it turns red.</p>
     </div>
   </div>
   <div class="foot"><span>PerDiem · Challenge B</span><span>7 / 9</span></div>
@@ -386,7 +396,7 @@ npm run scenario                # the 8 scripted runs</div>
     </div>
     <div class="card">
       <b>Honest scope</b>
-      <p class="small" style="margin-top:8px;font-size:14.5px">Testnet only, no real money, no auth. Pre-kickoff modules (contract, policy engine, agent loop, Kiln and chain wrappers, verifier, tests) are disclosed in the README; the app, routes, scripts and this deck were built during the event with AI coding agents.</p>
+      <p class="small" style="margin-top:8px;font-size:14.5px">Testnet only, no real money, no auth. Pause and resume show as log lines and <span class="mono">MANDATE_NOT_ACTIVE</span> entries, not as hashed records. Pre-kickoff modules (contract, policy engine, agent loop, Kiln and chain wrappers, verifier, tests) are disclosed in the README; the app, routes, scripts and this deck were built during the event with AI coding agents.</p>
     </div>
   </div>
   <div class="thanks"><span class="big">Thank you.</span><span class="small"><!--@generated-->Template — render with npx tsx scripts/deck.ts<!--/@generated--></span></div>

@@ -17,7 +17,7 @@
 | Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added | Run 3 `OVER_BUDGET_WITH_FEES` (mandate B, $10 예산, $10 요청, 수수료 비반올림) | `evidence/03-over-budget-with-fees.png` + 장부 JSON | ☐ |
 | — a merchant that is not on the list | Run 2 `MERCHANT_NOT_ALLOWED` (+ category, keyword) | `evidence/02-merchant-not-allowed.png` | ☐ |
 | — a deadline already past | mandate C(만료일 과거)로 요청 → `EXPIRED`. 코드 없음 | `evidence/04-expired.png` | ☐ |
-| show through logs or history that it stopped | 장부 행 status=stopped, reasons[] 저장, 서버 로그 | `evidence/logs-stop.txt` | ☐ |
+| show through logs or history that it stopped | 장부 행 status=stopped, reasons[] 저장, 서버 로그(`"kind":"decision"`, 일시정지·재개는 `"kind":"mandate_status"`) | `evidence/logs-stop.txt` + `evidence/logs-status.txt`(상태 타임라인: 두 종류 로그 줄을 `at` 순으로 병합; 해시된 기록이 아니라 서버 로그 줄) | ☐ |
 | Stopping is a correct outcome, and it should be recorded rather than silent | STOP도 receiptHash를 갖고 `/audit`에 나타남 | `/audit` 캡처 | ☐ |
 
 ## C. Kiln API Integration & Efficiency
@@ -43,9 +43,9 @@
 |---|---|---|---|
 | how a person grants a budget | `/principal` mandate 폼 → 앵커 tx | 영상 0:00~0:20 | ☐ |
 | follows what is being spent | `/principal` 잔액 게이지 + 실시간 장부 | `evidence/09-principal.png` | ☐ |
-| stops the agent | Pause 버튼 → `MANDATE_NOT_ACTIVE` | 영상, `evidence/10-paused.png` | ☐ |
-| receives a receipt | 영수증 카드(금액, 수수료, 해시, 링크) | `evidence/01-approve.png` | ☐ |
-| another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed | `scripts/verify.ts`(내보낸 JSON + RPC만 사용, 앱 불필요): mandate 해시 = 온체인 앵커, 항목별 재계산 = 저장된 결정, 영수증 해시 재계산 = 저장값 = calldata, 수취 주소와 금액 일치. `/audit/[id]`는 같은 내용의 화면 | `evidence/11-audit.png` + `evidence/12-verify.txt`, 영상 1:50~2:40 | ☐ |
+| stops the agent | Pause 버튼 → `MANDATE_NOT_ACTIVE`. 한계: 일시정지·재개 자체는 해시된 기록이나 온체인 기록이 아니라 로그 줄과 `MANDATE_NOT_ACTIVE` 항목으로만 보임(README에 명시) | 영상, `evidence/10-paused.png`, `evidence/logs-status.txt` | ☐ |
+| receives a receipt | 영수증 카드(금액, 수수료, "You said", tx·receipt·mandate 해시, 링크). 우하단 **Evidence** 버튼 → 드로어에 최신 영수증 | `evidence/01-approve.png`, `evidence/14-evidence-drawer.png` | ☐ |
+| another person, working from your records alone, can reconstruct whether a completed payment was inside what the user allowed | Evidence 드로어(또는 `/audit` 페이지)의 **Download records** → `mandate-<id>.json`, `ledger-<id>.json`(`npm run export`와 바이트 동일, `cmp`로 확인) → `npx tsx scripts/verify.ts ~/Downloads/mandate-<id>.json ~/Downloads/ledger-<id>.json`(파일 + 공개 RPC만 사용, 앱 불필요): mandate 해시 = 온체인 앵커, 앵커 발신자 = agentWallet, 항목별 재계산 = 저장된 결정, 결제마다 영수증 해시 = calldata, 수취 주소, 금액, 발신자 = agentWallet, 채굴·성공. 검사 수 = 2 + 2 × 항목 + 6 × 결제(mandate A: 24). 금액은 `DEMO_ETH_USD`(기본 4000, 앱과 같은 환율)로 환산. `/audit/[id]`와 `GET /api/audit/<id>`도 같은 공식으로 같은 수를 셈 | `evidence/11-audit.png` + `evidence/12-verify.txt`, 영상 1:50~2:32 | ☐ |
 
 ## F. 제출 형식(공식 Q&A)
 | 항목 | 상태 |

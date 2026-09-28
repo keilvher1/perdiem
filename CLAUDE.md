@@ -64,15 +64,15 @@ tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts �
 npm run dev                       # lead only (port 3000); devs: npm run dev -- -p <your port>
 npm run typecheck                 # next typegen && tsc --noEmit (includes tests/contract.check.ts)
 npm run lint                      # eslint (next build does NOT run lint)
-npm test                          # policy engine (17 blocks) + view mapping (10) + mandate-request validation (5)
+npm test                          # 6 suites: policy engine (17 blocks), view (10), mandate-request (5), ledger-write (8), db-error (4), http-json (4)
 npm run spike -- kiln             # model + tool-call smoke test (5 prompts)
 npm run spike -- chain            # SPENDS test ETH (anchor tx) — backend dev only
 npm run seed -- --window now      # new A/B/C demo set + 3 anchor txs → evidence/seed-latest.json (spends test ETH)
 npm run scenario                  # DEMO_SCRIPT 0–7 against BASE_URL (default http://localhost:3000) → evidence/scenario-*.json
 npm run export -- <mandateId>     # evidence/mandate-<id>.json + evidence/ledger-<id>.json
-npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json   # auditor, no app needed
+npm run verify -- evidence/mandate-<id>.json evidence/ledger-<id>.json   # auditor, no app needed; 2 + 2/entry + 6/payment checks
 npm run compare                   # thinking on vs off (/no_think), 10 Kiln calls → docs/reasoning-comparison.json
-npm run metrics                   # /api/usage + logs/dev-server.log → evidence/{metrics.md,kiln-calls-by-flow.md,06-kiln-calls.txt,logs-stop.txt}
+npm run metrics                   # /api/usage + logs/dev-server.log → evidence/{metrics.md,kiln-calls-by-flow.md,06-kiln-calls.txt,logs-stop.txt,logs-status.txt}
 npm run build                     # run it early (after the first page), not on the last night
 ```
 

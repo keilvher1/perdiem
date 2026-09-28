@@ -199,7 +199,10 @@ function verifyExcerpt(txt: string): string {
   const head = lines.slice(0, 1);
   const checks = lines.filter((l) => /^(✅|❌)/.test(l));
   const tail = lines.slice(-1);
-  const pick = [...head, ...checks.slice(0, 4), ...(checks.length > 4 ? [`… ${checks.length - 4} more checks`] : []), ...tail];
+  // Shorten 0x-hashes and addresses so each line fits the slide's terminal box (the full text is in 12-verify.txt).
+  const pick = [...head, ...checks.slice(0, 4), ...(checks.length > 4 ? [`… ${checks.length - 4} more checks`] : []), ...tail].map((l) =>
+    l.replace(/0x[0-9a-fA-F]{16,}/g, (h) => short(h)),
+  );
   return [`<span class="dim">$ npm run verify -- evidence/mandate-&lt;id&gt;.json \\\n    evidence/ledger-&lt;id&gt;.json</span>`, ...pick.map((l) => (/^✅|ALL RECORDS VERIFIED/.test(l) ? `<span class="ok">${esc(l)}</span>` : esc(l)))].join("\n");
 }
 
