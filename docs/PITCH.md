@@ -6,7 +6,7 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 
 ---
 
-## Slides (8)
+## Slides (9) — rendered as `docs/deck.pdf` from `docs/deck/deck.html` (`npx tsx scripts/deck.ts`)
 
 | # | Title | On the slide | Say (≈ seconds) |
 |---|---|---|---|
@@ -14,10 +14,11 @@ Rule of thumb: **show the STOP, not the feature list.** Everyone can make an age
 | 2 | The moment after delegation | one line: "Payment rails record who paid whom, not who authorized it or under what conditions." Photo: a traveler, a finance manager, a receipt | 30 |
 | 3 | Who it is for | finance manager at a small company sending staff to a 2-day conference; wants delegation without losing control | 20 |
 | 4 | How it works | diagram: traveler → agent (Kiln) *proposes* → policy engine (code) *decides* → Sepolia *settles* → ledger + receipt → auditor *replays* | 45 |
-| 5 | The boundary, in code | the 11 checks as a compact list; "enforced in `policy.ts` before any chain call; the model never holds keys" | 30 |
+| 5 | The boundary, in code | the 12 checks as a compact list; "enforced in `policy.ts` before any chain call; the model never holds keys" | 30 |
 | 6 | Live evidence | 3 screenshots: APPROVED receipt with tx link; STOPPED card with 3 reasons; STOPPED "$10 + fee > $10 budget" | 60 |
 | 7 | Verifiable by a stranger | audit screenshot: mandate hash = on-chain anchor ✅, N/N entries replayed ✅, calldata decoded | 40 |
-| 8 | Efficient on the NPU | tokens by flow table; "status questions: 0 tokens; refusals: 0 tokens"; thinking off for proposals: 160 → 47 tokens (−71%), 2.9 s → 1.1 s, 5/5 tool calls; energy estimate with stated assumption; what's next | 45 |
+| 8 | Efficient on the NPU | tokens by flow table; "status questions: 0 tokens; refusals: 0 tokens"; thinking off for proposals: 180 → 47 completion tokens (−74%), 2.9 s → 0.9 s, cost −50%, 5/5 tool calls both ways (Sep 27; re-measured live in `docs/reasoning-comparison.json`); energy estimate with stated assumption | 35 |
+| 9 | What's next | stablecoin settlement, multi-traveler mandates, a receipt format finance teams can import; repo URL + "Challenge B" | 10 |
 
 Total ≈ 4:50. Leave slide 8 up during Q&A.
 
@@ -38,7 +39,7 @@ My day job is in the MICE industry — conferences and exhibitions. Companies se
 Here is the flow. The traveler chats with the agent. The agent runs on Kiln — Qwen3-32B on Furiosa NPUs — and it can do exactly one thing: propose a payment through a tool call. It never holds a key. The proposal goes to a policy engine written in plain TypeScript. If the engine approves, we send the payment on Sepolia with the mandate hash and the receipt hash in the calldata. If it refuses, we record why — and we do not call the model again.
 
 **[Slide 5]**
-This is the boundary. Eleven checks: is the mandate active, is the trip window open, is the merchant on the list, is the category permitted, any blocked keywords, per-transaction cap, and — the one I like most — does the amount plus the *real* network fee still fit the remaining budget. It's a pure function with unit tests. Stopping is a correct outcome here, and it is recorded, not silent.
+This is the boundary. Twelve checks: is the mandate active, is the trip window open, is the merchant on the list, is the category permitted, any blocked keywords, per-transaction cap, and — the one I like most — does the amount plus the *real* network fee still fit the remaining budget. It's a pure function with unit tests. Stopping is a correct outcome here, and it is recorded, not silent.
 
 **[Slide 6]**
 Real runs. First, lunch for twelve dollars: approved, settled, here's the Etherscan link. Second, a taxi to the airport for eighty-five: stopped, over the per-transaction cap. Third, "a bottle of wine as a client gift": stopped with three reasons at once — merchant not on the list, category not permitted, blocked keyword. And fourth, on a ten-dollar budget, a ten-dollar dinner: stopped, because once the real network fee is added — even a fraction of a cent — it exceeds the budget. We never round the fee away. The finance manager can also pause the agent at any time — every request after that stops with "mandate not active".
@@ -47,8 +48,9 @@ Real runs. First, lunch for twelve dollars: approved, settled, here's the Ethers
 Now the part for the auditor. This page does not trust my database. It takes the mandate, re-computes its hash, and compares it with the hash anchored on-chain when the budget was granted. Then it replays every ledger entry through the same policy function and compares the recomputed decision with the stored one. Finally it opens each transaction and decodes the calldata — you can see the same receipt hash there. The same checks run as a standalone script from exported JSON and an RPC, with no access to my app. If I edit one decision by hand, it turns red.
 
 **[Slide 8]**
-And it's cheap on the NPU by design. Tokens are reported per flow. Status questions are answered from the ledger — zero tokens. Refusal explanations are templated — zero tokens. One tool call per turn, low reasoning effort, a compact catalog in the prompt. And the proposal step runs with thinking switched off: on the same five requests the model still made the right tool call every time, with about seventy percent fewer output tokens and a third of the latency. Energy is estimated from tokens with a stated assumption of Y joules per token — I'd love your real number.
+And it's cheap on the NPU by design. Tokens are reported per flow. Status questions are answered from the ledger — zero tokens. Refusal explanations are templated — zero tokens. One tool call per turn, low reasoning effort, a compact catalog in the prompt. And the proposal step runs with thinking switched off: on the same five requests the model still made the right tool call every time, with about three quarters fewer output tokens, under a third of the latency, and half the cost. Energy is estimated from tokens with a stated assumption of Y joules per token — I'd love your real number.
 
+**[Slide 9]**
 Next: stablecoin settlement, multi-traveler mandates, and a receipt format finance teams can import. Thank you.
 
 ---
@@ -63,7 +65,7 @@ Next: stablecoin settlement, multi-traveler mandates, and a receipt format finan
 | 1:00–1:35 | Runs 1, 2, 3 (taxi $85 / wine gift $30 / mandate B: dinner $10 on $10) | "Stopped: over per-tx cap" / "Stopped: 3 reasons" / "Stopped: $10 + fee > $10" |
 | 1:35–1:50 | `/principal`: Pause → coffee $5 → stopped → Resume → approved; mandate C → "expired" | "The human can stop the agent at any time" |
 | 1:50–2:30 | terminal: `scripts/verify.ts` all ✅, then `/audit/[id]` hash match, replay table, decoded memo; optional: tampered row ❌ | "An auditor can verify from records alone — no app needed" |
-| 2:30–2:55 | `/metrics`: tokens by flow, 0-token rows, low vs high comparison, energy card with assumption | "Efficient on the NPU by design" |
+| 2:30–2:55 | `/metrics`: tokens by flow, 0-token rows, thinking on vs off (`/no_think`) comparison, energy card with assumption | "Efficient on the NPU by design" |
 | 2:55–3:00 | GitHub URL + Challenge B | — |
 
 Record at 1080p, 1.25× speed on typing, no music needed. Rehearse once; record twice; keep the better take.
@@ -78,10 +80,10 @@ Record at 1080p, 1.25× speed on typing, no music needed. Rehearse once; record 
 4. **Is the fee check real?** — Yes. `estimateGas × gasPrice` for the exact transfer, converted at the displayed demo rate. The demo rate is the only mocked economic input, and it's labeled.
 5. **How would this work with real money?** — Same architecture with a stablecoin transfer (ERC-20) and a real FX feed; the policy engine and audit replay don't change. I'd add a spending-policy signature from the principal so the agent wallet can be a smart account with session keys.
 6. **What can an auditor verify without your app?** — Everything: `scripts/verify.ts` takes the exported mandate and ledger JSON plus an RPC URL and checks the anchored hash, replays every decision, recomputes each receipt hash and matches it to the calldata, the recipient and the amount. The policy function is open source.
-7. **How did you reduce tokens?** — Rule fast-path for status questions, templated refusals, compact catalog line, one tool per turn, and thinking switched off for the proposal step — that alone cut output tokens about 70% with the same tool-call accuracy. Measured: numbers on the metrics page.
+7. **How did you reduce tokens?** — Rule fast-path for status questions, templated refusals, compact catalog line, one tool per turn, and thinking switched off for the proposal step — that alone cut output tokens about 74% (180 → 47) and latency from 2.9 s to 0.9 s with the same tool-call accuracy. Measured: numbers on the metrics page.
 8. **Where does the energy number come from?** — Tokens × an assumed J/token, shown next to the assumption. Kiln doesn't expose energy per request today; I'd wire the real meter if Bricksum exposes one.
-9. **Did you use AI to write the code?** — Yes, I paired with an AI coding assistant throughout; the design, the boundary rules, and the tests are mine, and I can walk through any file.
-10. **Team size / what took longest?** — Solo. Longest was making the audit page distrust the database properly — replaying spend-so-far from earlier entries so a tampered row is caught.
+9. **Did you use AI to write the code?** — Yes. Claude Code wrote most of it, run as three parallel developer roles (frontend, backend, planner/full-stack) against one typed contract, merged by me. The design, the boundary rules and what counts as evidence are my decisions, the pre-kickoff modules are disclosed in the README, and I can walk through any file.
+10. **Team size / what took longest?** — Solo human builder with AI coding agents. Longest was making the audit page distrust the database properly — replaying spend-so-far from earlier entries so a tampered row is caught.
 
 Fallback line if a question is unclear: *"Could you say that once more? I want to make sure I answer the right question."*
 

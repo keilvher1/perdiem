@@ -39,7 +39,7 @@ docs/seed.json이 있어(mandates는 이미 lib/policy.ts의 Mandate 타입 그�
 
 ## P3. 정책 엔진 테스트 (10분)
 ```
-lib/policy.ts와 tests/policy.test.ts는 이미 있어. package.json에 "test": "tsx tests/policy.test.ts"를 넣고 npm test를 실행해 15블록이 통과하는지 보여줘. 정책 로직은 바꾸지 마.
+lib/policy.ts와 tests/policy.test.ts는 이미 있어. package.json에 "test": "tsx tests/policy.test.ts"를 넣고 npm test를 실행해 17블록이 통과하는지 보여줘. 정책 로직은 바꾸지 마.
 ```
 확인: `npm test` 통과.
 
@@ -101,7 +101,7 @@ app/audit/[mandateId]/page.tsx를 만들어줘. 클라이언트 컴포넌트로 
 
 ## P11. 토큰 비교와 Metrics (9/29 화 21:15, 45분 — 화면 대신 스크립트 표로)
 ```
-scripts/compare-reasoning.ts를 먼저 만들어줘: 실제 앱의 systemPrompt와 proposePaymentTool로, spike의 구매 요청 5개를 flow "compare"로 (1) 생각 켬(사용자 메시지 그대로) (2) 생각 끔(메시지 끝에 " /no_think") 두 방식으로 각각 1회씩 호출해 completion 토큰, prompt 토큰, 비용, latency, 툴콜 여부를 docs/reasoning-comparison.json에 저장하고 절감률(%)을 출력. (사전 측정값: 5/5 동일, completion 160 → 47, latency 2.9초 → 1.1초) 그 다음 app/metrics/page.tsx("use client", api.usage() → UsageResponse): 표 1 byFlow(flow, calls, prompt/completion/total tokens, cost, avg latency — status_fastpath와 stop_template의 0토큰 행 포함). 표 2: reasoning-comparison.json. 카드: Energy estimate = total_tokens × ENERGY_J_PER_TOKEN / 3600 Wh, 옆에 "Assumption: X J/token, source: …" 필수. ENERGY_J_PER_TOKEN이 비어 있으면 "assumption not set — see README"라고 보여줘. 시간이 없으면 페이지 대신 scripts/metrics.ts가 같은 내용을 마크다운 표로 출력하게 해줘.
+scripts/compare-reasoning.ts를 먼저 만들어줘: 실제 앱의 systemPrompt와 proposePaymentTool로, spike의 구매 요청 5개를 flow "compare"로 (1) 생각 켬(사용자 메시지 그대로) (2) 생각 끔(메시지 끝에 " /no_think") 두 방식으로 각각 1회씩 호출해 completion 토큰, prompt 토큰, 비용, latency, 툴콜 여부를 docs/reasoning-comparison.json에 저장하고 절감률(%)을 출력. (9/27 측정값: 5/5 동일, completion 180 → 47(−74%), latency 2.9초 → 0.9초, 비용 −50%; 킥오프 전 스파이크는 160 → 47) 그 다음 app/metrics/page.tsx("use client", api.usage() → UsageResponse): 표 1 byFlow(flow, calls, prompt/completion/total tokens, cost, avg latency — status_fastpath와 stop_template의 0토큰 행 포함). 표 2: reasoning-comparison.json. 카드: Energy estimate = total_tokens × ENERGY_J_PER_TOKEN / 3600 Wh, 옆에 "Assumption: X J/token, source: …" 필수. ENERGY_J_PER_TOKEN이 비어 있으면 "assumption not set — see README"라고 보여줘. 시간이 없으면 페이지 대신 scripts/metrics.ts가 같은 내용을 마크다운 표로 출력하게 해줘.
 ```
 확인: 비교표에 실제 숫자, 에너지 카드에 가정 문구.
 
@@ -109,7 +109,7 @@ scripts/compare-reasoning.ts를 먼저 만들어줘: 실제 앱의 systemPrompt�
 ```
 scripts/scenario.ts를 만들어줘. 먼저 scripts/seed.ts로 A/B/C를 새로 만들고(DUPLICATE 회피), PRD §7의 0~7번 요청을 순서대로 /api/chat에 보내(mandate는 요청별로 A/B/C 지정), pending 항목은 confirm을 폴링해 settled까지 기다린 뒤, 각 응답과 장부 행을 evidence/scenario-YYYYMMDD-HHmm.json에 저장해. Pause/Resume은 PATCH로 사이에 끼워 넣어. 끝나면 요약 표(요청, mandate, 결정, 사유 코드, txHash)를 출력해.
 ```
-확인: 표가 PRD §7과 일치. 스크린샷 11장 촬영(ACCEPTANCE-CHECKLIST의 evidence 번호대로).
+확인: 표가 PRD §7과 일치. 스크린샷 9장(01, 02, 03, 04, 07, 08, 09, 10, 11) + 05-health.json, 06-kiln-calls.txt, 12-verify.txt (`docs/PLAN.md` §4 명명 규칙).
 
 ## P13. 다듬기 — 시간이 남을 때만
 ```

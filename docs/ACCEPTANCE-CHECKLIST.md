@@ -13,7 +13,7 @@
 ## B. Boundaries & Stopping
 | 과제서 문장 | 구현 | 증거 | 상태 |
 |---|---|---|---|
-| State the boundary the agent must not cross and where in your system it is enforced | README "The boundary" = 11개 검사 표 + "enforced in `lib/policy.ts::evaluate()` before any call to `lib/chain.ts`" | README, 코드 링크 | ☐ |
+| State the boundary the agent must not cross and where in your system it is enforced | README "The boundary" = 12개 검사(StopCode 12개) 표 + "enforced in `lib/policy.ts::evaluate()` before any call to `lib/chain.ts`" | README, 코드 링크 | ☐ |
 | Include at least two runs in which the agent is pushed outside the permitted scope — a budget exceeded once fees are added | Run 3 `OVER_BUDGET_WITH_FEES` (mandate B, $10 예산, $10 요청, 수수료 비반올림) | `evidence/03-over-budget-with-fees.png` + 장부 JSON | ☐ |
 | — a merchant that is not on the list | Run 2 `MERCHANT_NOT_ALLOWED` (+ category, keyword) | `evidence/02-merchant-not-allowed.png` | ☐ |
 | — a deadline already past | mandate C(만료일 과거)로 요청 → `EXPIRED`. 코드 없음 | `evidence/04-expired.png` | ☐ |
@@ -24,10 +24,10 @@
 | 과제서 문장 | 구현 | 증거 | 상태 |
 |---|---|---|---|
 | The resulting AI agent must operate using the NPU-based Kiln API with (Qwen3-32B, 변경 공지) | `lib/kiln.ts` baseURL `api.bricksum.com/v1`, model `qwen3-32b`, `/api/health`가 GET /models 결과 표시 | `evidence/05-health.json` | ☐ |
-| Demonstrate actual API calls within the selected workflow | `chatWithUsage`가 호출마다 `{"kind":"kiln", id, tool_calls, usage}` JSON 한 줄을 로그로 남김. 장부 행에 `kilnResponseId`, `toolArgsRaw` 저장 | `evidence/06-kiln-calls.txt` (서버 로그에서 `"kind":"kiln"` grep) | ☐ |
+| Demonstrate actual API calls within the selected workflow | `chatWithUsage`가 호출마다 `{"kind":"kiln", id, tool_calls, usage}` JSON 한 줄을 로그로 남김. 장부 행에 `kilnResponseId`, `toolArgsRaw` 저장 | `evidence/06-kiln-calls.txt` (서버 로그에서 `"kind":"kiln"` 줄) + `evidence/kiln-calls-by-flow.md` (`npm run metrics`) | ☐ |
 | show how the responses inform the agent's decisions or actions | 툴콜 인자 → Proposal → evaluate 입력. README 시퀀스 다이어그램 | README | ☐ |
 | Report token usage broken down by flow rather than as a single total | `usage_records`를 flow별 집계: propose / status_fastpath(0) / stop_template(0) / compare | `evidence/07-metrics.png` 또는 스크립트 출력 표 | ☐ |
-| explain how the design reduces unnecessary inference and energy consumption | README 표: fast-path 0토큰, 템플릿 STOP 0토큰, 컴팩트 카탈로그, low vs high 실측, 단일 툴콜 | README + 비교표 | ☐ |
+| explain how the design reduces unnecessary inference and energy consumption | README 표: fast-path 0토큰, 템플릿 STOP 0토큰, 컴팩트 카탈로그, thinking on vs off(`/no_think`) 실측(9/27: 툴콜 5/5 동일, completion 180→47 −74%, latency 2.9s→0.9s, 비용 −50%), 단일 툴콜 | README + `docs/reasoning-comparison.json` | ☐ |
 | supporting energy estimates with available measurements or clearly stated assumptions | "Energy (assumed X J/token, source: …)" 카드, env `ENERGY_J_PER_TOKEN`. 수치가 없으면 카드 W × latency ÷ completion tokens 상한 공식과 출처 | `evidence/07-metrics.png` | ☐ |
 
 ## D. Blockchain Integration
@@ -54,5 +54,10 @@
 | GitHub 저장소 링크(접근 가능) | ☐ |
 | 데모 영상 3분 이내 링크 | ☐ |
 | 프로젝트 요약 + 피치덱 PDF | ☐ |
-| README에 사전 준비 범위 공개(lib/, scripts/, tests/, 문서, 스캐폴드, 지갑, 키) | ☐ |
+| README에 사전 준비 범위 공개(contracts/, docs/, prompts/, lib/{kiln,policy,chain,agent}.ts, scripts/{spike,verify}.ts, tests/, 지갑, 키, Supabase 프로젝트) | ☐ |
+| 공개(Public) GitHub 저장소 + README에 설명과 실행 방법(how to run) | ☐ |
+| 발표 자료 PDF 10쪽 이내 (`docs/deck.pdf`) | ☐ |
+| **README에 API 사용 증거: 온체인 tx 해시(앵커 + 결제) + Kiln API 호출 로그(flow별, `evidence/kiln-calls-by-flow.md`)** | ☐ |
+| 모델 표기: 과제서 문구는 gpt-oss-120b, Kiln 제공 모델은 qwen3-32b와 deepseek-v4.1-flash뿐 → 트랙은 qwen3-32b 사용(공지 링크) | ☐ |
+| 마감 2026-09-30 12:00 KST 전 제출 | ☐ |
 | 시크릿 창에서 모든 링크 열림 확인 | ☐ |
