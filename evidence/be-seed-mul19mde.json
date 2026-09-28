@@ -1,0 +1,28 @@
+{
+  "A": "man_A_mul19mde",
+  "B": "man_B_mul19mde",
+  "C": "man_C_mul19mde",
+  "anchors": {
+    "A": {
+      "txHash": "0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0xbd2f3b3813d3b336727f0cf6e4840a4fc8f08a1f43f364c19423693deacb769c"
+    },
+    "B": {
+      "txHash": "0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x8cf669e3979c92c6adc9ac15157a29a8c7a40de9d61d388c3251e02b7fbcabdc"
+    },
+    "C": {
+      "txHash": "0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223",
+      "explorerUrl": "https://sepolia.etherscan.io/tx/0x0b6fc932f02cbbb0e2ff7b1a161e9528448c53295147268940d9eede22333223"
+    }
+  },
+  "hashes": {
+    "A": "0x647fb7e4b6697f1d56d791fe398d07464287190e3ea5e963c9b0a17a48a51a3c",
+    "B": "0xdd6e9f7c74e3c6d7ec419f68312801c2d8e03ac35b58d48a2475157a4ac6cb56",
+    "C": "0x172bd5a2b0828750d3958925eb6560b79673dc893093492552657edbb2d56796"
+  },
+  "window": "event",
+  "suffix": "mul19mde",
+  "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+  "at": "2026-09-28T09:16:40.476Z"
+}
