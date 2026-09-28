@@ -63,8 +63,24 @@ export class DbError extends Error {
   }
 }
 
+/**
+ * postgrest-js puts the fetch error's `cause.stack` (or the whole stack) into `details` when the
+ * network fails. That text reaches API error bodies, so keep one line without stack frames
+ * (no server paths): "TypeError: fetch failed | Caused by: Error: connect ECONNREFUSED … | …".
+ */
+export function cleanDetails(details: string | null | undefined): string | null {
+  if (!details) return null;
+  const out = details
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l !== "" && !/^at\s/.test(l))
+    .join(" | ")
+    .slice(0, 300);
+  return out || null;
+}
+
 function fail(op: string, e: PostgrestError): never {
-  throw new DbError(op, e.code || null, e.message || "unknown error", e.details || null, e.hint || null);
+  throw new DbError(op, e.code || null, e.message || "unknown error", cleanDetails(e.details), e.hint || null);
 }
 
 let client: SupabaseClient | null = null;
