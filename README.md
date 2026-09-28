@@ -279,7 +279,7 @@ Headline evidence: the evidence run of 2026-09-28 KST, one server on port 3000, 
 | [`evidence/05-health.json`](evidence/05-health.json) | `GET /api/health`: Kiln `GET /models` (`deepseek-v4.1-flash`, `qwen3-32b`), `modelAvailable: true`, agent wallet, Sepolia via PublicNode, demo rate 4000 |
 | [`evidence/07-metrics.png`](evidence/07-metrics.png) | `/metrics` after `ev1` (22:06 KST): tokens by flow with the 0-token rows (13 calls, 3,599 tokens), thinking on vs off, energy card with its assumption |
 | [`evidence/08-tx-and-ledger.png`](evidence/08-tx-and-ledger.png) | the ledger of `man_A_ev1` next to both payments' decoded calldata from `/audit` (recipient, amount, receipt hash, memo: Match); Etherscan blocks headless Chrome |
-| [`evidence/09-principal.png`](evidence/09-principal.png) | `/principal`: grant, spend gauge, ledger |
+| [`evidence/09-principal.png`](evidence/09-principal.png) | `/principal` on `man_A_ev1`: the grant form, the spend summary (budget, spent, pending, remaining), mandate hash and anchor tx, Pause / Revoke |
 | [`evidence/11-audit.png`](evidence/11-audit.png) | `/audit/man_A_ev1`: 24 of 24 (Anchor 1/1 + Replay 10/10 + Transactions 8/8 + Payer & mined 5/5) |
 | [`evidence/14-evidence-drawer.png`](evidence/14-evidence-drawer.png) | the Evidence drawer on `/traveler`: latest receipt, Download records, Copy verify command, "24 of 24 checks passed" |
 | [`evidence/13-trip-statement.pdf`](evidence/13-trip-statement.pdf) | the printable trip statement `/audit/man_A_ev1/report`, 2 A4 pages: parties and terms, boundary, recomputed checks, ledger annex |
