@@ -5,8 +5,11 @@ import "server-only";
  *   400 validation | 404 not found | 409 state conflict | 502 upstream (Supabase, Kiln, Sepolia RPC).
  */
 import { NextResponse } from "next/server";
+import { OpenAIError } from "openai";
+import { BaseError as ViemError } from "viem";
 import type { z } from "zod";
 import type { ApiError } from "@/contracts/api";
+import { DbError } from "@/lib/db";
 
 export type ApiErrorStatus = 400 | 404 | 409 | 500 | 502;
 
@@ -33,15 +36,31 @@ export function errorMessage(err: unknown): string {
   return String(err);
 }
 
+/** Which dependency failed: Supabase, Kiln (OpenAI SDK) or the Sepolia RPC (viem). */
+export function upstreamCode(err: unknown): "DB_ERROR" | "KILN_ERROR" | "RPC_ERROR" | null {
+  if (err instanceof DbError) return "DB_ERROR";
+  if (err instanceof OpenAIError) return "KILN_ERROR";
+  if (err instanceof ViemError) return "RPC_ERROR";
+  return null;
+}
+
 /**
  * Maps anything thrown by a handler to an ApiError response. Upstream failures (db, Kiln, RPC)
- * are 502 — the request was fine, a dependency was not. Logged as one JSON line for the dev log.
+ * are 502 — the request was fine, a dependency was not; anything else is a 500.
+ * Logged as one JSON line for the dev log.
  */
-export function toErrorResponse(err: unknown, route: string, upstreamCode = "UPSTREAM_ERROR"): NextResponse<ApiError> {
+export function toErrorResponse(err: unknown, route: string): NextResponse<ApiError> {
   if (err instanceof HttpError) return apiError(err.status, err.code, err.message, err.details);
-  const message = errorMessage(err);
-  console.error(JSON.stringify({ kind: "api_error", route, code: upstreamCode, message }));
-  return apiError(502, upstreamCode, message);
+  const code = upstreamCode(err);
+  const message = err instanceof ViemError ? err.shortMessage : errorMessage(err);
+  console.error(JSON.stringify({ kind: "api_error", route, code: code ?? "INTERNAL_ERROR", message }));
+  return code ? apiError(502, code, message) : apiError(500, "INTERNAL_ERROR", message);
+}
+
+/** Every route answers fresh JSON and runs on Node (viem, supabase-js, secrets). */
+export function noStore<T>(res: NextResponse<T>): NextResponse<T> {
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 /** Reads and validates a JSON body. Throws HttpError(400) with zod issues as details. */
