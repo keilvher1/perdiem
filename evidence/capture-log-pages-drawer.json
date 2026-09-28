@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-28T13:06:22.768Z",
+  "baseUrl": "http://localhost:3000",
+  "steps": [
+    "pages",
+    "drawer"
+  ],
+  "mandates": {
+    "A": "man_A_ev1",
+    "B": "man_B_ev1",
+    "C": "man_C_ev1"
+  },
+  "sent": [],
+  "saved": [
+    "evidence/05-health.json",
+    "evidence/09-principal.png",
+    "evidence/11-audit.png",
+    "evidence/08-tx-and-ledger.png",
+    "evidence/07-metrics.png",
+    "evidence/14-evidence-drawer.png"
+  ],
+  "warnings": [
+    "08: Etherscan not captured (blocked: Just a moment...); using the audit page's decoded transaction instead"
+  ]
+}

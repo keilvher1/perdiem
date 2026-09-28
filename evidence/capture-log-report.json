@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-28T13:06:27.135Z",
+  "baseUrl": "http://localhost:3000",
+  "steps": [
+    "report"
+  ],
+  "mandates": {
+    "A": "man_A_ev1",
+    "B": "man_B_ev1",
+    "C": "man_C_ev1"
+  },
+  "sent": [],
+  "saved": [
+    "evidence/13-trip-statement.pdf"
+  ],
+  "warnings": []
+}

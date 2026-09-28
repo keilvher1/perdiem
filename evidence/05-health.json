@@ -1,0 +1,21 @@
+{
+  "fetchedAt": "2026-09-28T13:05:58.422Z",
+  "url": "http://localhost:3000/api/health",
+  "status": 200,
+  "body": {
+    "ok": true,
+    "model": "qwen3-32b",
+    "models": [
+      "deepseek-v4.1-flash",
+      "qwen3-32b"
+    ],
+    "modelAvailable": true,
+    "agentAddress": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+    "balanceEth": "0.04115105255221468",
+    "balanceUsd": 164.60421020885872,
+    "demoEthUsd": 4000,
+    "chain": "sepolia",
+    "rpc": "publicnode",
+    "errors": []
+  }
+}

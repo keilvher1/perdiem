@@ -282,29 +282,56 @@ async function composeSideBySide(page: PwPage, left: Buffer, right: Buffer, left
 
 // ---------- parts ----------
 
+/** Chat captures use a taller viewport so a whole receipt card (about 400 px) fits in the chat list. */
+const CHAT_VIEWPORT = { width: 1280, height: 1000 };
+
+/**
+ * Scrolls the chat list so the newest receipt card starts at the top of the list, so the card's
+ * headline ("Approved — inside the mandate" / "Stopped — nothing was sent") is in the screenshot.
+ * Only the chat list scrolls; the page header stays in view.
+ */
+async function alignLatestCard(page: PwPage) {
+  await page.evaluate(() => {
+    const cards = document.querySelectorAll('article[aria-label^="Receipt "]');
+    const card = cards[cards.length - 1] as HTMLElement | undefined;
+    if (!card) return;
+    let box: HTMLElement | null = card.parentElement;
+    while (box && !(box.scrollHeight > box.clientHeight && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+    if (!box) return;
+    box.scrollTop += card.getBoundingClientRect().top - box.getBoundingClientRect().top - 12;
+  });
+  await page.waitForTimeout(300);
+}
+
 async function chatPart(page: PwPage, ids: Record<Key, string>) {
   console.log("\n== chat (drives /traveler; #0 and #6 are real payments) ==");
   let paused = false;
+  await page.setViewportSize(CHAT_VIEWPORT);
   try {
     await openTraveler(page, ids.A);
     await send(page, 0, ids.A);
+    await alignLatestCard(page);
     await shot(page, "01-approve.png");
     await send(page, 1, ids.A);
     await send(page, 2, ids.A);
+    await alignLatestCard(page);
     await shot(page, "02-merchant-not-allowed.png");
 
     await openTraveler(page, ids.B);
     await send(page, 3, ids.B);
+    await alignLatestCard(page);
     await shot(page, "03-over-budget-with-fees.png");
 
     await patchStatus(ids.A, "paused");
     paused = true;
     await openTraveler(page, ids.A);
     await send(page, 4, ids.A);
+    await alignLatestCard(page);
     await shot(page, "10-paused.png");
 
     await openTraveler(page, ids.C);
     await send(page, 5, ids.C);
+    await alignLatestCard(page);
     await shot(page, "04-expired.png");
 
     await patchStatus(ids.A, "active");
@@ -314,6 +341,7 @@ async function chatPart(page: PwPage, ids: Record<Key, string>) {
     await send(page, 7, ids.A);
   } finally {
     if (paused) await patchStatus(ids.A, "active");
+    await page.setViewportSize(VIEWPORT);
   }
 }
 
