@@ -57,11 +57,24 @@ const NOTHING_SENT_CODES: ReadonlySet<string> = new Set([
  * proposal). A 5xx or no response at all (status 0) is never "nothing sent".
  */
 export function nothingWasSent(err: { code: string; status: number }): boolean {
+  if (unrecordedPaymentCode(err.code)) return false;
   if (!NOTHING_SENT_CODES.has(err.code)) return false;
   return (err.status >= 400 && err.status < 500) || err.code === "KILN_ERROR";
 }
 
-/** A tx hash the server attached to an error (LEDGER_WRITE_FAILED), or null. */
+/**
+ * /api/chat codes for a payment that was broadcast but is not (yet) in the ledger
+ * (app/api/_lib/ledger-write.ts): 502 PAYMENT_NOT_RECORDED (this request's payment left the wallet,
+ * details.txHash) and 409 LEDGER_UNRECONCILED (an earlier one did; no new spend is evaluated until
+ * it is written). Retrying could pay twice, so the chat never offers "Try again" for them.
+ */
+export type UnrecordedPaymentCode = "PAYMENT_NOT_RECORDED" | "LEDGER_UNRECONCILED";
+
+export function unrecordedPaymentCode(code: string): UnrecordedPaymentCode | null {
+  return code === "PAYMENT_NOT_RECORDED" || code === "LEDGER_UNRECONCILED" ? code : null;
+}
+
+/** A tx hash the server attached to an error (PAYMENT_NOT_RECORDED, LEDGER_UNRECONCILED), or null. */
 export function errorTxHash(details: unknown): `0x${string}` | null {
   if (!details || typeof details !== "object") return null;
   const h = (details as { txHash?: unknown }).txHash;
