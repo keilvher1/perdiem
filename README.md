@@ -110,7 +110,7 @@ Runs 1, 2 and 4 are also in the exported ledger of mandate A ([`evidence/ledger-
 
 The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not** in `usage_records`: it runs outside the server and writes [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json) (it adds database rows only with `npm run compare -- --save`). That run: 10 calls, 4,676 prompt + 1,007 completion = 5,683 tokens, $0.000471, 2,109 ms average latency (details below).
 
-**Design choices that reduce inference** (each measured or visible in the table): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog lines instead of JSON; one tool call per turn, no parallel calls; **thinking switched off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`).
+**Design choices that reduce inference** (fast-path and templated refusals show as 0-token rows in the table above; thinking off is measured below; the compact catalog and one tool call per turn are design choices, not separately measured): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog lines instead of JSON; one tool call per turn, no parallel calls; **thinking switched off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`).
 
 **Thinking on vs off** — [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json), measured 2026-09-28 18:12 KST on Kiln `qwen3-32b` with the production system prompt and tool (`npm run compare`):
 
