@@ -12,6 +12,7 @@ import { agentAccount, anchorMandate } from "@/lib/chain";
 import { createMandate, DbError, getMandate, listLedgerForMandates, listMandates, listMerchants } from "@/lib/db";
 import { mandateHash } from "@/lib/policy";
 import { toDetail, toSummary } from "@/lib/view";
+import { logEvent } from "../_lib/events";
 import { apiError, errorMessage, HttpError, noStore, readJson, toErrorResponse } from "../_lib/http";
 import { withLock } from "../_lib/lock";
 import { buildMandate, CreateMandateSchema, unknownMerchantIds } from "../_lib/mandate";
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
 
       try {
         const row = await createMandate(mandate, hash, anchor.txHash);
-        console.log(JSON.stringify({ kind: "mandate_created", mandateId: row.mandate.id, hash, anchorTx: anchor.txHash }));
+        logEvent({ kind: "mandate_created", mandateId: row.mandate.id, hash, anchorTx: anchor.txHash, status: row.mandate.status, at: new Date().toISOString() });
         const body: CreateMandateResponse = { mandate: toDetail(row, []), anchor };
         return noStore(NextResponse.json<CreateMandateResponse>(body, { status: 201 }));
       } catch (err) {

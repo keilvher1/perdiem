@@ -5,6 +5,7 @@
  *   settled → update status, actualFeeUsd, settledAt ONLY (all excluded from receiptHash)
  *   failed  → update status only
  *   pending → no write
+ * A write prints {"kind":"settlement","mandateId","entryId","txHash","state",…,"at"} (_lib/events.ts).
  * 400 when the entry has no txHash (stopped, or broadcast failed); 502 when the RPC errors.
  */
 import { NextResponse } from "next/server";
@@ -12,6 +13,7 @@ import type { ConfirmResponse, SettlementStatus } from "@/contracts/api";
 import { getSettlementStatus } from "@/lib/chain";
 import { getEntry, getMandate, updateEntry } from "@/lib/db";
 import { toEntryView } from "@/lib/view";
+import { logEvent } from "../../../_lib/events";
 import { apiError, errorMessage, HttpError, noStore, toErrorResponse } from "../../../_lib/http";
 import { withLock } from "../../../_lib/lock";
 
@@ -42,11 +44,12 @@ export async function GET(_req: Request, ctx: Ctx) {
 
       let current = entry;
       if (settlement.state === "settled" && entry.status !== "settled") {
-        current = await updateEntry(id, { status: "settled", actualFeeUsd: settlement.actualFeeUsd, settledAt: new Date().toISOString() });
-        console.log(JSON.stringify({ kind: "settlement", entryId: id, txHash: entry.txHash, state: "settled", blockNumber: settlement.blockNumber, actualFeeUsd: settlement.actualFeeUsd }));
+        const settledAt = new Date().toISOString();
+        current = await updateEntry(id, { status: "settled", actualFeeUsd: settlement.actualFeeUsd, settledAt });
+        logEvent({ kind: "settlement", mandateId: entry.mandateId, entryId: id, txHash: entry.txHash, state: "settled", blockNumber: settlement.blockNumber, actualFeeUsd: settlement.actualFeeUsd, at: settledAt });
       } else if (settlement.state === "failed" && entry.status !== "failed") {
         current = await updateEntry(id, { status: "failed" });
-        console.log(JSON.stringify({ kind: "settlement", entryId: id, txHash: entry.txHash, state: "failed", reason: settlement.reason }));
+        logEvent({ kind: "settlement", mandateId: entry.mandateId, entryId: id, txHash: entry.txHash, state: "failed", reason: settlement.reason, at: new Date().toISOString() });
       }
 
       const body: ConfirmResponse = { entry: toEntryView(current, row), settlement };
