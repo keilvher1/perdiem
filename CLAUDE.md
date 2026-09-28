@@ -54,7 +54,7 @@ lib/agent.ts   handleTravelerMessage(): fast-path → propose (/no_think) → ev
 lib/db.ts      Supabase helpers (getMandate merges status column, listLedger, saveEntry, updateEntry, saveUsage, usageByFlow)
 lib/view.ts    LedgerEntry → LedgerEntryView, Mandate → MandateSummary/Detail (backend-owned)
 lib/api-client.ts  FRONTEND-owned: mock|live client over ENDPOINTS
-scripts/spike.ts, scripts/verify.ts (prepared) | scripts/seed.ts, export.ts (BE) | scripts/scenario.ts, compare-reasoning.ts, metrics.ts, capture.ts, deck.ts (FS) — built during the event
+scripts/spike.ts, scripts/verify.ts (prepared) | scripts/seed.ts, export.ts, db-clean.ts (BE) | scripts/scenario.ts, compare-reasoning.ts, metrics.ts, capture.ts, deck.ts (FS) — built during the event
 docs/seed.json agent address, 7 merchants with Sepolia addresses, complete Mandate objects A ($150), B ($10, fee scenario), C (expired)
 tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts — typecheck proves contract == lib
 ```
