@@ -28,7 +28,7 @@
 | show how the responses inform the agent's decisions or actions | 툴콜 인자 → Proposal → evaluate 입력. README 시퀀스 다이어그램 | README | ☐ |
 | Report token usage broken down by flow rather than as a single total | `usage_records`를 flow별 집계: propose / status_fastpath(0) / stop_template(0) / compare | `evidence/07-metrics.png` 또는 스크립트 출력 표 | ☐ |
 | explain how the design reduces unnecessary inference and energy consumption | README 표: fast-path 0토큰, 템플릿 STOP 0토큰, 컴팩트 카탈로그, thinking on vs off(`/no_think`) 실측(9/27: 툴콜 5/5 동일, completion 180→47 −74%, latency 2.9s→0.9s, 비용 −50%), 단일 툴콜 | README + `docs/reasoning-comparison.json` | ☐ |
-| supporting energy estimates with available measurements or clearly stated assumptions | "Energy (assumed X J/token, source: …)" 카드, env `ENERGY_J_PER_TOKEN`. 수치가 없으면 카드 W × latency ÷ completion tokens 상한 공식과 출처 | `evidence/07-metrics.png` | ☐ |
+| supporting energy estimates with available measurements or clearly stated assumptions | "Energy (assumed X J/token, source: …)" 카드, env `ENERGY_J_PER_TOKEN`. 수치가 없으면 카드 TDP W × latency ÷ 요청당 처리 토큰(prompt + completion) 추정 공식과 출처 (적용값 180 W × 1.233 s ÷ 517 = 0.429 J/token; 상한이 아니라 양방향 오차가 있는 추정) | `evidence/07-metrics.png` | ☐ |
 
 ## D. Blockchain Integration
 | 과제서 문장 | 구현 | 증거 | 상태 |

@@ -125,7 +125,10 @@ The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not
 
 Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). An earlier run on 2026-09-27 measured 180 → 47 (−74%), 2.9 s → 0.9 s, cost −50%, also 5/5 both ways.
 
-**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600` = <!-- FILL(lead): from evidence/metrics.md --> `… Wh` for all recorded calls. Assumption: `ENERGY_J_PER_TOKEN = …` (source: …). Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
+**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600`. For the 4,622 tokens of the snapshot above: 4,622 × 0.429 ÷ 3600 ≈ **0.55 Wh** for all recorded calls at that time; one thinking-off proposal (517 tokens) ≈ 222 J ≈ 0.06 Wh.
+<!-- OPTIONAL(lead): after the evidence run, replace the total with the "Energy" line of evidence/metrics.md -->
+
+**Assumption:** `ENERGY_J_PER_TOKEN = 0.429` J per processed (prompt + completion) token. It is an estimate that assumes one FuriosaAI RNGD card (TDP 180 W, [furiosa.ai/renegade-spec](https://furiosa.ai/renegade-spec)) is busy for the client-measured latency of one request: 180 W × 1.233 s (mean thinking-off proposal latency) ÷ 517 tokens (mean prompt + completion per thinking-off proposal) = 0.429 J/token, both inputs from [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json). It can be off in either direction: multi-card serving (BF16 Qwen3-32B weights, about 65 GB, would not fit one 48 GB card) or host power would raise it; batching and the network time inside the client latency would lower it. Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
 
 ## Blockchain integration (Ethereum Sepolia)
 

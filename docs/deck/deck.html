@@ -360,7 +360,7 @@
         <li>Compact <span class="mono" style="font-size:13px">id | name | category</span> catalog, one tool call per turn</li>
         <li>Thinking switched off for the propose step, same accuracy</li>
       </ul>
-      <div class="card energy"><!--@energy--><b>Energy:</b> total tokens × an assumed J/token ÷ 3600 = Wh. The assumption and its source are printed next to every number; Kiln does not report per-request energy.<!--/@energy--></div>
+      <div class="card energy"><!--@energy--><b>Energy:</b> total tokens × 0.429 J/token ÷ 3600 = Wh (≈ 0.06 Wh per proposal). Assumption: one RNGD card (180 W TDP) busy for a proposal's measured 1.233 s over its 517 tokens — an estimate, not a measurement; Kiln does not report per-request energy.<!--/@energy--></div>
     </div>
   </div>
   <div class="foot"><span>PerDiem · Challenge B</span><span>8 / 9</span></div>
