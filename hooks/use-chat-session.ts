@@ -19,7 +19,54 @@ export type ChatMessage =
       entry: LedgerEntryView | null;
       usage: UsageRecord[];
     }
-  | { kind: "error"; id: string; mandateId: string; text: string; at: string; request: string; code: string };
+  | {
+      kind: "error";
+      id: string;
+      mandateId: string;
+      text: string;
+      at: string;
+      request: string;
+      code: string;
+      /** HTTP status of the failed request; 0 when no response arrived (NETWORK_ERROR). */
+      status: number;
+      /** ApiError.details (e.g. `{ txHash }` when the ledger write after a broadcast failed). */
+      details?: unknown;
+    };
+
+/**
+ * Error codes that /api/chat raises BEFORE the proposal is evaluated, so nothing was proposed and
+ * nothing can have been paid: request validation (400), unknown mandate (404) and the Kiln call
+ * itself (502). Both spellings on purpose: the live routes use VALIDATION_FAILED /
+ * MANDATE_NOT_FOUND, the mock client VALIDATION_ERROR / NOT_FOUND.
+ * Anything else (DB_ERROR or LEDGER_WRITE_FAILED after a broadcast, a dropped connection, a
+ * non-JSON 5xx) leaves the outcome unknown: a payment may have been sent, and retrying could pay
+ * twice because the ledger may not hold the entry that DUPLICATE checks against.
+ */
+const NOTHING_SENT_CODES: ReadonlySet<string> = new Set([
+  "VALIDATION_FAILED",
+  "VALIDATION_ERROR",
+  "INVALID_JSON",
+  "MANDATE_NOT_FOUND",
+  "NOT_FOUND",
+  "KILN_ERROR",
+]);
+
+/**
+ * True only when the failed chat request provably proposed and paid nothing (safe to retry): a
+ * whitelisted code that also came back as a 4xx rejection (or the Kiln 502, which precedes any
+ * proposal). A 5xx or no response at all (status 0) is never "nothing sent".
+ */
+export function nothingWasSent(err: { code: string; status: number }): boolean {
+  if (!NOTHING_SENT_CODES.has(err.code)) return false;
+  return (err.status >= 400 && err.status < 500) || err.code === "KILN_ERROR";
+}
+
+/** A tx hash the server attached to an error (LEDGER_WRITE_FAILED), or null. */
+export function errorTxHash(details: unknown): `0x${string}` | null {
+  if (!details || typeof details !== "object") return null;
+  const h = (details as { txHash?: unknown }).txHash;
+  return typeof h === "string" && /^0x[0-9a-fA-F]{64}$/.test(h) ? (h as `0x${string}`) : null;
+}
 
 export interface ChatSnapshot {
   messages: ChatMessage[];
@@ -78,6 +125,8 @@ export async function sendChat(mandateId: string, text: string): Promise<ChatRes
       at: new Date().toISOString(),
       request: text,
       code: err.code,
+      status: err.status,
+      details: err.details,
     };
     set({ messages: [...snapshot.messages, msg], pending: null });
     throw err;

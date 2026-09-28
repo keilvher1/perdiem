@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
-import { Bot, CornerDownLeft, LoaderCircle, RotateCcw, SendHorizontal, TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Bot, CornerDownLeft, LoaderCircle, RotateCcw, SendHorizontal, TriangleAlert } from "lucide-react";
 import type { LedgerEntryView, MandateSummary, UsageRecord } from "@/contracts/api";
 import { DEMO_SCRIPT } from "@/lib/api-client";
 import { fmtInt, fmtTime } from "@/lib/format";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/perdiem/states";
 import { ReceiptCard } from "@/components/perdiem/receipt-card";
 import { useConfirmPolling } from "@/hooks/use-confirm-polling";
-import { updateChatEntry, type ChatMessage } from "@/hooks/use-chat-session";
+import { errorTxHash, nothingWasSent, updateChatEntry, type ChatMessage } from "@/hooks/use-chat-session";
 import { cn } from "@/lib/utils";
 
 /** Receipt that polls confirm while pending and writes the result back into the session. */
@@ -92,20 +93,60 @@ function Message({
     );
   }
   if (m.kind === "error") {
+    if (nothingWasSent(m)) {
+      return (
+        <div className="flex gap-3">
+          <AgentAvatar />
+          <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm">
+            <p className="flex items-center gap-1.5 font-medium text-rose-900">
+              <TriangleAlert aria-hidden className="size-4" /> The request did not go through
+            </p>
+            <p className="mt-1 text-rose-800/90">
+              {m.text} <span className="font-mono text-xs text-rose-700/80">{m.code}</span>
+            </p>
+            <p className="mt-1 text-xs text-rose-800/70">Nothing was proposed or paid.</p>
+            <Button type="button" size="sm" variant="outline" className="mt-2 bg-white" disabled={busy} onClick={() => onRetry(m.request, m.mandateId)}>
+              <RotateCcw aria-hidden /> Try again
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    // The failure may have come after a broadcast: never claim nothing was paid, never offer a retry.
+    const txHash = errorTxHash(m.details);
     return (
       <div className="flex gap-3">
         <AgentAvatar />
-        <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm">
-          <p className="flex items-center gap-1.5 font-medium text-rose-900">
-            <TriangleAlert aria-hidden className="size-4" /> The request did not go through
+        <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-amber-300 bg-amber-50/80 px-4 py-3 text-sm">
+          <p className="flex items-center gap-1.5 font-medium text-amber-950">
+            <TriangleAlert aria-hidden className="size-4" /> The server did not confirm the outcome
           </p>
-          <p className="mt-1 text-rose-800/90">
-            {m.text} <span className="font-mono text-xs text-rose-700/80">{m.code}</span>
+          <p className="mt-1 text-amber-900/90">
+            {m.text}{" "}
+            <span className="font-mono text-xs text-amber-800/80">
+              {m.code}
+              {m.status > 0 && m.code !== `HTTP_${m.status}` ? ` · HTTP ${m.status}` : ""}
+            </span>
           </p>
-          <p className="mt-1 text-xs text-rose-800/70">Nothing was proposed or paid.</p>
-          <Button type="button" size="sm" variant="outline" className="mt-2 bg-white" disabled={busy} onClick={() => onRetry(m.request, m.mandateId)}>
-            <RotateCcw aria-hidden /> Try again
-          </Button>
+          <p className="mt-1 text-xs font-medium text-amber-900">
+            {m.status === 0
+              ? "No response arrived (the connection dropped), so the outcome is unknown: a payment may have been sent."
+              : "The server returned an error without confirming the outcome: a payment may have been sent."}{" "}
+            Check the ledger before retrying.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline" className="bg-white">
+              <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>Open ledger</Link>
+            </Button>
+            {txHash && (
+              <Button asChild size="sm" variant="outline" className="bg-white">
+                <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
+                  View tx on Etherscan
+                  <ArrowUpRight aria-hidden />
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );

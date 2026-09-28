@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/perdiem/page";
 import { EmptyState, ErrorState } from "@/components/perdiem/states";
-import { useChatSession, sendChat, clearChatSession } from "@/hooks/use-chat-session";
+import { useChatSession, sendChat, clearChatSession, nothingWasSent } from "@/hooks/use-chat-session";
+import { toApiClientError } from "@/lib/api-client";
 import { useNow } from "@/hooks/use-now";
 import { findByPrefix, useSelectedMandate } from "@/hooks/use-selected-mandate";
 import { ChatPanel } from "./chat-panel";
@@ -26,8 +27,15 @@ function TravelerInner() {
       const res = await sendChat(mandateId, text);
       if (res) refresh();
     } catch (e) {
-      setDraft(text);
-      toast.error("The agent could not be reached", { description: e instanceof Error ? e.message : String(e) });
+      const err = toApiClientError(e);
+      if (nothingWasSent(err)) {
+        setDraft(text);
+        toast.error("The agent could not be reached", { description: err.message });
+        return;
+      }
+      // A payment may have gone out before the error: no draft to resend, and reload the budget.
+      refresh();
+      toast.error("Outcome unknown: check the ledger before retrying", { description: err.message });
     }
   };
 
