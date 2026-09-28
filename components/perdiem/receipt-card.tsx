@@ -23,6 +23,7 @@ function Row({ label, value, strong = false, hint }: { label: string; value: str
 }
 
 function MerchantLine({ entry }: { entry: LedgerEntryView }) {
+  const said = entry.proposal.sourceText?.trim();
   return (
     <div className="min-w-0">
       <p className="truncate font-medium text-zinc-900">{entry.merchantName ?? entry.proposal.merchantId}</p>
@@ -30,6 +31,12 @@ function MerchantLine({ entry }: { entry: LedgerEntryView }) {
         {entry.merchantCategory ?? "unknown category"} · <span className="font-mono">{entry.proposal.merchantId}</span>
         {entry.proposal.memo ? <> · “{entry.proposal.memo}”</> : null}
       </p>
+      {/* Plain text only (React escapes it); the title carries the full request. */}
+      {said ? (
+        <p className="mt-0.5 truncate text-xs text-zinc-400" title={said}>
+          You said: “{said}”
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -43,12 +50,21 @@ export function ReceiptCard({ entry, className }: { entry: LedgerEntryView; clas
   return <ApprovedCard entry={entry} className={className} />;
 }
 
+/**
+ * A failed approval never counts against the budget (lib/view.ts spends only approved|pending|
+ * settled). Without a txHash the broadcast call itself errored; with one, the confirm route saw
+ * the transaction revert on-chain.
+ */
+function failedHeadline(entry: LedgerEntryView): string {
+  return entry.txHash ? "Transaction failed on-chain" : "Broadcast did not confirm — nothing recorded on-chain";
+}
+
 function ApprovedCard({ entry, className }: { entry: LedgerEntryView; className?: string }) {
   const failed = entry.status === "failed";
   const settled = entry.status === "settled";
   return (
     <article
-      aria-label={`Receipt ${entry.id}: ${failed ? "approved, broadcast failed" : `approved, ${entry.status}`}`}
+      aria-label={`Receipt ${entry.id}: ${failed ? `approved, ${failedHeadline(entry).toLowerCase()}` : `approved, ${entry.status}`}`}
       className={cn(
         "overflow-hidden rounded-xl border bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)]",
         failed ? "border-slate-300" : "border-emerald-200",
@@ -63,7 +79,7 @@ function ApprovedCard({ entry, className }: { entry: LedgerEntryView; className?
             <ShieldCheck aria-hidden className="size-4.5 text-emerald-600" />
           )}
           <span className={cn("text-sm font-semibold", failed ? "text-slate-800" : "text-emerald-800")}>
-            {failed ? "Approved — broadcast failed, nothing settled" : "Approved — inside the mandate"}
+            {failed ? failedHeadline(entry) : "Approved — inside the mandate"}
           </span>
         </div>
         <StatusPill status={entry.status} />
@@ -77,11 +93,16 @@ function ApprovedCard({ entry, className }: { entry: LedgerEntryView; className?
           <Row label="Amount" value={fmtUsd(entry.proposal.amountUsd)} />
           <Row label="Network fee" hint={entry.feeSource === "fallback" ? "fallback estimate" : "estimate"} value={fmtUsd(entry.feeUsd)} />
           {settled && entry.actualFeeUsd !== undefined && <Row label="Actual fee" hint="after mining" value={fmtUsd(entry.actualFeeUsd)} />}
-          <Row label="Counted against budget" value={fmtUsd(entry.totalUsd)} strong />
+          {failed ? (
+            <Row label="Not counted against budget" hint="payment failed" value={fmtUsd(0)} strong />
+          ) : (
+            <Row label="Counted against budget" value={fmtUsd(entry.totalUsd)} strong />
+          )}
         </dl>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-100 pt-3">
           <HashChip label="tx" what="transaction hash" value={entry.txHash} href={entry.explorerUrl} emptyText="not broadcast" />
           <HashChip label="receipt" what="receipt hash" value={entry.receiptHash} />
+          <HashChip label="mandate" what="mandate hash" value={entry.mandateHash} />
         </div>
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 bg-zinc-50/60 px-4 py-2">
@@ -137,7 +158,10 @@ function StoppedCard({ entry, className }: { entry: LedgerEntryView; className?:
         <p className="text-xs text-zinc-500">
           Recorded in ledger as <span className="font-mono text-zinc-700">{entry.id}</span> · {fmtTime(entry.at)} · no transaction broadcast
         </p>
-        <HashChip label="receipt" what="receipt hash" value={entry.receiptHash} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <HashChip label="receipt" what="receipt hash" value={entry.receiptHash} />
+          <HashChip label="mandate" what="mandate hash" value={entry.mandateHash} />
+        </div>
       </footer>
     </article>
   );
