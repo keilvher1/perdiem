@@ -222,7 +222,7 @@ cp .env.example .env.local        # fill KILN_API_KEY, AGENT_PRIVATE_KEY (Sepoli
                                   # NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY; set NEXT_PUBLIC_API_MODE=live
 # Supabase → SQL editor: run docs/schema.sql once (tables, view usage_by_flow_v, RLS on)
 npm run seed -- --window now      # merchants + fresh mandates A/B/C anchored on Sepolia → evidence/seed-latest.json
-npm run dev                       # http://localhost:3000 → /traveler, /principal, /audit/<id>, /metrics
+mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log   # http://localhost:3000 → /traveler, /principal, /audit/<id>, /metrics
 ```
 
 Then, in a second terminal:
@@ -231,11 +231,12 @@ Then, in a second terminal:
 npm test                          # policy engine, 17 blocks
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
 npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
-npm run compare                   # thinking on vs off, 10 Kiln calls → docs/reasoning-comparison.json
+npm run compare                   # thinking on vs off, 10 Kiln calls; OVERWRITES docs/reasoning-comparison.json
+                                  # (the README tables are from the committed 2026-09-28 run)
 npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 06-kiln-calls.txt, logs-stop.txt
 ```
 
-For the per-flow Kiln log, keep the server log: `mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log`. Without any keys, `NEXT_PUBLIC_API_MODE=mock npm run dev` shows the whole UI on the fixtures in `docs/fixtures/` (no model, no chain).
+The `tee` keeps the server log that `npm run metrics` turns into the per-flow Kiln log (`evidence/kiln-calls-by-flow.md`); with a plain `npm run dev` that file lists only the compare calls. Without any keys, `NEXT_PUBLIC_API_MODE=mock npm run dev` shows the whole UI on the fixtures in `docs/fixtures/` (no model, no chain).
 
 ## Evidence index
 
