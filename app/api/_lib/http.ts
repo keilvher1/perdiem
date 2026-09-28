@@ -63,8 +63,23 @@ export function noStore<T>(res: NextResponse<T>): NextResponse<T> {
   return res;
 }
 
-/** Reads and validates a JSON body. Throws HttpError(400) with zod issues as details. */
+/**
+ * Reads and validates a JSON body. Throws HttpError(400) with zod issues as details.
+ *
+ * Only `Content-Type: application/json` is accepted: a cross-site page can send text/plain or a
+ * form without a CORS preflight, but not application/json (the preflight gets no CORS headers
+ * here), so a page open in the operator's browser cannot trigger Kiln calls, payments or anchor
+ * txs. A request the browser labels `Sec-Fetch-Site: cross-site` is refused too (defense in
+ * depth). Every caller (lib/api-client.ts, scripts/scenario.ts, scripts/capture.ts) sends JSON.
+ */
 export async function readJson<S extends z.ZodType>(req: Request, schema: S): Promise<z.output<S>> {
+  const type = (req.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+  if (type !== "application/json") {
+    throw new HttpError(400, "UNSUPPORTED_MEDIA_TYPE", "Content-Type must be application/json.");
+  }
+  if ((req.headers.get("sec-fetch-site") ?? "").toLowerCase() === "cross-site") {
+    throw new HttpError(400, "CROSS_SITE", "Cross-site requests are not accepted.");
+  }
   let raw: unknown;
   try {
     raw = await req.json();

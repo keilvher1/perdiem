@@ -5,15 +5,18 @@
  * fast-path | Kiln propose → policy.evaluate() → STOP (recorded, no chain call) | APPROVE (broadcast).
  * Requests for one mandate are serialized (see _lib/lock.ts). Every decision is logged as one JSON
  * line: {"kind":"decision","mandateId","entryId","decision","codes":[...]} → evidence/logs-stop.txt.
+ * A payment that was broadcast but could not be written to the ledger is never silent: 502
+ * PAYMENT_NOT_RECORDED (details.txHash) and, until it is written, 409 LEDGER_UNRECONCILED for the
+ * next request of that mandate (see _lib/ledger-write.ts).
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { ChatResponse } from "@/contracts/api";
 import { handleTravelerMessage } from "@/lib/agent";
 import { getMandate, listLedger, saveEntry, saveUsage } from "@/lib/db";
-import type { LedgerEntry } from "@/lib/policy";
 import { toEntryView } from "@/lib/view";
-import { errorMessage, HttpError, noStore, readJson, toErrorResponse } from "../_lib/http";
+import { HttpError, noStore, readJson, toErrorResponse } from "../_lib/http";
+import { createLedgerWriter } from "../_lib/ledger-write";
 import { withLock } from "../_lib/lock";
 
 export const runtime = "nodejs";
@@ -25,36 +28,24 @@ const ChatSchema = z.object({
   text: z.string().trim().min(1).max(1000),
 });
 
-/**
- * A ledger write that follows a broadcast must not get lost: retry once, and if it still fails
- * print the full entry (no secrets in it) so it can be re-inserted from the log.
- */
-async function saveEntryDurably(entry: LedgerEntry): Promise<void> {
-  try {
-    await saveEntry(entry);
-  } catch (first) {
-    await new Promise((r) => setTimeout(r, 500));
-    try {
-      await saveEntry(entry);
-    } catch (second) {
-      console.error(JSON.stringify({ kind: "ledger_write_failed", error: errorMessage(second), firstError: errorMessage(first), entry }));
-      throw second;
-    }
-  }
-}
+/** Retries once; a broadcast payment that still cannot be saved is kept and blocks new spend. */
+const ledger = createLedgerWriter({ save: saveEntry });
 
 export async function POST(req: Request) {
   try {
     const { mandateId, text } = await readJson(req, ChatSchema);
     return await withLock(`mandate:${mandateId}`, async () => {
+      // A payment that left the wallet but is missing from the ledger must be written first:
+      // spent-so-far and DUPLICATE are computed from listLedger() below.
+      await ledger.reconcile(mandateId);
       const row = await getMandate(mandateId);
       if (!row) throw new HttpError(404, "MANDATE_NOT_FOUND", `No mandate ${mandateId}.`);
-      const ledger = await listLedger(mandateId);
+      const entries = await listLedger(mandateId);
 
       const r = await handleTravelerMessage(text, {
         mandate: row.mandate,
-        ledger,
-        saveEntry: saveEntryDurably,
+        ledger: entries,
+        saveEntry: ledger.saveDecision,
         saveUsage: (u) => saveUsage(u, mandateId),
       });
 

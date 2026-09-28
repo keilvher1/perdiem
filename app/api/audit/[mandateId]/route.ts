@@ -3,13 +3,17 @@
  * records + Sepolia RPC:
  *  1. mandateHash recomputed from the PURE Mandate == memo of the anchor tx
  *  2. replayLedger(): every stored decision re-derived by policy.evaluate()
- *  3. every SETTLED entry: calldata memo, receiptHash recomputation, recipient, amount
+ *  3. every entry with a txHash (every broadcast payment, like scripts/verify.ts — not only the
+ *     settled ones): calldata memo, receiptHash recomputation, recipient, amount
+ *  4. every such entry whose ledger status is not yet "settled": its receipt on Sepolia must show
+ *     it mined (a "failed" entry: reverted), so allVerified stays false while a payment is unmined
  * summary.passed / summary.total count the individual boolean checks (1 anchor + 2 per replayed
- * entry + 4 per tx). One RPC call per tx: this route is not meant to be polled.
+ * entry + 4 per tx + 1 per not-yet-settled tx). One or two RPC calls per tx: not meant to be polled.
+ * Read-only: the ledger status is updated by /api/ledger/[id]/confirm, never here.
  */
 import { NextResponse } from "next/server";
 import type { AuditResponse, Hex, TxCheck } from "@/contracts/api";
-import { explorerTxUrl, readMemo } from "@/lib/chain";
+import { explorerTxUrl, getSettlementStatus, readMemo } from "@/lib/chain";
 import { getMandate, listLedger } from "@/lib/db";
 import { findMerchant, mandateHash, receiptHash, replayLedger, type LedgerEntry, type Mandate } from "@/lib/policy";
 import { toDetail } from "@/lib/view";
@@ -55,6 +59,25 @@ async function checkTx(mandate: Mandate, hash: Hex, e: LedgerEntry & { txHash: H
   }
 }
 
+/**
+ * The chain agrees with a ledger entry that has not been confirmed as settled yet: pending/approved
+ * → the receipt shows it mined successfully; failed (reverted, set by /confirm) → the receipt shows
+ * the revert. Unmined, unknown or an RPC error → false.
+ */
+async function checkSettlement(e: LedgerEntry & { txHash: Hex }): Promise<boolean> {
+  const expected = e.status === "failed" ? "failed" : "settled";
+  try {
+    const st = await getSettlementStatus(e.txHash);
+    if (st.state !== expected) {
+      console.warn(JSON.stringify({ kind: "audit_warning", check: "settlement", entryId: e.id, txHash: e.txHash, ledgerStatus: e.status, chainState: st.state }));
+    }
+    return st.state === expected;
+  } catch (err) {
+    console.warn(JSON.stringify({ kind: "audit_warning", check: "settlement", entryId: e.id, txHash: e.txHash, message: errorMessage(err) }));
+    return false;
+  }
+}
+
 export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { mandateId } = await ctx.params;
@@ -64,10 +87,12 @@ export async function GET(_req: Request, ctx: Ctx) {
 
     // Only the pure Mandate and pure LedgerEntry objects are hashed/replayed — never a view.
     const hash = mandateHash(row.mandate);
-    const settled = ledger.filter((e): e is LedgerEntry & { txHash: Hex } => e.status === "settled" && !!e.txHash);
-    const [anchor, transactions] = await Promise.all([
+    // Every broadcast payment, whatever its ledger status (pending ones included).
+    const paid = ledger.filter((e): e is LedgerEntry & { txHash: Hex } => !!e.txHash);
+    const [anchor, transactions, settlement] = await Promise.all([
       checkAnchor(row.anchorTx, hash),
-      Promise.all(settled.map((e) => checkTx(row.mandate, hash, e))),
+      Promise.all(paid.map((e) => checkTx(row.mandate, hash, e))),
+      Promise.all(paid.filter((e) => e.status !== "settled").map(checkSettlement)),
     ]);
     const replay = replayLedger(row.mandate, ledger);
 
@@ -75,6 +100,7 @@ export async function GET(_req: Request, ctx: Ctx) {
       anchor.matches,
       ...replay.flatMap((r) => [r.consistent, r.mandateHashMatches]),
       ...transactions.flatMap((t) => [t.memoMatches, t.receiptHashMatches, t.recipientMatches, t.amountMatches]),
+      ...settlement,
     ];
     const passed = checks.filter(Boolean).length;
     const body: AuditResponse = {
