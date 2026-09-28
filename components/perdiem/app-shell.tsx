@@ -86,7 +86,7 @@ export function AppShell() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 px-4 sm:px-6">
         <div className="flex h-14 items-center">
           <Wordmark />
