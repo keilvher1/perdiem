@@ -98,15 +98,17 @@ Runs 1, 2 and 4 are also in the exported ledger of mandate A ([`evidence/ledger-
 
 **Model note.** The challenge brief text names `gpt-oss-120b`, but Kiln serves only `qwen3-32b` and `deepseek-v4.1-flash`; the track uses **`qwen3-32b`** (organizer announcement: <!-- FILL(lead): announcement link --> `<announcement link>`).
 
-**Tokens by flow** (from `/metrics` → [`evidence/metrics.md`](evidence/metrics.md), <!-- FILL(lead): date/time -->):
+**Tokens by flow** (`/metrics`, `GET /api/usage`, `evidence/metrics.md`) counts every `usage_records` row in the project database — development, integration, the evidence run and video takes alike — not one run. The snapshot below is `GET /api/usage` at 2026-09-28 18:18 KST, at the end of the backend verification run (verbatim in [`evidence/be-phase3-20260928T0916Z.txt`](evidence/be-phase3-20260928T0916Z.txt), step 8a). The database then held that run's 13 rows (7 `propose`, 5 `stop_template`, 1 `status_fastpath`) plus 5 rows of an earlier backend development run at 18:13 KST (2 `propose`, 2 `stop_template`, 1 `status_fastpath`, mandates `man_*_devbe1`).
+<!-- OPTIONAL(lead): replace with the "Tokens by flow" table from evidence/metrics.md after the evidence run, and update the time and the scope sentence above -->
 
-<!-- FILL(lead): paste the "Tokens by flow" table from evidence/metrics.md -->
 | Flow | What it is | Calls | Prompt | Completion | Total | Cost (USD) | Avg latency |
 |---|---|---|---|---|---|---|---|
-| `propose` | one model call per purchase request | … | … | … | … | … | … ms |
-| `status_fastpath` | no model — answered from the ledger | … | 0 | 0 | 0 | 0 | — |
-| `stop_template` | no model — refusal templated from reasons | … | 0 | 0 | 0 | 0 | — |
-| `compare` | thinking on vs off (`/no_think`), `scripts/compare-reasoning.ts` | 10 | 4,676 | 1,007 | 5,683 | $0.000471 | 2,110 ms |
+| `propose` | one model call per purchase request | 9 | 4,209 | 413 | 4,622 | $0.000284 | 1,657 ms |
+| `status_fastpath` | no model — answered from the ledger | 2 | 0 | 0 | 0 | 0 | — |
+| `stop_template` | no model — refusal templated from reasons | 7 | 0 | 0 | 0 | 0 | — |
+| **Total** | | **18** | **4,209** | **413** | **4,622** | **$0.000284** | |
+
+The `compare` flow (thinking on vs off, `scripts/compare-reasoning.ts`) is **not** in `usage_records`: it runs outside the server and writes [`docs/reasoning-comparison.json`](docs/reasoning-comparison.json) (it adds database rows only with `npm run compare -- --save`). That run: 10 calls, 4,676 prompt + 1,007 completion = 5,683 tokens, $0.000471, 2,109 ms average latency (details below).
 
 **Design choices that reduce inference** (each measured or visible in the table): rule fast-path for status questions (0 tokens); templated refusals (0 tokens); compact `id | name | category` catalog lines instead of JSON; one tool call per turn, no parallel calls; **thinking switched off for the propose step** (Qwen3 `/no_think`, `KILN_NO_THINK=1`).
 
@@ -123,7 +125,7 @@ Runs 1, 2 and 4 are also in the exported ledger of mandate A ([`evidence/ledger-
 
 Reasoning tokens (`usage.completion_tokens_details.reasoning_tokens`) drop from 108 to 1 per call and total cost from $0.000309 to $0.000162 (−47.5%). An earlier run on 2026-09-27 measured 180 → 47 (−74%), 2.9 s → 0.9 s, cost −50%, also 5/5 both ways.
 
-**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600` = <!-- FILL(lead): from evidence/metrics.md --> `… Wh` for the whole demo session. Assumption: `ENERGY_J_PER_TOKEN = …` (source: …). Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
+**Energy estimate:** `energy_Wh = total_tokens × ENERGY_J_PER_TOKEN ÷ 3600` = <!-- FILL(lead): from evidence/metrics.md --> `… Wh` for all recorded calls. Assumption: `ENERGY_J_PER_TOKEN = …` (source: …). Kiln does not expose per-request energy today; the assumption is always shown next to the number (`/metrics`, `evidence/metrics.md`), and the number is not shown at all while the assumption is unset.
 
 ## Blockchain integration (Ethereum Sepolia)
 
@@ -157,6 +159,8 @@ Check one yourself: open the tx on Etherscan → *Input Data* → *View Input As
 ### Kiln API call logs, per flow
 
 Every call through `chatWithUsage()` prints one JSON line (`"kind":"kiln"`: Kiln response id, tool calls, finish reason, the `usage` block Kiln returned). `npm run metrics` collects them into [`evidence/kiln-calls-by-flow.md`](evidence/kiln-calls-by-flow.md) (per flow: calls, response ids, tool calls, prompt / cached / completion / reasoning tokens, cost); raw lines: [`evidence/06-kiln-calls.txt`](evidence/06-kiln-calls.txt).
+
+Scope: these are the calls logged by one server session — here the backend verification run ([`evidence/be-kiln-calls.txt`](evidence/be-kiln-calls.txt)); after the evidence run, `logs/dev-server.log` of the evidence-run server — plus the compare run, which runs outside the server. The counts differ from the database totals under [Tokens by flow](#kiln-integration--efficiency) by design: the database keeps every call ever made against it, a log covers one server session.
 
 | Flow | Kiln calls | What the calls did | Log |
 |---|---|---|---|

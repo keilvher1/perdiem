@@ -177,6 +177,7 @@ function renderKilnByFlow(calls: KilnCall[], usage: UsageResponse | null, genera
   out.push("# Kiln API calls by flow");
   out.push("");
   out.push(`Generated ${generatedAt} by \`scripts/metrics.ts\` from ${sources.map((s) => `\`${s}\``).join(", ")}.`);
+  out.push("Scope: only the calls in these log files (one server session plus the compare run). `/metrics` and `evidence/metrics.md` count every row in `usage_records`, i.e. every call ever recorded in the database, so their call counts are larger by design.");
   out.push("Every line comes from `lib/kiln.ts::chatWithUsage()`, which prints one JSON line per real call to Kiln (`https://api.bricksum.com/v1`, model `qwen3-32b`): the Kiln response id, the tool calls the model made, and the `usage` block Kiln returned. Raw lines: `evidence/06-kiln-calls.txt`.");
   out.push("");
   out.push("## Summary");
@@ -201,7 +202,7 @@ function renderKilnByFlow(calls: KilnCall[], usage: UsageResponse | null, genera
   if (usage) {
     const zero = usage.byFlow.filter((r) => r.totalTokens === 0 && r.calls > 0);
     const z = usage.zeroTokenCalls;
-    out.push("Flows answered **without** calling the model (recorded as 0-token rows by `zeroUsage()`, so they appear in `/metrics` but never in the Kiln log):");
+    out.push("Flows answered **without** calling the model (recorded as 0-token rows by `zeroUsage()`, so they appear in `/metrics` but never in the Kiln log; counts from `/api/usage`, i.e. all rows in `usage_records`, not only this log):");
     out.push("");
     out.push(`- \`status_fastpath\`: ${z.statusFastpath} request(s) answered from the ledger, 0 tokens`);
     out.push(`- \`stop_template\`: ${z.stopTemplate} refusal(s) explained from a template, 0 tokens`);
@@ -275,7 +276,9 @@ function renderMetrics(u: UsageResponse, comparison: ReasoningComparison | null,
   const out: string[] = [];
   out.push("# PerDiem — metrics");
   out.push("");
-  out.push(`Generated ${generatedAt} by \`scripts/metrics.ts\` from \`${from}\`.`);
+  out.push(`Generated ${generatedAt} by \`scripts/metrics.ts\` from \`${from}\` (all rows in \`usage_records\`).`);
+  out.push("");
+  out.push("Scope: every call ever recorded in this database (development, integration, evidence run, video takes), not one server session, so the call counts differ from `kiln-calls-by-flow.md` (built from the server log) by design. The `compare` flow appears here only if `npm run compare -- --save` was run.");
   out.push("");
   out.push("## Tokens by flow");
   out.push("");
