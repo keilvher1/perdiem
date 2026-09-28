@@ -64,7 +64,7 @@ tests/policy.test.ts  `npm test` — must stay green | tests/contract.check.ts �
 npm run dev                       # lead only (port 3000); devs: npm run dev -- -p <your port>
 npm run typecheck                 # next typegen && tsc --noEmit (includes tests/contract.check.ts)
 npm run lint                      # eslint (next build does NOT run lint)
-npm test                          # 9 suites: policy engine (17 blocks), view (10), mandate-request (5), ledger-write (8), db-error (4), http-json (4), audit (9), events (6), evidence-records (7)
+npm test                          # 9 suites: policy engine (16 blocks; prints a stale "17"), view (10), mandate-request (5), ledger-write (8), db-error (4), http-json (4), audit (9), events (6), evidence-records (7)
 npm run spike -- kiln             # model + tool-call smoke test (5 prompts)
 npm run spike -- chain            # SPENDS test ETH (anchor tx) — backend dev only
 npm run seed -- --window now      # new A/B/C demo set + 3 anchor txs → evidence/seed-latest.json (spends test ETH)

@@ -57,7 +57,7 @@ The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledg
 
 ## The boundary and where it is enforced
 
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs nine suites — policy engine (17 blocks), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4), audit check count equals the `verify.ts` count (9), decision and status log lines (6), Evidence download byte-identical to `npm run export` (7).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs nine suites — policy engine (16 blocks; its last line still prints a hard-coded `OK (17 blocks)`), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4), audit check count equals the `verify.ts` count (9), decision and status log lines (6), Evidence download byte-identical to `npm run export` (7).
 
 | Code | Rule |
 |---|---|
