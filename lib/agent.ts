@@ -174,18 +174,22 @@ export async function handleTravelerMessage(userText: string, deps: AgentDeps): 
   // 4. APPROVE → broadcast on-chain (no wait), record as pending; a poller
   //    (/api/ledger/[id]/confirm) flips it to settled/failed via getSettlementStatus().
   const rh = receiptHash(base);
+  let sent: { txHash: LedgerEntry["txHash"]; explorerUrl: string };
   try {
-    const s = await sendPaymentNoWait({ to: merchant!.wallet, amountUsd: proposal.amountUsd, mandateHash: mh, receiptHash: rh });
-    const entry: LedgerEntry = { ...base, status: "pending", txHash: s.txHash, receiptHash: rh };
-    await deps.saveEntry(entry);
-    return {
-      text: `Approved. Paying ${merchant!.name} $${fmtUsd(proposal.amountUsd)} for "${proposal.memo}" (est. network fee $${fmtUsd(decision.feeUsd)}). Tx: ${s.explorerUrl}`,
-      entry,
-      usage,
-    };
+    sent = await sendPaymentNoWait({ to: merchant!.wallet, amountUsd: proposal.amountUsd, mandateHash: mh, receiptHash: rh });
   } catch (err) {
+    // Only a failed BROADCAST is recorded as "failed" (nothing left the wallet).
     const entry: LedgerEntry = { ...base, status: "failed", receiptHash: rh };
     await deps.saveEntry(entry);
     return { text: `Approved but broadcast failed: ${(err as Error).message}`, entry, usage };
   }
+  // The payment is on its way. Save it outside the broadcast try/catch, so a DB error here can never
+  // relabel money that was actually sent as "failed" (it surfaces as an error; the tx hash is in the log).
+  const entry: LedgerEntry = { ...base, status: "pending", txHash: sent.txHash, receiptHash: rh };
+  await deps.saveEntry(entry);
+  return {
+    text: `Approved. Paying ${merchant!.name} ${fmtUsd(proposal.amountUsd)} for "${proposal.memo}" (est. network fee ${fmtUsd(decision.feeUsd)}). Tx: ${sent.explorerUrl}`,
+    entry,
+    usage,
+  };
 }
