@@ -27,6 +27,8 @@ export type ChatMessage =
       at: string;
       request: string;
       code: string;
+      /** HTTP status of the failed request; 0 when no response arrived (NETWORK_ERROR). */
+      status: number;
       /** ApiError.details (e.g. `{ txHash }` when the ledger write after a broadcast failed). */
       details?: unknown;
     };
@@ -49,9 +51,14 @@ const NOTHING_SENT_CODES: ReadonlySet<string> = new Set([
   "KILN_ERROR",
 ]);
 
-/** True only when the failed chat request provably proposed and paid nothing (safe to retry). */
-export function nothingWasSent(err: { code: string }): boolean {
-  return NOTHING_SENT_CODES.has(err.code);
+/**
+ * True only when the failed chat request provably proposed and paid nothing (safe to retry): a
+ * whitelisted code that also came back as a 4xx rejection (or the Kiln 502, which precedes any
+ * proposal). A 5xx or no response at all (status 0) is never "nothing sent".
+ */
+export function nothingWasSent(err: { code: string; status: number }): boolean {
+  if (!NOTHING_SENT_CODES.has(err.code)) return false;
+  return (err.status >= 400 && err.status < 500) || err.code === "KILN_ERROR";
 }
 
 /** A tx hash the server attached to an error (LEDGER_WRITE_FAILED), or null. */
@@ -118,6 +125,7 @@ export async function sendChat(mandateId: string, text: string): Promise<ChatRes
       at: new Date().toISOString(),
       request: text,
       code: err.code,
+      status: err.status,
       details: err.details,
     };
     set({ messages: [...snapshot.messages, msg], pending: null });

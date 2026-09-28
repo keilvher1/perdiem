@@ -122,10 +122,17 @@ function Message({
             <TriangleAlert aria-hidden className="size-4" /> The server did not confirm the outcome
           </p>
           <p className="mt-1 text-amber-900/90">
-            {m.text} <span className="font-mono text-xs text-amber-800/80">{m.code}</span>
+            {m.text}{" "}
+            <span className="font-mono text-xs text-amber-800/80">
+              {m.code}
+              {m.status > 0 && m.code !== `HTTP_${m.status}` ? ` · HTTP ${m.status}` : ""}
+            </span>
           </p>
           <p className="mt-1 text-xs font-medium text-amber-900">
-            The outcome is unknown: a payment may have been sent. Check the ledger before retrying.
+            {m.status === 0
+              ? "No response arrived (the connection dropped), so the outcome is unknown: a payment may have been sent."
+              : "The server returned an error without confirming the outcome: a payment may have been sent."}{" "}
+            Check the ledger before retrying.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button asChild size="sm" variant="outline" className="bg-white">
