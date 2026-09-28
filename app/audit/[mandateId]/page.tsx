@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CircleCheck, OctagonAlert, RefreshCw, ShieldCheck, SquareTerminal } from "lucide-react";
+import { CircleCheck, OctagonAlert, Printer, RefreshCw, ShieldCheck, SquareTerminal } from "lucide-react";
 import type { AuditResponse, MandateDetailResponse } from "@/contracts/api";
 import { api } from "@/lib/api-client";
 import { fmtRel, fmtUsd } from "@/lib/format";
@@ -319,6 +320,12 @@ export default function AuditPage() {
             {audit.updatedAt !== null && (
               <span className="text-xs text-zinc-400 tabular-nums">Checked {fmtRel(new Date(audit.updatedAt).toISOString(), now)}</span>
             )}
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/audit/${encodeURIComponent(id)}/report`}>
+                <Printer aria-hidden />
+                Printable statement
+              </Link>
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={rerun} disabled={audit.refreshing || audit.loading}>
               <RefreshCw aria-hidden className={cn((audit.refreshing || audit.loading) && "animate-spin")} />
               Re-run checks

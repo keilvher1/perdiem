@@ -76,7 +76,7 @@ export function AppShell() {
   const onSelect = (id: string) => {
     writeStoredMandateId(id);
     if (pathname.startsWith("/audit")) {
-      router.push(`/audit/${encodeURIComponent(id)}`);
+      router.push(`/audit/${encodeURIComponent(id)}${pathname.endsWith("/report") ? "/report" : ""}`);
       return;
     }
     const sp = new URLSearchParams(params.toString());

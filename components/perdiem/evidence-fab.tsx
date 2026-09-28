@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, FileCheck, ListChecks, LoaderCircle, OctagonAlert, ShieldCheck } from "lucide-react";
+import { ArrowRight, FileCheck, ListChecks, LoaderCircle, OctagonAlert, Printer, ShieldCheck } from "lucide-react";
 import type { AuditResponse, LedgerStatus, MandateSummary } from "@/contracts/api";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -16,6 +16,9 @@ import { EvidenceActions } from "./evidence-actions";
 import { ReceiptCard } from "./receipt-card";
 import { EmptyState, ErrorState } from "./states";
 import { StatusPill, effectiveMandateStatus } from "./status-pill";
+
+const LINK =
+  "flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-900 outline-none hover:border-indigo-300 hover:bg-indigo-50/40 focus-visible:ring-2 focus-visible:ring-indigo-500";
 
 const COUNTED: ReadonlyArray<{ status: LedgerStatus; label: string }> = [
   { status: "settled", label: "settled" },
@@ -240,16 +243,20 @@ export function EvidenceFab({ id, summary, onAuditPage }: { id: string; summary:
             </div>
           </section>
 
-          {!onAuditPage && (
-            <Link
-              href={`/audit/${encodeURIComponent(id)}`}
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-900 outline-none hover:border-indigo-300 hover:bg-indigo-50/40 focus-visible:ring-2 focus-visible:ring-indigo-500"
-            >
-              Open the audit page
+          <nav aria-label="More evidence" className="space-y-2">
+            {!onAuditPage && (
+              <Link href={`/audit/${encodeURIComponent(id)}`} onClick={() => setOpen(false)} className={LINK}>
+                Open the audit page
+                <ArrowRight aria-hidden className="size-4 text-zinc-500" />
+              </Link>
+            )}
+            <Link href={`/audit/${encodeURIComponent(id)}/report`} onClick={() => setOpen(false)} className={LINK}>
+              <span className="inline-flex items-center gap-2">
+                <Printer aria-hidden className="size-4 text-zinc-500" /> Open printable statement
+              </span>
               <ArrowRight aria-hidden className="size-4 text-zinc-500" />
             </Link>
-          )}
+          </nav>
         </div>
       </SheetContent>
     </Sheet>
