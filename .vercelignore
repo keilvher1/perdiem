@@ -1,0 +1,8 @@
+# Never upload local secrets or run artefacts to Vercel (env vars are set in the project instead).
+.env
+.env.*
+!.env.example
+logs/
+evidence/
+.next/
+node_modules/
