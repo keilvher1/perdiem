@@ -10,6 +10,7 @@ import {
   OctagonAlert,
   Printer,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import type {
   AuditResponse,
@@ -38,7 +39,7 @@ import { EmptyState, ErrorState } from "./states";
 import { StatusPill, effectiveMandateStatus } from "./status-pill";
 
 const LINK =
-  "flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-900 outline-none hover:border-indigo-300 hover:bg-indigo-50/40 focus-visible:ring-2 focus-visible:ring-indigo-500";
+  "flex items-center justify-between rounded-lg border border-line bg-surface px-3 py-2.5 text-sm font-medium text-ink outline-none transition-colors duration-150 hover:border-cobalt-line hover:bg-cobalt-soft focus-visible:ring-2 focus-visible:ring-ring";
 
 /** Counted in this order; labels come from t.evidence.decisions.status. */
 const COUNTED = [
@@ -63,7 +64,7 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-2">
-      <h3 className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+      <h3 className="type-label text-muted-ink">
         {children}
       </h3>
       {aside}
@@ -83,16 +84,16 @@ function Money({
   warn?: boolean;
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2">
-      <dt className="text-[11px] text-zinc-500">{label}</dt>
-      <dd className="truncate text-base font-semibold tracking-tight text-zinc-900 tabular-nums">
+    <div className="min-w-0 rounded-lg border border-line bg-surface px-3 py-2">
+      <dt className="text-[11px] text-muted-ink">{label}</dt>
+      <dd className="truncate text-base font-semibold tracking-tight text-ink tabular-nums">
         {value}
       </dd>
       {hint && (
         <dd
           className={cn(
             "truncate text-[11px] tabular-nums",
-            warn ? "text-amber-700" : "text-zinc-400",
+            warn ? "text-pending" : "text-muted-ink",
           )}
         >
           {hint}
@@ -178,7 +179,7 @@ export function EvidenceFab({
           type="button"
           data-evidence-fab=""
           aria-label={t.fab.ariaLabel(id)}
-          className="fixed right-6 bottom-6 z-40 size-12 rounded-full bg-indigo-600 p-0 text-white shadow-lg shadow-indigo-900/20 ring-1 ring-indigo-700/40 hover:bg-indigo-700 sm:h-11 sm:w-auto sm:gap-2 sm:px-4 print:hidden"
+          className="fixed right-6 bottom-6 z-40 size-12 rounded-lg bg-primary p-0 text-primary-foreground shadow-md shadow-ink/15 hover:bg-primary/90 sm:h-11 sm:w-auto sm:gap-2 sm:px-4 print:hidden"
         >
           <FileCheck aria-hidden className="size-5 sm:size-4.5" />
           <span className="hidden sm:inline">{t.fab.button}</span>
@@ -187,18 +188,18 @@ export function EvidenceFab({
       <SheetContent
         closeLabel={messages.common.close}
         side="right"
-        className="gap-0 bg-zinc-50 outline-none data-[side=right]:w-full data-[side=right]:sm:max-w-md"
+        className="gap-0 bg-background outline-none data-[side=right]:w-full data-[side=right]:sm:max-w-md"
         // Focus the drawer itself, not its first control (that would pop the mock-mode tooltip open).
         onOpenAutoFocus={(e) => {
           e.preventDefault();
           (e.currentTarget as HTMLElement | null)?.focus();
         }}
       >
-        <SheetHeader className="border-b border-zinc-200 bg-white pr-12">
-          <SheetTitle className="text-base font-semibold text-zinc-900">
+        <SheetHeader className="border-b border-line bg-surface pr-12">
+          <SheetTitle className="text-base font-semibold text-ink">
             {t.drawer.title} · <span className="font-mono">{id}</span>
           </SheetTitle>
-          <SheetDescription className="text-xs text-zinc-500">
+          <SheetDescription className="text-xs text-muted-ink">
             {t.drawer.description}
           </SheetDescription>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -207,10 +208,10 @@ export function EvidenceFab({
             )}
             <span
               className={cn(
-                "inline-flex h-6 items-center rounded-full px-2 text-xs font-medium ring-1 ring-inset",
+                "inline-flex h-6 items-center rounded-md border px-2 text-xs font-medium",
                 API_MODE === "live"
-                  ? "bg-indigo-50 text-indigo-700 ring-indigo-600/20"
-                  : "border-dashed bg-white text-zinc-500 ring-zinc-300",
+                  ? "border-cobalt-line bg-cobalt-soft text-cobalt"
+                  : "border-dashed border-line-strong bg-surface text-muted-ink",
               )}
             >
               {API_MODE === "live" ? t.drawer.live : t.drawer.mock}
@@ -254,10 +255,10 @@ export function EvidenceFab({
                 <SectionTitle>
                   {t.decisions.recorded(ledger.length)}
                 </SectionTitle>
-                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 tabular-nums">
+                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-ink tabular-nums">
                   {COUNTED.map((status) => (
                     <li key={status}>
-                      <span className="font-semibold text-zinc-900">
+                      <span className="font-semibold text-ink">
                         {count(status)}
                       </span>{" "}
                       {t.decisions.status[status]}
@@ -265,7 +266,7 @@ export function EvidenceFab({
                   ))}
                   {approvedOnly > 0 && (
                     <li>
-                      <span className="font-semibold text-zinc-900">
+                      <span className="font-semibold text-ink">
                         {approvedOnly}
                       </span>{" "}
                       {t.decisions.approvedOnly}
@@ -273,7 +274,7 @@ export function EvidenceFab({
                   )}
                 </ul>
                 {failed > 0 && (
-                  <p className="mt-1.5 text-xs text-zinc-500">
+                  <p className="mt-1.5 text-xs text-muted-ink">
                     {t.decisions.failed(failed)}
                   </p>
                 )}
@@ -287,7 +288,7 @@ export function EvidenceFab({
                         type="button"
                         onClick={() => setShowAll((v) => !v)}
                         aria-expanded={showAll}
-                        className="text-xs font-medium text-indigo-700 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="rounded-sm text-xs font-medium text-cobalt outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         {showAll
                           ? t.receipts.showLatest
@@ -328,7 +329,7 @@ export function EvidenceFab({
 
           <section aria-label={t.checks.region}>
             <SectionTitle>{t.checks.title}</SectionTitle>
-            <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3">
+            <div className="rounded-lg border border-line bg-surface px-3 py-3">
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   type="button"
@@ -346,7 +347,7 @@ export function EvidenceFab({
                 </Button>
                 <ChecksResult checks={checks} />
               </div>
-              <p className="mt-2 text-[11px] text-zinc-500">
+              <p className="mt-2 text-[11px] text-muted-ink">
                 {t.checks.explain}
               </p>
             </div>
@@ -360,7 +361,7 @@ export function EvidenceFab({
                 className={LINK}
               >
                 {t.links.audit}
-                <ArrowRight aria-hidden className="size-4 text-zinc-500" />
+                <ArrowRight aria-hidden className="size-4 text-muted-ink" />
               </Link>
             )}
             <Link
@@ -369,10 +370,10 @@ export function EvidenceFab({
               className={LINK}
             >
               <span className="inline-flex items-center gap-2">
-                <Printer aria-hidden className="size-4 text-zinc-500" />{" "}
+                <Printer aria-hidden className="size-4 text-muted-ink" />{" "}
                 {t.links.statement}
               </span>
-              <ArrowRight aria-hidden className="size-4 text-zinc-500" />
+              <ArrowRight aria-hidden className="size-4 text-muted-ink" />
             </Link>
           </nav>
         </div>
@@ -387,14 +388,15 @@ function ChecksResult({ checks }: { checks: Checks }) {
   if (checks.state === "idle") return null;
   if (checks.state === "running") {
     return checks.last ? (
-      <span className="text-xs text-zinc-400 tabular-nums">
+      <span className="text-xs text-muted-ink tabular-nums">
         {t.last(checks.last.passed, checks.last.total)}
       </span>
     ) : null;
   }
   if (checks.state === "error") {
     return (
-      <span role="alert" className="text-xs text-rose-700">
+      <span role="alert" className="inline-flex items-center gap-1.5 text-xs text-danger">
+        <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
         {t.error(checks.message)}
       </span>
     );
@@ -405,7 +407,7 @@ function ChecksResult({ checks }: { checks: Checks }) {
       role="status"
       className={cn(
         "inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums",
-        allVerified ? "text-emerald-700" : "text-rose-700",
+        allVerified ? "text-approve" : "text-danger",
       )}
     >
       {allVerified ? (
@@ -414,7 +416,7 @@ function ChecksResult({ checks }: { checks: Checks }) {
         <OctagonAlert aria-hidden className="size-4" />
       )}
       {t.passed(passed, total)}
-      <span className="text-[11px] font-normal text-zinc-400">
+      <span className="text-[11px] font-normal text-muted-ink">
         · {f.time(checks.at)}
       </span>
     </span>

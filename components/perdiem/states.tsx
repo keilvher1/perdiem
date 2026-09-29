@@ -24,15 +24,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 bg-white/60 px-6 py-10 text-center",
+        "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line-strong bg-surface/60 px-6 py-10 text-center",
         className,
       )}
     >
-      <span className="grid size-10 place-items-center rounded-full bg-zinc-100 text-zinc-500">
+      <span className="grid size-10 place-items-center rounded-full bg-surface-2 text-muted-ink">
         <Icon aria-hidden className="size-5" />
       </span>
-      <p className="font-medium text-zinc-900">{title}</p>
-      {description && <div className="max-w-md text-sm text-zinc-500">{description}</div>}
+      <p className="font-medium text-ink">{title}</p>
+      {description && <div className="max-w-md text-sm text-muted-ink">{description}</div>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );
@@ -57,17 +57,17 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className={cn("flex flex-col items-start gap-3 rounded-xl border border-rose-200 bg-rose-50/60 px-5 py-4 sm:flex-row sm:items-center", className)}
+      className={cn("flex flex-col items-start gap-3 rounded-lg border border-danger-line bg-danger-soft px-5 py-4 sm:flex-row sm:items-center", className)}
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-surface text-danger">
         <TriangleAlert aria-hidden className="size-4.5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-rose-900">{title ?? t.common.error.title}</p>
-        <p className="mt-0.5 text-sm break-words text-rose-800/90">
+        <p className="font-medium text-danger">{title ?? t.common.error.title}</p>
+        <p className="mt-0.5 text-sm break-words text-ink">
           {error?.message ?? t.common.error.unknown}
           {code && (
-            <span className="ml-2 font-mono text-xs text-rose-700/80">
+            <span className="ml-2 font-mono text-xs text-muted-ink">
               {code}
               {status ? ` · ${status}` : ""}
             </span>
@@ -75,7 +75,7 @@ export function ErrorState({
         </p>
       </div>
       {onRetry && (
-        <Button type="button" variant="outline" size="sm" onClick={onRetry} disabled={retrying} className="bg-white">
+        <Button type="button" variant="outline" size="sm" onClick={onRetry} disabled={retrying} className="bg-surface">
           <RefreshCw aria-hidden className={cn(retrying && "animate-spin")} />
           {t.common.retry}
         </Button>
@@ -89,7 +89,7 @@ export function LoadingRows({ rows = 4, className }: { rows?: number; className?
   return (
     <div className={cn("space-y-2.5", className)} aria-busy="true" aria-label={t.common.loading}>
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-9 w-full rounded-lg" style={{ opacity: 1 - i * 0.12 }} />
+        <Skeleton key={i} className="h-9 w-full rounded-md" style={{ opacity: 1 - i * 0.12 }} />
       ))}
     </div>
   );

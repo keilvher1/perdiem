@@ -5,18 +5,31 @@ import { api } from "@/lib/api-client";
 import { fmtHash } from "@/lib/format";
 import { useFmt, useT } from "@/lib/i18n/provider";
 import { useResource } from "@/hooks/use-resource";
+import type { Glyph, Tone } from "@/lib/ui-state";
 import { cn } from "@/lib/utils";
+import { TONE_TEXT } from "./state-badge";
+import { StateGlyph } from "./state-glyph";
 
 const loadHealth = () => api.health();
 
-/** `Testnet | Sepolia | 1 ETH = $4,000 demo rate` with a status dot; details in the tooltip. */
+/**
+ * `Testnet | Sepolia | 1 ETH = $4,000 demo rate` with a status glyph; details in the tooltip.
+ * Problems use the danger tone (never the rule-stop amber): ● nominal, ◌ checking, ▲ degraded /
+ * unreachable — the glyph and the accessible name carry the state, not the colour alone.
+ */
 export function HealthBadge() {
   const t = useT();
   const f = useFmt();
   const h = t.shell.health;
   const { data, error, loading } = useResource(loadHealth, 60_000);
   const warn = data ? !data.ok || !data.modelAvailable || data.errors.length > 0 : false;
-  const dot = error ? "bg-rose-500" : loading ? "bg-zinc-300" : warn ? "bg-amber-500" : "bg-emerald-500";
+  const look: { glyph: Glyph; tone: Tone } = error
+    ? { glyph: "triangle", tone: "danger" }
+    : loading
+      ? { glyph: "dashed", tone: "unverified" }
+      : warn
+        ? { glyph: "triangle", tone: "danger" }
+        : { glyph: "circle", tone: "approve" };
   const state = error ? h.unreachable : loading ? h.checking : warn ? h.degraded : h.nominal;
 
   return (
@@ -25,16 +38,16 @@ export function HealthBadge() {
         <button
           type="button"
           aria-label={h.aria(state)}
-          className="inline-flex h-7 items-center rounded-full border border-zinc-200 bg-white text-xs text-zinc-600 outline-none hover:border-zinc-300 focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="inline-flex h-7 items-center rounded-md border border-line bg-surface text-xs text-muted-ink outline-none transition-colors duration-150 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <span className="flex items-center gap-1.5 pr-2.5 pl-2.5">
-            <span aria-hidden className={cn("size-2 rounded-full", dot, loading && "animate-pulse")} />
-            <span className="font-medium text-zinc-800">{h.testnet}</span>
+          <span className="flex items-center gap-1.5 px-2">
+            <StateGlyph glyph={look.glyph} className={cn("size-2.5", TONE_TEXT[look.tone])} />
+            <span className="font-medium text-ink">{h.testnet}</span>
           </span>
-          <span className="hidden h-4 w-px bg-zinc-200 sm:block" />
-          <span className="hidden px-2.5 sm:block">Sepolia</span>
-          <span className="hidden h-4 w-px bg-zinc-200 md:block" />
-          <span className="hidden px-2.5 tabular-nums md:block">
+          <span aria-hidden className="hidden h-4 w-px bg-line sm:block" />
+          <span className="hidden px-2 sm:block">Sepolia</span>
+          <span aria-hidden className="hidden h-4 w-px bg-line xl:block" />
+          <span className="hidden px-2 tabular-nums xl:block">
             {h.demoRate(data ? `$${f.int(data.demoEthUsd)}` : error ? "—" : "…")}
           </span>
         </button>
@@ -51,8 +64,8 @@ export function HealthBadge() {
             </span>
             <span className="opacity-80">{h.rpc(data.rpc === "publicnode")}</span>
             {data.errors.map((e) => (
-              <span key={e} className="text-amber-300">
-                {e}
+              <span key={e} className="font-medium">
+                ▲ {e}
               </span>
             ))}
           </>

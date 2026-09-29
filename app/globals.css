@@ -2,14 +2,36 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * PerDiem design tokens — "authority-management finance console + verifiable decision ledger".
+ * Reference: docs/DESIGN-SYSTEM.md (token table, contrast table, state families, components).
+ *
+ * Two layers:
+ *  1. shadcn variables (--background, --card, --primary, …) so every components/ui piece follows
+ *     the palette without edits.
+ *  2. Semantic PerDiem tokens (--ink, --surface, --line, --cobalt, --approve, --stop, --pending,
+ *     --danger, --unverified) exposed to Tailwind as bg-surface, text-ink, border-line,
+ *     text-approve, bg-stop-soft, …
+ *
+ * State colours never stand alone: every state is glyph + label (components/perdiem/state-badge).
+ * Amber (--stop) is ONLY for rule-based stops; errors and verification mismatches use --danger.
+ * Keep the palette values hex: docs/contrast-check.mjs reads them from this file and prints the
+ * WCAG contrast table in docs/DESIGN-SYSTEM.md (`node docs/contrast-check.mjs`).
+ */
+
+/* `dark:` utilities follow the same rule as the tokens: screen only, so print is always light. */
+@custom-variant dark {
+  @media not print {
+    &:is(.dark *) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
+  /* shadcn */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,83 +61,282 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* PerDiem semantic colours */
+  --color-page: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted-ink);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-cobalt: var(--cobalt);
+  --color-cobalt-soft: var(--cobalt-soft);
+  --color-cobalt-line: var(--cobalt-line);
+  --color-approve: var(--approve);
+  --color-approve-soft: var(--approve-soft);
+  --color-approve-line: var(--approve-line);
+  --color-stop: var(--stop);
+  --color-stop-soft: var(--stop-soft);
+  --color-stop-line: var(--stop-line);
+  --color-pending: var(--pending);
+  --color-pending-soft: var(--pending-soft);
+  --color-pending-line: var(--pending-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-unverified: var(--unverified);
+  --color-unverified-soft: var(--unverified-soft);
+  --color-unverified-line: var(--unverified-line);
+
+  /*
+   * Fonts. Pretendard (self-hosted from node_modules/pretendard, imported in app/layout.tsx) leads
+   * for English and Korean. Japanese and Chinese lead with their own system fonts (see :lang rules
+   * below) because Pretendard's Han and kana glyphs follow Korean / Japanese-M+ forms.
+   */
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto,
+    "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-heading: var(--font-sans);
+
+  /* Radius: buttons 4–6 px (rounded-md / rounded-lg), cards and panels 6–8 px (rounded-lg / rounded-xl).
+     Larger steps are capped at 8 px so older rounded-2xl markup stays inside the brief. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
+  --radius-3xl: 8px;
+  --radius-4xl: 8px;
+}
+
+@theme {
+  /* Motion: 150–220 ms, one easing curve. `duration-150 ease-standard`, `duration-200`, … */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root {
-  /* PerDiem light theme: zinc neutrals, indigo-600 for primary actions only. */
-  --background: oklch(0.985 0 0); /* zinc-50 */
-  --foreground: oklch(0.21 0.006 285.885); /* zinc-900 */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.006 285.885);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.006 285.885);
-  --primary: oklch(0.511 0.262 276.966); /* indigo-600 */
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.967 0.001 286.375); /* zinc-100 */
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938); /* zinc-500 */
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.586 0.253 17.585); /* rose-600 */
-  --border: oklch(0.92 0.004 286.32); /* zinc-200 */
-  --input: oklch(0.871 0.006 286.286); /* zinc-300 */
-  --ring: oklch(0.585 0.233 277.117); /* indigo-500 */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  color-scheme: light;
+
+  /* Motion tokens for hand-written CSS (Tailwind: duration-150 / duration-200 / duration-[220ms]). */
+  --motion-fast: 150ms;
+  --motion-base: 180ms;
+  --motion-slow: 220ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- PerDiem palette, light ---- */
+  --ink: #14202e;
+  --muted-ink: #556172;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --line: #dadfe5;
+  --line-strong: #c2c9d2;
+
+  --cobalt: #214fdb;
+  --cobalt-soft: #ebf0fd;
+  --cobalt-line: #b7c7f4;
+
+  --approve: #146949;
+  --approve-soft: #e7f2ed;
+  --approve-line: #a6cfbd;
+
+  --stop: #865215;
+  --stop-soft: #f9f0e3;
+  --stop-line: #dfc49c;
+
+  --pending: #3b5387;
+  --pending-soft: #ecf0f7;
+  --pending-line: #b3c0da;
+
+  --danger: #b42318;
+  --danger-soft: #fcedeb;
+  --danger-line: #eeb6b0;
+
+  --unverified: #5a6573;
+  --unverified-soft: #eef0f3;
+  --unverified-line: #b9c1cb;
+
+  /* ---- shadcn mapping, light ---- */
+  --background: #f1f3f5;
+  --foreground: #14202e;
+  --card: #ffffff;
+  --card-foreground: #14202e;
+  --popover: #ffffff;
+  --popover-foreground: #14202e;
+  --primary: #214fdb;
+  --primary-foreground: #ffffff;
+  --secondary: #eceff2;
+  --secondary-foreground: #14202e;
+  --muted: #eceff2;
+  --muted-foreground: #556172;
+  --accent: #ebf0fd;
+  --accent-foreground: #14202e;
+  --destructive: #b42318;
+  --border: #dadfe5;
+  /* Boundary of form controls (inputs, select triggers, checkboxes, the unchecked switch track):
+     ≥ 3:1 on surface, surface-2 and background (WCAG 1.4.11). Hairlines that only group content
+     use --line / --border instead. */
+  --input: #7d8796;
+  --ring: #214fdb;
+  --chart-1: #214fdb;
+  --chart-2: #146949;
+  --chart-3: #865215;
+  --chart-4: #3b5387;
+  --chart-5: #5a6573;
+  --radius: 6px;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #14202e;
+  --sidebar-primary: #214fdb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ebf0fd;
+  --sidebar-accent-foreground: #14202e;
+  --sidebar-border: #dadfe5;
+  --sidebar-ring: #214fdb;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Dark: same hierarchy and state meanings, tuned for contrast. Screen only — print stays light. */
+@media not print {
+  .dark {
+    color-scheme: dark;
+
+    --ink: #e6eaf0;
+    --muted-ink: #9ba7b6;
+    --surface: #141c25;
+    --surface-2: #19222d;
+    --line: #27313d;
+    --line-strong: #394553;
+
+    --cobalt: #86a2ff;
+    --cobalt-soft: #1b2849;
+    --cobalt-line: #3a5296;
+
+    --approve: #58c99f;
+    --approve-soft: #0f2b23;
+    --approve-line: #22614a;
+
+    --stop: #e3a95e;
+    --stop-soft: #2f2311;
+    --stop-line: #6e4f22;
+
+    --pending: #9cb0de;
+    --pending-soft: #1a233a;
+    --pending-line: #3a4d78;
+
+    --danger: #f58f86;
+    --danger-soft: #361a1c;
+    --danger-line: #80332e;
+
+    --unverified: #9ba7b6;
+    --unverified-soft: #1d252f;
+    --unverified-line: #4a5664;
+
+    --background: #0d131a;
+    --foreground: #e6eaf0;
+    --card: #141c25;
+    --card-foreground: #e6eaf0;
+    --popover: #19222d;
+    --popover-foreground: #e6eaf0;
+    --primary: #3f66e6;
+    --primary-foreground: #ffffff;
+    --secondary: #1f2935;
+    --secondary-foreground: #e6eaf0;
+    --muted: #1f2935;
+    --muted-foreground: #9ba7b6;
+    --accent: #1b2849;
+    --accent-foreground: #e6eaf0;
+    --destructive: #f58f86;
+    --border: #27313d;
+    --input: #627080;
+    --ring: #86a2ff;
+    --chart-1: #86a2ff;
+    --chart-2: #58c99f;
+    --chart-3: #e3a95e;
+    --chart-4: #9cb0de;
+    --chart-5: #9ba7b6;
+    --sidebar: #141c25;
+    --sidebar-foreground: #e6eaf0;
+    --sidebar-primary: #3f66e6;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1b2849;
+    --sidebar-accent-foreground: #e6eaf0;
+    --sidebar-border: #27313d;
+    --sidebar-ring: #86a2ff;
+  }
+}
+
+/*
+ * Type scale (use these instead of ad-hoc sizes; never combine with a text-<size> class):
+ *   type-page-title  24 px mobile → 30 px ≥ md     page <h1>
+ *   type-section     18 px                          panel / section headings
+ *   type-amount      32 px mobile → 40 px ≥ md     the one key amount on a screen (tabular)
+ *   type-amount-sm   20 px                          secondary amounts (tabular)
+ *   type-body        15 px / 1.6                    reading text (default UI text stays 14 px)
+ *   type-label       12 px, medium, wide tracking   section eyebrows and field labels
+ *   type-id          12 px mono                     hashes, ids (always abbreviated + copy)
+ */
+@utility type-page-title {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  @media (width >= 48rem) {
+    font-size: 1.875rem;
+  }
+}
+
+@utility type-section {
+  font-size: 1.125rem;
+  line-height: 1.35;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+@utility type-amount {
+  font-size: 2rem;
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  @media (width >= 48rem) {
+    font-size: 2.5rem;
+  }
+}
+
+@utility type-amount-sm {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-body {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+@utility type-label {
+  font-size: 0.75rem;
+  line-height: 1.33;
+  font-weight: 560;
+  letter-spacing: 0.02em;
+}
+
+@utility type-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.33;
+  letter-spacing: 0;
+}
+
+/* The selected decision: the ledger row and the evidence panel share this marker. */
+@utility selected-marker {
+  background-color: var(--cobalt-soft);
+  box-shadow: inset 3px 0 0 0 var(--cobalt);
 }
 
 @layer base {
@@ -128,10 +349,57 @@
   html {
     @apply font-sans;
   }
+  /* Japanese and Chinese: native system fonts first (correct Han / kana forms), Pretendard after.
+     Matches <html lang> and any element that declares its own language (e.g. the language menu). */
+  [lang|="ja"] {
+    font-family:
+      "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, "Pretendard Variable",
+      Pretendard, system-ui, sans-serif;
+  }
+  [lang|="zh"] {
+    font-family:
+      "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", "Pretendard Variable", Pretendard,
+      system-ui, sans-serif;
+  }
+  /* Korean breaks between words (eojeol), not inside them ("정산 완료" never splits as "정산 완\n료");
+     a single word longer than the line still wraps. */
+  [lang|="ko"] {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  /* Keyboard focus: a visible cobalt ring everywhere a component did not draw its own. */
+  :focus-visible {
+    outline-color: var(--ring);
+  }
 }
 
-/* Printable trip statement (/audit/[id]/report): A4, the app chrome is print:hidden. */
+/*
+ * shadcn components (components/ui, all carry data-slot) draw focus as a 3 px ring at 50 % alpha,
+ * which is ≈ 2.3:1 on the page and invisible around a filled cobalt button. Unlayered on purpose so
+ * it wins over their layered `focus-visible:ring-*` utilities: 75 % alpha reaches ≥ 3.6:1 on
+ * background and surface in both themes (docs/contrast-check.mjs, FOCUS_HALO_ALPHA).
+ */
+[data-slot]:focus-visible {
+  --tw-ring-color: color-mix(in oklab, var(--ring) 75%, transparent);
+}
+
+/* Reduced motion: no animation or transition longer than a frame. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print: always the light palette (the dark block above is screen-only) and paper-friendly chrome. */
 @media print {
+  :root {
+    color-scheme: light !important;
+  }
   @page {
     size: A4;
     margin: 14mm;
@@ -144,6 +412,7 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* Printable trip statement (/audit/[id]/report): A4, the app chrome is print:hidden. */
   .report-row,
   .report-keep {
     break-inside: avoid;

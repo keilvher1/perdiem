@@ -15,6 +15,7 @@ import { HealthBadge } from "./health-badge";
 import { LocaleSwitcher } from "./locale-switcher";
 import { MandateSelector } from "./mandate-selector";
 import { useMandates } from "./mandates-provider";
+import { ThemeSwitcher } from "./theme-switcher";
 
 const NAV = [
   { key: "traveler", base: "/traveler" },
@@ -36,13 +37,17 @@ function auditIdFromPath(pathname: string): string | null {
 function Wordmark() {
   const t = useT();
   return (
-    <Link href="/traveler" className="group flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-      <span className="grid size-7 place-items-center rounded-lg bg-indigo-600 text-white shadow-sm">
+    <Link
+      href="/traveler"
+      aria-label={t.ui.shell.home}
+      className="group flex min-w-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+    >
+      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
         <ReceiptText aria-hidden className="size-4" />
       </span>
-      <span className="flex flex-col leading-none">
-        <span className="text-[15px] font-semibold tracking-tight text-zinc-900">PerDiem</span>
-        <span className="mt-0.5 hidden text-[11px] text-zinc-500 lg:block">{t.shell.brand.tagline}</span>
+      <span className="flex min-w-0 flex-col leading-none">
+        <span className="text-[15px] font-semibold tracking-tight text-ink">PerDiem</span>
+        <span className="mt-1 hidden truncate text-xs text-muted-ink lg:block">{t.ui.shell.message}</span>
       </span>
     </Link>
   );
@@ -96,12 +101,15 @@ export function AppShell() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 px-4 sm:px-6">
-          <div className="flex h-14 items-center">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 px-4 sm:px-6 lg:gap-x-8">
+          <div className="flex h-14 min-w-0 items-center">
             <Wordmark />
           </div>
-          <nav aria-label={t.shell.nav.label} className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-6 overflow-x-auto border-t border-zinc-100 px-4 sm:order-none sm:mx-0 sm:w-auto sm:border-0 sm:px-0">
+          <nav
+            aria-label={t.shell.nav.label}
+            className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-5 overflow-x-auto border-t border-line px-4 sm:order-none sm:mx-0 sm:w-auto sm:border-0 sm:px-0"
+          >
             {NAV.map((n) => {
               const active = pathname === n.base || pathname.startsWith(`${n.base}/`);
               return (
@@ -110,8 +118,8 @@ export function AppShell() {
                   href={hrefFor(n.base)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-11 items-center border-b-2 text-sm font-medium whitespace-nowrap outline-none focus-visible:text-indigo-700 sm:h-14",
-                    active ? "border-indigo-600 text-zinc-900" : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900",
+                    "flex h-11 items-center border-b-2 text-sm font-medium whitespace-nowrap outline-none transition-colors duration-150 focus-visible:rounded-t-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:h-14",
+                    active ? "border-cobalt text-cobalt" : "border-transparent text-muted-ink hover:border-line-strong hover:text-ink",
                   )}
                 >
                   {t.shell.nav[n.key]}
@@ -119,14 +127,15 @@ export function AppShell() {
               );
             })}
           </nav>
-          <div className="ml-auto flex h-14 items-center gap-2">
+          <div className="ml-auto flex h-14 items-center gap-1.5 sm:gap-2">
             <HealthBadge />
             <LocaleSwitcher />
+            <ThemeSwitcher />
           </div>
         </div>
-        <div className="border-t border-zinc-100 bg-zinc-50/90">
+        <div className="border-t border-line bg-surface-2">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 sm:px-6">
-            <span className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">{t.shell.context.mandate}</span>
+            <span className="type-label text-muted-ink">{t.shell.context.mandate}</span>
             <MandateSelector
               mandates={mandates}
               value={current}
@@ -140,7 +149,7 @@ export function AppShell() {
                 <TooltipTrigger asChild>
                   <span
                     tabIndex={0}
-                    className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-300 px-2 py-0.5 text-[11px] font-medium text-zinc-500 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-dashed border-line-strong px-2 py-0.5 text-xs font-medium text-muted-ink outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Database aria-hidden className="size-3" />
                     <span className="sr-only sm:not-sr-only">{t.shell.context.mockData}</span>
@@ -162,11 +171,11 @@ export function AppShell() {
 /** Static stand-in while the shell's search params resolve (same height, no layout shift). */
 export function AppShellFallback() {
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white print:hidden">
+    <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-8 px-4 sm:px-6">
         <Wordmark />
       </div>
-      <div className="h-12 border-t border-zinc-100 bg-zinc-50/90" />
+      <div className="h-12 border-t border-line bg-surface-2" />
     </header>
   );
 }

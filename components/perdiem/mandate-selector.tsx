@@ -11,9 +11,11 @@ import type { ApiClientError } from "@/lib/api-client";
 import { useT } from "@/lib/i18n/provider";
 import { useNow } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
-import { effectiveMandateStatus, StatusPill } from "./status-pill";
+import { authorityState } from "@/lib/ui-state";
+import { StateBadge } from "./state-badge";
+import { StateGlyph } from "./state-glyph";
 
-/** Global mandate picker: id, traveler, status pill, remaining / budget. */
+/** Global mandate picker: id, traveler, authority badge, remaining / budget. */
 export function MandateSelector({
   mandates,
   value,
@@ -35,9 +37,10 @@ export function MandateSelector({
 
   if (!mandates && error) {
     return (
-      <div role="alert" className={cn("flex items-center gap-2 text-xs text-rose-700", className)}>
+      <div role="alert" className={cn("flex items-center gap-2 text-xs text-danger", className)}>
+        <StateGlyph glyph="triangle" className="size-3" />
         {s.loadFailed(error.code)}
-        <Button type="button" variant="outline" size="xs" onClick={onRetry} className="bg-white">
+        <Button type="button" variant="outline" size="xs" onClick={onRetry} className="bg-surface">
           <RefreshCw aria-hidden />
           {t.common.retry}
         </Button>
@@ -47,9 +50,9 @@ export function MandateSelector({
   if (!mandates) return <Skeleton className={cn("h-8 w-full sm:w-[460px]", className)} aria-label={s.loading} />;
   if (mandates.length === 0) {
     return (
-      <p className={cn("text-xs text-zinc-500", className)}>
+      <p className={cn("text-xs text-muted-ink", className)}>
         {s.emptyBefore}
-        <Link href="/principal" className="font-medium text-indigo-700 underline-offset-2 hover:underline">
+        <Link href="/principal" className="font-medium text-cobalt underline-offset-2 hover:underline">
           {s.emptyLink}
         </Link>
         {s.emptyAfter}
@@ -62,7 +65,7 @@ export function MandateSelector({
     <Select value={known ? value : undefined} onValueChange={onChange}>
       <SelectTrigger
         aria-label={s.label}
-        className={cn("h-8 w-full bg-white sm:w-[460px] [&_[data-slot=select-value]]:min-w-0", className)}
+        className={cn("h-8 w-full bg-surface sm:w-[480px] [&_[data-slot=select-value]]:min-w-0", className)}
       >
         <SelectValue placeholder={value ? s.unknown(value) : s.placeholder} />
       </SelectTrigger>
@@ -70,12 +73,12 @@ export function MandateSelector({
         {mandates.map((m) => (
           <SelectItem key={m.id} value={m.id} className="py-1.5 *:[span]:last:min-w-0 *:[span]:last:flex-1">
             <span className="flex min-w-0 flex-1 items-center gap-2">
-              <span className="max-w-[14rem] shrink-0 truncate font-mono text-xs font-medium text-zinc-900">{m.id}</span>
-              <span className="hidden min-w-0 truncate text-xs text-zinc-500 sm:inline">{m.traveler}</span>
-              <StatusPill status={effectiveMandateStatus(m, now)} size="xs" />
+              <span className="max-w-[14rem] shrink-0 truncate font-mono text-xs font-medium text-ink">{m.id}</span>
+              <span className="hidden min-w-0 truncate text-xs text-muted-ink sm:inline">{m.traveler}</span>
+              <StateBadge family="authority" state={authorityState(m, now)} className="h-5 px-1" />
               {/* In the closed trigger on phones only id + status fit; the open list always shows money. */}
-              <span className="ml-auto pl-2 text-xs whitespace-nowrap text-zinc-600 tabular-nums in-data-[slot=select-trigger]:hidden sm:in-data-[slot=select-trigger]:inline">
-                {fmtUsd(m.remainingUsd)} <span className="text-zinc-400">/ {fmtUsd(m.budgetUsd)}</span>
+              <span className="ml-auto pl-2 text-xs whitespace-nowrap text-ink tabular-nums in-data-[slot=select-trigger]:hidden sm:in-data-[slot=select-trigger]:inline">
+                {fmtUsd(m.remainingUsd)} <span className="text-muted-ink">/ {fmtUsd(m.budgetUsd)}</span>
               </span>
             </span>
           </SelectItem>

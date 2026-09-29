@@ -21,10 +21,16 @@ export function LocaleSwitcher() {
       <SelectTrigger
         size="sm"
         aria-label={t.shell.language.label}
-        className="bg-white text-xs text-zinc-700"
+        className="bg-surface text-xs text-ink"
       >
-        <Languages aria-hidden className="size-3.5 text-zinc-500" />
-        <SelectValue />
+        <Languages aria-hidden className="size-3.5 text-muted-ink" />
+        {/* Phones: the icon alone (the accessible name still says "Language"). Radix drops a
+            className on SelectValue, so the visible label is its own span. */}
+        <SelectValue>
+          <span lang={HTML_LANG[locale]} className="max-sm:sr-only">
+            {LOCALE_LABELS[locale]}
+          </span>
+        </SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" align="end">
         {LOCALES.map((l) => (

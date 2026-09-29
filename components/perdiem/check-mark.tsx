@@ -1,8 +1,11 @@
-import { CircleCheck, CircleX } from "lucide-react";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
+import { StateGlyph } from "./state-glyph";
 
-/** ✅ / ❌ as icon + text (color is never the only signal). */
+/**
+ * A verification result as glyph + text (colour is never the only signal): match = approve tone,
+ * ● with a check; mismatch = danger tone, ▲ (never the rule-stop amber). See lib/ui-state.ts.
+ */
 export function CheckMark({
   ok,
   yes,
@@ -16,8 +19,8 @@ export function CheckMark({
 }) {
   const t = useT();
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap", ok ? "text-emerald-700" : "text-rose-700", className)}>
-      {ok ? <CircleCheck aria-hidden className="size-4" /> : <CircleX aria-hidden className="size-4" />}
+    <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap", ok ? "text-approve" : "text-danger", className)}>
+      <StateGlyph glyph={ok ? "circle-check" : "triangle"} className="size-3" />
       {ok ? (yes ?? t.common.check.match) : (no ?? t.common.check.mismatch)}
     </span>
   );

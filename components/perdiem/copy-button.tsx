@@ -62,12 +62,12 @@ export function CopyButton({
       aria-label={name}
       title={name}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center gap-1 rounded text-zinc-500 transition-colors outline-none hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-indigo-500",
+        "inline-flex shrink-0 items-center justify-center gap-1 rounded-sm text-muted-ink transition-colors duration-150 outline-none hover:bg-line hover:text-ink focus-visible:ring-2 focus-visible:ring-ring",
         showText ? "h-7 px-2 text-xs font-medium" : "size-5",
         className,
       )}
     >
-      {copied ? <Check aria-hidden className="size-3.5 text-emerald-600" /> : <Copy aria-hidden className="size-3.5" />}
+      {copied ? <Check aria-hidden className="size-3.5 text-approve" /> : <Copy aria-hidden className="size-3.5" />}
       {showText && <span>{copied ? t.common.copy.copied : t.common.copy.label}</span>}
       <span className="sr-only" aria-live="polite">
         {copied ? t.common.copy.copied : ""}

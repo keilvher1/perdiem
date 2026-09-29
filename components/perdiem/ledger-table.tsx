@@ -9,21 +9,19 @@ import { cn } from "@/lib/utils";
 import { TableShell, Tbl, Td, Th, THead, Tr } from "./data-table";
 import { HashChip } from "./hash-chip";
 import { ReasonChips } from "./reason-chips";
+import { StateBadge } from "./state-badge";
 import { StatusPill } from "./status-pill";
 
+/** Decision as glyph + label (approve ●, stop ■ amber — a stop is a recorded decision, not an error). */
 function Decision({ decision }: { decision: LedgerEntryView["decision"] }) {
-  return decision === "APPROVE" ? (
-    <span className="font-mono text-[11px] font-semibold text-emerald-700">APPROVE</span>
-  ) : (
-    <span className="font-mono text-[11px] font-semibold text-rose-700">STOP</span>
-  );
+  return <StateBadge family="decision" state={decision === "APPROVE" ? "approve" : "stop"} variant="plain" />;
 }
 
 function Detail({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
   return (
     <div className={cn("min-w-0", wide && "sm:col-span-2")}>
-      <dt className="text-xs text-zinc-500">{label}</dt>
-      <dd className="mt-0.5 text-sm break-words text-zinc-800">{children}</dd>
+      <dt className="text-xs text-muted-ink">{label}</dt>
+      <dd className="mt-0.5 text-sm break-words text-ink">{children}</dd>
     </div>
   );
 }
@@ -74,7 +72,7 @@ export function LedgerTable({
             return (
               <Fragment key={e.id}>
                 <Tr
-                  className={cn("cursor-pointer", isOpen && "bg-zinc-50", e.decision === "STOP" && "bg-rose-50/20")}
+                  className={cn("cursor-pointer", isOpen && "bg-surface-2")}
                   onClick={toggle}
                 >
                   <Td className="w-8 pr-0">
@@ -86,27 +84,27 @@ export function LedgerTable({
                         ev.stopPropagation();
                         toggle();
                       }}
-                      className="grid size-6 place-items-center rounded text-zinc-400 outline-none hover:bg-zinc-200/70 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="grid size-6 place-items-center rounded-md text-muted-ink outline-none hover:bg-line hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <ChevronRight aria-hidden className={cn("size-4 transition-transform", isOpen && "rotate-90")} />
+                      <ChevronRight aria-hidden className={cn("size-4 transition-transform duration-150", isOpen && "rotate-90")} />
                     </button>
                   </Td>
                   <Td className="whitespace-nowrap">
-                    <div className="text-zinc-800 tabular-nums" title={f.date(e.at, true)}>
+                    <div className="text-ink tabular-nums" title={f.date(e.at, true)}>
                       {f.time(e.at)}
                     </div>
-                    <div className="text-xs text-zinc-400">{f.rel(e.at, now)}</div>
+                    <div className="text-xs text-muted-ink">{f.rel(e.at, now)}</div>
                   </Td>
                   <Td>
-                    <div className="max-w-[180px] truncate font-medium text-zinc-900">{e.merchantName ?? e.proposal.merchantId}</div>
-                    <div className="text-xs text-zinc-500">{e.merchantCategory != null ? (t.common.category[e.merchantCategory] ?? e.merchantCategory) : "—"}</div>
+                    <div className="max-w-[180px] truncate font-medium text-ink">{e.merchantName ?? e.proposal.merchantId}</div>
+                    <div className="text-xs text-muted-ink">{e.merchantCategory != null ? (t.common.category[e.merchantCategory] ?? e.merchantCategory) : "—"}</div>
                   </Td>
                   <Td numeric>{fmtUsd(e.proposal.amountUsd)}</Td>
                   <Td numeric>
                     <div>{fmtUsd(e.feeUsd)}</div>
-                    {e.actualFeeUsd !== undefined && <div className="text-xs text-zinc-400">{tl.actualFee(fmtUsd(e.actualFeeUsd))}</div>}
+                    {e.actualFeeUsd !== undefined && <div className="text-xs text-muted-ink">{tl.actualFee(fmtUsd(e.actualFeeUsd))}</div>}
                   </Td>
-                  <Td numeric className={cn("font-medium", e.decision === "STOP" ? "text-zinc-400" : "text-zinc-900")}>
+                  <Td numeric className={cn("font-medium", e.decision === "STOP" ? "text-muted-ink" : "text-ink")}>
                     {fmtUsd(e.totalUsd)}
                   </Td>
                   <Td>
@@ -123,7 +121,7 @@ export function LedgerTable({
                   </Td>
                 </Tr>
                 {isOpen && (
-                  <tr className="border-b border-zinc-100 bg-zinc-50/70">
+                  <tr className="border-b border-line bg-surface-2">
                     <td colSpan={10} className="px-4 pt-3 pb-4 sm:pl-11">
                       <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
                         <Detail label={tl.travelerSaid} wide>
@@ -146,7 +144,7 @@ export function LedgerTable({
                         </Detail>
                         <Detail label={tl.toolArgs} wide>
                           {e.toolArgsRaw ? (
-                            <code className="block rounded-md bg-white px-2 py-1.5 font-mono text-xs break-all text-zinc-700 ring-1 ring-zinc-200">
+                            <code className="block rounded-md bg-surface px-2 py-1.5 font-mono text-xs break-all text-ink ring-1 ring-line">
                               {e.toolArgsRaw}
                             </code>
                           ) : (
@@ -156,7 +154,7 @@ export function LedgerTable({
                       </dl>
                       {e.reasons.length > 0 && (
                         <div className="mt-3">
-                          <p className="mb-1.5 text-xs text-zinc-500">{tl.stopReasons}</p>
+                          <p className="mb-1.5 text-xs text-muted-ink">{tl.stopReasons}</p>
                           <ReasonChips reasons={e.reasons} />
                         </div>
                       )}

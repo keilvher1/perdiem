@@ -24,9 +24,19 @@ export const MOCK_DOWNLOAD_HINT = evidenceEn.actions.mockHint;
 
 type Tone = "light" | "dark";
 
-function Note({ tone, children }: { tone: Tone; children: ReactNode }) {
+/**
+ * A caution about the records (not a rule stop, so never the stop amber in the light tone):
+ * `pending` = payments still settling, `unverified` = something an auditor cannot check yet.
+ */
+function Note({ tone, kind, children }: { tone: Tone; kind: "pending" | "unverified"; children: ReactNode }) {
   return (
-    <p role="status" className={cn("flex items-start gap-1.5 text-xs", tone === "dark" ? "text-amber-300" : "text-amber-800")}>
+    <p
+      role="status"
+      className={cn(
+        "flex items-start gap-1.5 text-xs",
+        tone === "dark" ? "text-amber-300" : kind === "pending" ? "text-pending" : "text-unverified",
+      )}
+    >
       <TriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
       <span>{children}</span>
     </p>
@@ -97,7 +107,7 @@ export function EvidenceActions({
         size="sm"
         disabled={disabled}
         onClick={saveBoth}
-        className={cn(dark ? "text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40" : "text-zinc-600")}
+        className={cn(dark ? "text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40" : "text-muted-ink")}
       >
         {t.both}
       </Button>
@@ -111,7 +121,7 @@ export function EvidenceActions({
         <Tooltip>
           <TooltipTrigger asChild>
             {/* Disabled buttons get no pointer events, so the wrapper carries the tooltip. */}
-            <div tabIndex={0} aria-label={t.downloadsDisabled(t.mockHint)} className="w-fit rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+            <div tabIndex={0} aria-label={t.downloadsDisabled(t.mockHint)} className="w-fit rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {buttons}
             </div>
           </TooltipTrigger>
@@ -123,20 +133,29 @@ export function EvidenceActions({
         buttons
       )}
 
-      {mock && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>{t.mockOff}</p>}
-      {!mock && loading && !ready && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>{t.loading}</p>}
+      {mock && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-muted-ink")}>{t.mockOff}</p>}
+      {!mock && loading && !ready && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-muted-ink")}>{t.loading}</p>}
       {!mock && error && !ready && (
-        <p role="alert" className={cn("flex flex-wrap items-center gap-2 text-xs", dark ? "text-rose-300" : "text-rose-700")}>
+        <p role="alert" className={cn("flex flex-wrap items-center gap-2 text-xs", dark ? "text-rose-300" : "text-danger")}>
+          <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
           {t.loadError(error.message)}
           {onRetry && (
-            <button type="button" onClick={onRetry} className="underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+            <button type="button" onClick={onRetry} className="rounded-sm underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {t.retry}
             </button>
           )}
         </p>
       )}
-      {ready && records.mandate.anchorTx === null && <Note tone={tone}>{t.notAnchored}</Note>}
-      {ready && pending > 0 && <Note tone={tone}>{t.stillPending(pending)}</Note>}
+      {ready && records.mandate.anchorTx === null && (
+        <Note tone={tone} kind="unverified">
+          {t.notAnchored}
+        </Note>
+      )}
+      {ready && pending > 0 && (
+        <Note tone={tone} kind="pending">
+          {t.stillPending(pending)}
+        </Note>
+      )}
 
       <div className={cn("flex items-start gap-2 rounded-lg px-3 py-2", dark ? "bg-black/40 ring-1 ring-white/10" : "bg-zinc-900")}>
         <span aria-hidden className="py-1 font-mono text-[11px] leading-5 text-zinc-500">
@@ -145,7 +164,7 @@ export function EvidenceActions({
         <code className="min-w-0 flex-1 py-1 font-mono text-[11px] leading-5 break-all text-zinc-100">{cmd}</code>
         <CopyButton value={cmd} label={t.copyCommand} showText className="text-zinc-300 hover:bg-white/10 hover:text-white" />
       </div>
-      <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>
+      <p className={cn("text-xs", dark ? "text-zinc-400" : "text-muted-ink")}>
         {t.runFrom.before}
         <code className="font-mono">npm ci</code>
         {t.runFrom.after}

@@ -13,6 +13,7 @@ import * as receipt from "./receipt";
 import * as shell from "./shell";
 import * as stop from "./stop";
 import * as traveler from "./traveler";
+import * as ui from "./ui";
 
 const NAMESPACES = {
   common,
@@ -25,6 +26,7 @@ const NAMESPACES = {
   audit,
   metrics,
   evidence,
+  ui,
 } as const;
 
 export type Messages = {

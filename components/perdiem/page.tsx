@@ -21,26 +21,26 @@ export function PageHeader({
   return (
     <div className={cn("mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="min-w-0">
-        {eyebrow && <p className="mb-1 text-xs font-medium tracking-wide text-zinc-500 uppercase">{eyebrow}</p>}
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-900">{title}</h1>
-        {description && <p className="mt-1 max-w-3xl text-sm text-zinc-600">{description}</p>}
+        {eyebrow && <p className="type-label mb-1 text-muted-ink">{eyebrow}</p>}
+        <h1 className="type-page-title text-ink">{title}</h1>
+        {description && <p className="mt-1.5 max-w-3xl text-sm text-muted-ink sm:text-[15px] sm:leading-6">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-/** White card with the brief's spacing (p-6) and zinc-200 border. */
+/** Surface panel (6 px radius, hairline border, no shadow: structure comes from lines and alignment). */
 export function Panel({ children, className, as: As = "section" }: { children: ReactNode; className?: string; as?: "section" | "div" | "aside" }) {
-  return <As className={cn("rounded-xl border border-zinc-200 bg-white p-6 shadow-[0_1px_2px_rgba(24,24,27,0.04)]", className)}>{children}</As>;
+  return <As className={cn("rounded-lg border border-line bg-surface p-6", className)}>{children}</As>;
 }
 
 export function PanelTitle({ children, description, actions, className }: { children: ReactNode; description?: ReactNode; actions?: ReactNode; className?: string }) {
   return (
     <div className={cn("mb-4 flex flex-wrap items-start justify-between gap-3", className)}>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-zinc-900">{children}</h2>
-        {description && <p className="mt-0.5 text-sm text-zinc-500">{description}</p>}
+        <h2 className="text-base font-semibold text-ink">{children}</h2>
+        {description && <p className="mt-0.5 text-sm text-muted-ink">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>
@@ -64,21 +64,22 @@ export function StatTile({
   className?: string;
   labelClassName?: string;
 }) {
+  // Legacy tone names map onto the state tokens (app/globals.css): amber = rule stop, rose = error.
   const toneCls = {
-    default: "text-zinc-900",
-    emerald: "text-emerald-700",
-    amber: "text-amber-700",
-    rose: "text-rose-700",
-    indigo: "text-indigo-700",
+    default: "text-ink",
+    emerald: "text-approve",
+    amber: "text-stop",
+    rose: "text-danger",
+    indigo: "text-cobalt",
   }[tone];
   return (
-    <div className={cn("rounded-xl border border-zinc-200 bg-white px-4 py-3.5", className)}>
-      <div className={cn("flex items-start gap-1.5 text-xs font-medium text-zinc-500 [&>svg]:mt-0.5 [&>svg]:shrink-0", labelClassName)}>
+    <div className={cn("rounded-lg border border-line bg-surface px-4 py-3.5", className)}>
+      <div className={cn("flex items-start gap-1.5 text-xs font-medium text-muted-ink [&>svg]:mt-0.5 [&>svg]:shrink-0", labelClassName)}>
         {icon}
         <span>{label}</span>
       </div>
       <div className={cn("mt-1 text-2xl font-semibold tracking-tight tabular-nums", toneCls)}>{value}</div>
-      {hint && <div className="mt-0.5 text-xs text-zinc-500">{hint}</div>}
+      {hint && <div className="mt-0.5 text-xs text-muted-ink">{hint}</div>}
     </div>
   );
 }
