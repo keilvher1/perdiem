@@ -37,21 +37,47 @@ export function fmtUsdTile(n: number | null | undefined): string {
 }
 
 /** `0x6f83…af6e`. Does not validate hex (fixture hashes contain placeholder characters). */
-export function fmtHash(h: string | null | undefined, head = 6, tail = 4): string {
+export function fmtHash(
+  h: string | null | undefined,
+  head = 6,
+  tail = 4,
+): string {
   if (!h) return "—";
   if (h.length <= head + tail + 1) return h;
   return `${h.slice(0, head)}…${h.slice(-tail)}`;
 }
 
-/** "just now", "12 s ago", "2 min ago", "3 h ago", "in 2 d". `now` comes from useNow(). */
-export function fmtRel(iso: string | null | undefined, now: number | null): string {
+/**
+ * "just now", "12 s ago", "2 min ago", "3 h ago", "in 2 d". `now` comes from useNow().
+ * `locale` (a BCP 47 tag) other than English uses Intl.RelativeTimeFormat ("2분 전", "2 分钟前").
+ */
+export function fmtRel(
+  iso: string | null | undefined,
+  now: number | null,
+  locale = "en-US",
+): string {
   if (!iso) return "—";
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return iso;
-  if (now === null) return fmtDate(iso);
+  if (now === null) return fmtDate(iso, false, locale);
   const diff = now - t;
   const abs = Math.abs(diff);
   const future = diff < 0;
+  if (!locale.startsWith("en")) {
+    const rtf = new Intl.RelativeTimeFormat(locale, {
+      numeric: "auto",
+      style: "short",
+    });
+    const sign = future ? 1 : -1;
+    if (abs < 5_000) return rtf.format(0, "second");
+    if (abs < 60_000)
+      return rtf.format(sign * Math.round(abs / 1000), "second");
+    if (abs < 3_600_000)
+      return rtf.format(sign * Math.round(abs / 60_000), "minute");
+    if (abs < 86_400_000)
+      return rtf.format(sign * Math.round(abs / 3_600_000), "hour");
+    return rtf.format(sign * Math.round(abs / 86_400_000), "day");
+  }
   let out: string;
   if (abs < 5_000) return "just now";
   if (abs < 60_000) out = `${Math.round(abs / 1000)} s`;
@@ -70,28 +96,44 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 };
 
 /**
- * Date + time in the viewer's time zone. English month names on purpose (UI copy is
- * English for international judges) — the time zone is still the viewer's own.
+ * Date + time in the viewer's time zone. English month names by default (the reference UI copy
+ * is English for international judges); pass the viewer's language tag from useFmt() to follow
+ * the chosen UI language. The time zone is always the viewer's own.
  */
-export function fmtDate(iso: string | null | undefined, withZone = false): string {
+export function fmtDate(
+  iso: string | null | undefined,
+  withZone = false,
+  locale = "en-US",
+): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return iso;
-  return d.toLocaleString("en-US", withZone ? { ...DATE_FMT, timeZoneName: "short" } : DATE_FMT);
+  return d.toLocaleString(
+    locale,
+    withZone ? { ...DATE_FMT, timeZoneName: "short" } : DATE_FMT,
+  );
 }
 
 /** Time of day only, e.g. "14:03:12". */
-export function fmtTime(iso: string | null | undefined): string {
+export function fmtTime(
+  iso: string | null | undefined,
+  locale = "en-US",
+): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return iso;
-  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+  return d.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
 }
 
 /** 7957 → "7,957". */
-export function fmtInt(n: number | null | undefined): string {
+export function fmtInt(n: number | null | undefined, locale = "en-US"): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
-  return Math.round(n).toLocaleString("en-US");
+  return Math.round(n).toLocaleString(locale);
 }
 
 /** 1064 → "1.06 s", 980 → "980 ms", 0 → "0 ms". */
@@ -116,7 +158,11 @@ export function toDatetimeLocal(d: Date): string {
 /** Where a mandate is relative to its window. */
 export type WindowState = "before" | "open" | "expired";
 
-export function windowState(startsAt: string, expiresAt: string, now: number | null): WindowState {
+export function windowState(
+  startsAt: string,
+  expiresAt: string,
+  now: number | null,
+): WindowState {
   if (now === null) return "open";
   if (now < new Date(startsAt).getTime()) return "before";
   if (now > new Date(expiresAt).getTime()) return "expired";

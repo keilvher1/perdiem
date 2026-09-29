@@ -11,6 +11,7 @@ import { resolveMandateId } from "@/hooks/use-selected-mandate";
 import { useStoredMandateId, writeStoredMandateId } from "@/hooks/use-stored-mandate";
 import { EvidenceFab } from "./evidence-fab";
 import { HealthBadge } from "./health-badge";
+import { LocaleSwitcher } from "./locale-switcher";
 import { MandateSelector } from "./mandate-selector";
 import { useMandates } from "./mandates-provider";
 
@@ -117,6 +118,7 @@ export function AppShell() {
           </nav>
           <div className="ml-auto flex h-14 items-center gap-2">
             <HealthBadge />
+            <LocaleSwitcher />
           </div>
         </div>
         <div className="border-t border-zinc-100 bg-zinc-50/90">
