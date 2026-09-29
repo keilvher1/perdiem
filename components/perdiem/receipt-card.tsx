@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { SELECTED_MARKER } from "./decision-ledger";
 import type { EvidenceMandate } from "./evidence-panel";
 import { HashChip } from "./hash-chip";
+import { LocalAmount } from "./local-amount";
 import { StateBadge, TONE_TEXT } from "./state-badge";
 import { StateGlyph } from "./state-glyph";
 import { fmtReasonValue } from "./stop-codes";
@@ -395,6 +396,9 @@ export function ReceiptCard({
         </div>
         <div className="shrink-0 text-right">
           <p className="type-amount-sm text-ink">{fmtUsd(entry.proposal.amountUsd)}</p>
+          <p className="empty:hidden">
+            <LocalAmount usd={entry.proposal.amountUsd} />
+          </p>
           <p className="text-xs text-muted-ink">{tr.requested}</p>
         </div>
       </div>

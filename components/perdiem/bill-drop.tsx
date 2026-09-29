@@ -6,9 +6,15 @@
  * policy decides exactly as for a typed request. PerDiem pays the merchant named on the bill,
  * inside the mandate: it is not a reimbursement to the traveler.
  *
- * The file is read in the browser (lib/bills/extract.ts: text, PDF text layer, English OCR); only
- * the request sentence leaves the device. The card shows what was read and the exact sentence that
- * will be sent. This is input, not a decision: no StateBadge, no approve/stop colours.
+ * The file is read in the browser (lib/bills/extract.ts: text, PDF text layer, OCR in English plus
+ * the UI language's script); only the request sentence leaves the device. The card shows what was
+ * read and the exact sentence that will be sent. This is input, not a decision: no StateBadge, no
+ * approve/stop colours.
+ *
+ * Any currency: the total is shown in the bill's own currency (a select fixes a misread or an
+ * ambiguous ¥), and a total not in USD is converted with today's rate (GET /api/fx, hooks/use-fx.ts)
+ * — the USD amount, the rate, its source and date are shown and go into the request. Settlement is
+ * always USD. Without rates only "Edit as request" is offered.
  *
  *   <BillDrop mandateId={id} catalog={catalog} onSubmitText={send} onPrefill={setDraft}>
  *     {chatPanel}
@@ -33,19 +39,34 @@ import {
   type Ref,
 } from "react";
 import { flushSync } from "react-dom";
-import { ChevronDown, FileUp, Info, Paperclip, Pencil, ReceiptText, SendHorizontal, X } from "lucide-react";
+import { ChevronDown, FileUp, Info, Paperclip, Pencil, ReceiptText, RefreshCw, SendHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LocalAmount } from "@/components/perdiem/local-amount";
 import { StateGlyph } from "@/components/perdiem/state-glyph";
+import { useFxRates, type FxState } from "@/hooks/use-fx";
 import {
   assertBillFile,
   BILL_ACCEPT,
   BillFileError,
   fileToText,
+  ocrLanguagesFor,
   type BillFileErrorCode,
   type BillFileKind,
 } from "@/lib/bills/extract";
 import { parseBill, type BillCatalogMerchant, type ParsedBill } from "@/lib/bills/parse";
-import { billEditText, billPayText, billTooLong, canPayBill } from "@/lib/bills/request";
+import { billEditText, billHasNoItems, billPayText, billTooLong, billTotal, type BillPayOptions } from "@/lib/bills/request";
+import { COMMON_CURRENCIES, currencyName, isCurrencyCode, orderCurrencies } from "@/lib/fx/currencies";
+import { formatMoney, formatRate } from "@/lib/fx/format";
 import { fmtUsd } from "@/lib/format";
 import * as BILLS from "@/lib/i18n/messages/bills";
 import { useFmt, useLocale, useT } from "@/lib/i18n/provider";
@@ -103,8 +124,11 @@ export function BillDrop({
   className?: string;
   ref?: Ref<BillDropHandle>;
 }) {
-  const t = BILLS[useLocale()];
+  const locale = useLocale();
+  const t = BILLS[locale];
   const [state, setState] = useState<State>({ kind: "idle" });
+  /** A currency the traveler chose for the read bill (null: the one read off the bill). */
+  const [currency, setCurrency] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const depth = useRef(0);
   /** Time of the last dragover on the area (the overlay watchdog below). */
@@ -113,6 +137,8 @@ export function BillDrop({
   const inputRef = useRef<HTMLInputElement>(null);
   const attachRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  /** The wrapped conversation (children). */
+  const areaRef = useRef<HTMLDivElement>(null);
   const hintId = useId();
 
   const wraps = children !== undefined && children !== null && children !== false;
@@ -120,9 +146,13 @@ export function BillDrop({
   const open = state.kind !== "idle";
 
   const bill = useMemo(() => (state.kind === "preview" ? parseBill(state.text, catalog) : null), [state, catalog]);
+  // Today's rates, loaded once a bill is read (the currency list and any conversion need them).
+  const fx = useFxRates(state.kind === "preview");
+  const payOpts: BillPayOptions = { currency, fx: fx.rates };
 
   const readFile = useCallback(async (file: File) => {
     const id = ++run.current;
+    setCurrency(null);
     let fileKind: BillFileKind;
     try {
       fileKind = assertBillFile(file);
@@ -132,12 +162,12 @@ export function BillDrop({
     }
     setState({ kind: "reading", name: file.name, fileKind });
     try {
-      const { text } = await fileToText(file);
+      const { text } = await fileToText(file, { ocrLanguages: ocrLanguagesFor(locale) });
       if (run.current === id) setState({ kind: "preview", name: file.name, fileKind, text });
     } catch (e) {
       if (run.current === id) setState({ kind: "error", name: file.name, code: errorCode(e) });
     }
-  }, []);
+  }, [locale]);
 
   const openFilePicker = useCallback(() => {
     if (!blocked) inputRef.current?.click();
@@ -208,14 +238,21 @@ export function BillDrop({
   // Close first and synchronously: the children stop being inert before the parent acts, so its
   // handler can focus its own composer.
   const pay = () => {
-    const text = bill ? billPayText(bill) : null;
+    const text = bill ? billPayText(bill, payOpts) : null;
     if (!text || blocked) return;
     flushSync(close);
     onSubmitText(text);
+    // The request is now in flight, which disables "Attach bill" (where focus went back): keep
+    // keyboard focus in the conversation, on its composer, as after a typed request.
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active !== null && active !== document.body && active !== attachRef.current) return;
+      areaRef.current?.querySelector<HTMLElement>("textarea:not(:disabled)")?.focus({ preventScroll: true });
+    });
   };
   const edit = () => {
     if (!bill || !onPrefill || blocked) return;
-    const text = billEditText(bill);
+    const text = billEditText(bill, payOpts);
     flushSync(close);
     onPrefill(text);
   };
@@ -296,6 +333,9 @@ export function BillDrop({
         t={t}
         state={state}
         bill={bill}
+        fx={fx}
+        currency={currency}
+        onCurrencyChange={setCurrency}
         mandateId={mandateId}
         blocked={blocked}
         canEdit={onPrefill !== undefined}
@@ -385,7 +425,7 @@ export function BillDrop({
       {live}
       {toolbar === "top" && strip}
       <div className="relative min-h-0" data-bill-drop="" {...drag}>
-        <div inert={open} className="min-h-0">
+        <div ref={areaRef} inert={open} className="min-h-0">
           {children}
         </div>
         {card && (
@@ -408,6 +448,9 @@ function BillCard({
   t,
   state,
   bill,
+  fx,
+  currency,
+  onCurrencyChange,
   mandateId,
   blocked,
   canEdit,
@@ -420,6 +463,9 @@ function BillCard({
   t: Copy;
   state: Exclude<State, { kind: "idle" }>;
   bill: ParsedBill | null;
+  fx: FxState & { retry: () => void };
+  currency: string | null;
+  onCurrencyChange: (code: string | null) => void;
   mandateId: string | null;
   blocked: boolean;
   canEdit: boolean;
@@ -509,6 +555,9 @@ function BillCard({
       fileKind={state.fileKind}
       text={state.text}
       bill={bill}
+      fx={fx}
+      currency={currency}
+      onCurrencyChange={onCurrencyChange}
       mandateId={mandateId}
       blocked={blocked}
       canEdit={canEdit}
@@ -524,6 +573,7 @@ function BillCard({
   );
 }
 
+/** Notes that stop one click (the currency and the rate are checked separately, with the traveler's choice). */
 const MISSING = [
   "merchant_not_found",
   "merchant_ambiguous",
@@ -531,8 +581,6 @@ const MISSING = [
   "total_not_found",
   "total_negative",
   "nothing_due",
-  "total_not_usd",
-  "currency_unknown",
 ] as const;
 type MissingCode = (typeof MISSING)[number];
 const NOTES = ["merchant_approximate", "totals_disagree", "date_ambiguous"] as const;
@@ -544,6 +592,9 @@ function BillPreview({
   fileKind,
   text,
   bill,
+  fx,
+  currency: chosenCurrency,
+  onCurrencyChange,
   mandateId,
   blocked,
   canEdit,
@@ -561,6 +612,9 @@ function BillPreview({
   fileKind: BillFileKind;
   text: string;
   bill: ParsedBill;
+  fx: FxState & { retry: () => void };
+  currency: string | null;
+  onCurrencyChange: (code: string | null) => void;
   mandateId: string | null;
   blocked: boolean;
   canEdit: boolean;
@@ -573,11 +627,33 @@ function BillPreview({
   onEdit: () => void;
   onClose: () => void;
 }) {
-  const common = useT().common;
+  const { common, fx: tf } = useT();
   const f = useFmt();
-  const payable = canPayBill(bill);
-  const payText = billPayText(bill);
+  const opts: BillPayOptions = { currency: chosenCurrency, fx: fx.rates };
+  const total = billTotal(bill, opts);
+  const payText = billPayText(bill, opts);
+  const payable = payText !== null;
   const allItems = bill.items.length + bill.moreItems.length;
+  const noItems = billHasNoItems(bill);
+  const currency = total.currency;
+  const listFormat = (codes: string[]) =>
+    new Intl.ListFormat(f.tag, { type: "disjunction" }).format(codes.map((c) => `${currencyName(c, f.tag)} (${c})`));
+  // The rate is still loading: not a reason to refuse, just not ready.
+  const rateLoading = total.problem === "no_rate" && !fx.rates && (fx.status === "loading" || fx.status === "idle");
+  const rateProblem =
+    total.problem === "no_rate" && !rateLoading
+      ? fx.rates && currency
+        ? tf.bill.notCovered(currency)
+        : tf.bill.unavailable
+      : total.problem === "below_cent"
+        ? tf.bill.belowCent
+        : null;
+  const currencyProblem =
+    total.problem === "no_currency"
+      ? bill.ambiguousWith.length > 0
+        ? tf.bill.ambiguous(listFormat(bill.ambiguousWith))
+        : tf.bill.unknown
+      : null;
 
   const missing = bill.notes.filter((n): n is { code: MissingCode; detail?: string } => (MISSING as readonly string[]).includes(n.code));
   const notes = bill.notes.filter((n): n is { code: NoteCode; detail?: string } => (NOTES as readonly string[]).includes(n.code));
@@ -585,14 +661,21 @@ function BillPreview({
     switch (n.code) {
       case "merchant_ambiguous":
         return t.missing.merchant_ambiguous(n.detail ?? "");
-      case "total_not_usd":
-        return t.missing.total_not_usd(n.detail ?? "");
       default:
         return t.missing[n.code];
     }
   };
   const noteText = (n: { code: NoteCode; detail?: string }) =>
     n.code === "merchant_approximate" ? t.notes.merchant_approximate(n.detail ?? "") : t.notes[n.code];
+  // Why one click is not offered (the currency problem shows under the total instead).
+  const reasons = [
+    ...missing.map(missingText),
+    ...(rateProblem ? [rateProblem] : []),
+    ...(noItems ? [t.missing.no_items] : []),
+    ...(billTooLong(bill, opts) ? [t.missing.too_long] : []),
+  ];
+  // Only the rate is missing: "Pay this bill" shows (disabled) while it loads.
+  const waitingForRate = rateLoading && missing.length === 0 && bill.merchant !== null && !noItems;
 
   const date = bill.date
     ? new Intl.DateTimeFormat(f.tag, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${bill.date}T00:00:00Z`))
@@ -604,15 +687,35 @@ function BillPreview({
     </span>
   );
 
-  let total: ReactNode = notFound;
-  if (bill.totalUsd !== null) total = <span className="type-amount-sm text-ink">{fmtUsd(bill.totalUsd)}</span>;
-  else if (bill.totalAmount !== null)
-    total = (
-      <span className="type-amount-sm text-muted-ink">
-        {bill.currency ? `${bill.currency} ` : ""}
-        {bill.totalAmount.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+  // The total as printed, in its own currency ("₩16,000"); USD in the policy's format.
+  let printed: ReactNode = notFound;
+  if (bill.totalAmount !== null) {
+    printed = (
+      <span className={cn("type-amount-sm", total.amount === null ? "text-muted-ink" : "text-ink")} data-bill-total="">
+        {currency === "USD"
+          ? fmtUsd(bill.totalAmount)
+          : currency
+            ? formatMoney(bill.totalAmount, currency, f.tag)
+            : bill.totalAmount.toLocaleString(f.tag, { maximumFractionDigits: 3 })}
       </span>
     );
+  }
+  const conversion = total.conversion && total.conversion.currency !== "USD" ? total.conversion : null;
+  const rates = total.fx ?? fx.rates;
+  // The select: the bill's own candidates first, then the common currencies, then every other one
+  // the day's rates cover (only common ones while rates are not loaded).
+  const fromBill = [...new Set([...(bill.currency ? [bill.currency] : []), ...bill.ambiguousWith])];
+  const covered = rates ? Object.keys(rates.rates) : [];
+  const { common: commonCodes, others } = orderCurrencies(
+    [...(covered.length > 0 ? covered : COMMON_CURRENCIES), ...(currency ? [currency] : [])].filter((c) => !fromBill.includes(c)),
+  );
+  const currencyStatus = chosenCurrency
+    ? tf.bill.chosen
+    : bill.currency && bill.notes.some((n) => n.code === "currency_inferred")
+      ? tf.bill.inferred(bill.currency)
+      : bill.currency
+        ? tf.bill.detected
+        : currencyProblem;
 
   return (
     <section aria-labelledby={headingId} onKeyDown={onKeyDown} className={cn(frameClass, "border-line")} data-bill-card="preview">
@@ -655,7 +758,121 @@ function BillPreview({
           </dd>
 
           <dt className="type-label text-muted-ink">{t.preview.total}</dt>
-          <dd className="min-w-0 tabular-nums">{total}</dd>
+          <dd className="min-w-0 tabular-nums">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              {printed}
+              {bill.totalAmount !== null && (
+                <Select
+                  value={currency ?? ""}
+                  onValueChange={(v) => isCurrencyCode(v) && onCurrencyChange(v === bill.currency ? null : v)}
+                >
+                  <SelectTrigger size="sm" aria-label={tf.bill.currencyLabel} className="bg-surface text-xs text-ink" data-bill-currency="">
+                    <SelectValue placeholder={tf.bill.choose}>{currency ?? undefined}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent position="popper" align="start" className="max-h-[min(20rem,var(--radix-select-content-available-height))]">
+                    {fromBill.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>{tf.bill.detected}</SelectLabel>
+                        {fromBill.map((c) => (
+                          <CurrencyOption key={c} code={c} tag={f.tag} />
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {fromBill.length > 0 && <SelectSeparator />}
+                    <SelectGroup>
+                      <SelectLabel>{tf.menu.common}</SelectLabel>
+                      {commonCodes.map((c) => (
+                        <CurrencyOption key={c} code={c} tag={f.tag} />
+                      ))}
+                    </SelectGroup>
+                    {others.length > 0 && (
+                      <>
+                        <SelectSeparator />
+                        <SelectGroup>
+                          <SelectLabel>{tf.menu.all}</SelectLabel>
+                          {others.map((c) => (
+                            <CurrencyOption key={c} code={c} tag={f.tag} />
+                          ))}
+                        </SelectGroup>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+              {currency === "USD" && total.conversion && <LocalAmount usd={total.conversion.usd} />}
+            </span>
+            {bill.totalAmount !== null && currencyStatus && (
+              <span
+                className={cn(
+                  "mt-1 flex items-start gap-1.5 text-xs",
+                  currencyProblem && !chosenCurrency ? "text-ink" : "text-muted-ink",
+                )}
+              >
+                {currencyProblem && !chosenCurrency ? (
+                  <StateGlyph glyph="dashed" className="mt-0.5 size-3 shrink-0 text-unverified" />
+                ) : (
+                  <Info aria-hidden className="mt-px size-3.5 shrink-0" />
+                )}
+                {currencyStatus}
+                {chosenCurrency && bill.currency && (
+                  <button
+                    type="button"
+                    onClick={() => onCurrencyChange(null)}
+                    className="rounded-sm text-cobalt underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {bill.currency}
+                  </button>
+                )}
+              </span>
+            )}
+          </dd>
+
+          {currency !== null && currency !== "USD" && total.amount !== null && (
+            <>
+              <dt className="type-label text-muted-ink">{tf.bill.usd}</dt>
+              <dd className="min-w-0" data-bill-usd="">
+                {conversion && rates ? (
+                  <>
+                    <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="type-amount-sm text-ink tabular-nums">{fmtUsd(conversion.usd)}</span>
+                      <LocalAmount usd={conversion.usd} except={conversion.currency} />
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-ink tabular-nums" data-bill-rate="">
+                      {tf.rateLine(formatRate(conversion.rate, f.tag), conversion.currency, rates.source.name, rates.date)}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted-ink">
+                      {tf.bill.rounding}{" "}
+                      <a
+                        href={rates.source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-sm text-cobalt underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                        lang="en"
+                      >
+                        {rates.source.attribution ?? rates.source.name}
+                      </a>
+                    </span>
+                  </>
+                ) : rateLoading ? (
+                  <span className="flex items-start gap-1.5 text-sm text-pending">
+                    <StateGlyph glyph="half" className="mt-1 size-3" />
+                    {tf.bill.loading}
+                  </span>
+                ) : (
+                  // Why is in the "Not payable in one click" box below; here only the gap and a retry.
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-ink">
+                    <span className="text-muted-ink">—</span>
+                    {!fx.rates && (
+                      <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={fx.retry}>
+                        <RefreshCw aria-hidden />
+                        {tf.bill.retry}
+                      </Button>
+                    )}
+                  </span>
+                )}
+              </dd>
+            </>
+          )}
 
           <dt className="type-label text-muted-ink">{t.preview.date}</dt>
           <dd className="min-w-0 text-ink tabular-nums">
@@ -699,18 +916,25 @@ function BillPreview({
               {payText}
             </p>
           </div>
+        ) : waitingForRate ? (
+          <p className="flex items-start gap-2 rounded-md border border-line bg-surface-2 px-3 py-2 text-sm text-pending">
+            <StateGlyph glyph="half" className="mt-1 size-3" />
+            {tf.bill.loading}
+          </p>
         ) : (
           <div className="rounded-lg border border-dashed border-unverified-line bg-unverified-soft px-3 py-2.5 text-sm">
             <p className="flex items-start gap-2 font-medium text-ink">
               <StateGlyph glyph="dashed" className="mt-1 size-3 text-unverified" />
               {t.preview.blockedTitle}
             </p>
-            <ul className="mt-1 space-y-0.5 pl-5 text-ink">
-              {missing.map((n) => (
-                <li key={n.code}>{missingText(n)}</li>
-              ))}
-              {billTooLong(bill) && <li>{t.missing.too_long}</li>}
-            </ul>
+            {/* The currency problem is not repeated here: it sits under the total, next to its select. */}
+            {reasons.length > 0 && (
+              <ul className="mt-1 space-y-0.5 pl-5 text-ink">
+                {reasons.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            )}
             <p className="mt-1 pl-5 text-xs text-muted-ink">{t.preview.blockedBody}</p>
           </div>
         )}
@@ -728,8 +952,8 @@ function BillPreview({
 
       <footer className="sticky bottom-0 z-10 space-y-2 border-t border-line bg-surface-2 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          {payable && (
-            <Button type="button" size="lg" onClick={onPay} disabled={blocked} data-bill-pay="">
+          {(payable || waitingForRate) && (
+            <Button type="button" size="lg" onClick={onPay} disabled={blocked || !payable} data-bill-pay="">
               <SendHorizontal aria-hidden />
               {t.preview.pay}
             </Button>
@@ -747,5 +971,16 @@ function BillPreview({
         <p className="text-xs text-muted-ink">{t.preview.decides(mandateId)}</p>
       </footer>
     </section>
+  );
+}
+
+/** One currency in a select: the code, then its name in the UI language. */
+function CurrencyOption({ code, tag }: { code: string; tag: string }) {
+  const name = currencyName(code, tag);
+  return (
+    <SelectItem value={code} textValue={`${code} ${name}`} className="text-sm">
+      <span className="w-9 shrink-0 font-medium tabular-nums">{code}</span>
+      <span className="min-w-0 truncate text-muted-ink">{name}</span>
+    </SelectItem>
   );
 }

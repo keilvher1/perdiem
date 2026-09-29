@@ -55,9 +55,13 @@ sequenceDiagram
 
 The tool-call arguments become the `Proposal` that `evaluate()` checks; the ledger entry keeps the Kiln response id (`kilnResponseId`) and the raw tool arguments (`toolArgsRaw`), so every decision can be traced back to the model call that proposed it. Kiln applies `tool_choice: "auto"` only: no tool call means no proposal, and nothing is spent.
 
+**Bills:** on `/traveler`, drop a bill, receipt or invoice onto the conversation (or use **Attach bill**; PDF, image or text). It is read in the browser (text layer, or OCR for images), the card shows the merchant and total it read and the exact request sentence, and **Pay this bill** sends that sentence through the same chat path: PerDiem pays the merchant named on the bill, inside the mandate, through the same `evaluate()` boundary. It is not a reimbursement to the traveler. Sample bills: [`public/samples/`](public/samples/).
+
+**Currencies:** a bill in any currency is converted to USD at the live exchange rate shown on the card, with the rate's source and date (`GET /api/fx`; no rate, no conversion: the bill can then only be edited as a request). The header **Currency** menu adds approximate local equivalents next to USD amounts. Settlement stays in USD: the mandate, the policy and the ledger are in USD, and the Sepolia payment is that USD amount in test ETH at the fixed demo rate (`1 ETH = $4,000`).
+
 ## The boundary and where it is enforced
 
-Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs nine suites — policy engine (16 blocks), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4), audit check count equals the `verify.ts` count (9), decision and status log lines (6), Evidence download byte-identical to `npm run export` (7).
+Enforced in [`lib/policy.ts`](lib/policy.ts) `evaluate()` — a pure function called in [`lib/agent.ts`](lib/agent.ts) before any call into [`lib/chain.ts`](lib/chain.ts). The model never holds keys. Twelve checks (one per stop code); every failing check is reported, not just the first. Tests: `npm test` runs twelve suites — policy engine (16 blocks), view mapping (10), mandate-request validation (5), ledger write after broadcast (8), database errors (4), JSON-only requests (4), audit check count equals the `verify.ts` count (9), decision and status log lines (6), Evidence download byte-identical to `npm run export` (7), the 12 rule checks derived from a recorded decision (6), bill reading and the request sentence (27), exchange rates and currency detection (11).
 
 | Code | Rule |
 |---|---|
@@ -249,8 +253,8 @@ mkdir -p logs && npm run dev 2>&1 | tee logs/dev-server.log   # http://localhost
 Then, in a second terminal:
 
 ```bash
-npm test                          # nine suites: policy engine, view mapping, mandate requests, ledger write, DB errors,
-                                  # JSON-only, audit count, log lines, download == export
+npm test                          # twelve suites: policy engine, view mapping, mandate requests, ledger write, DB errors,
+                                  # JSON-only, audit count, log lines, download == export, rule checks, bills, exchange rates
 npm run scenario                  # the 8 scripted runs → evidence/scenario-*.json (2 real test-ETH payments)
 npm run export -- <mandate A id> && npx tsx scripts/verify.ts evidence/mandate-<id>.json evidence/ledger-<id>.json
                                   # or: Evidence button → Download records → verify.ts on the two downloaded files
@@ -260,6 +264,14 @@ npm run metrics                   # evidence/metrics.md, kiln-calls-by-flow.md, 
 ```
 
 The `tee` keeps the server log that `npm run metrics` turns into the per-flow Kiln log (`evidence/kiln-calls-by-flow.md`); with a plain `npm run dev` that file lists only the compare calls. Without any keys, `NEXT_PUBLIC_API_MODE=mock npm run dev` shows the whole UI on the fixtures in `docs/fixtures/` (no model, no chain).
+
+### Install as a desktop app
+
+PerDiem ships a web app manifest ([`app/manifest.ts`](app/manifest.ts)), so it installs as a desktop app with its own window and Dock / taskbar icon:
+
+- **Windows and macOS, Chrome or Edge:** the **Install app** tab on the left edge of the page (desktop widths), or the install icon in the address bar.
+- **macOS, Safari 17+:** **File > Add to Dock…** (the Install app tab shows these steps).
+- **Firefox:** no install flow; use the site in a tab.
 
 ## Evidence index
 
@@ -339,7 +351,7 @@ lib/agent.ts            one traveler message → fast-path | propose → evaluat
 lib/chain.ts            viem on Sepolia: fee estimate, broadcast, settlement, anchor, readMemo
 lib/db.ts, lib/view.ts  Supabase persistence and API view mapping
 lib/i18n/               UI copy in English (default), Korean, Japanese and Simplified Chinese
-app/api/**              route handlers (health, merchants, mandates, chat, ledger, confirm, usage, audit)
+app/api/**              route handlers (health, merchants, mandates, chat, ledger, confirm, usage, audit, fx)
 app/{traveler,principal,audit,metrics}/  the UI
 scripts/                seed, scenario, export, verify, compare-reasoning, metrics, capture, deck, db-clean, spike
 tests/                  policy tests (npm test) and the contract type check
@@ -360,6 +372,6 @@ The track allows existing code; this lists exactly what existed before the event
 
 ## Non-goals and demo simplifications
 
-Real money, mainnet, KYC, multi-currency, merchant onboarding, mobile app, LLM-written explanations. No authentication — the header has role links (Traveler, Principal, Audit, Metrics). Settlement uses test ETH at a fixed demo rate, labeled wherever amounts are shown.
+Real money, mainnet, KYC, multi-currency settlement, merchant onboarding, mobile app, LLM-written explanations. No user accounts — the header has role links (Traveler, Principal, Audit, Metrics); the hosted demo sits behind one HTTP Basic auth password (`proxy.ts`, active when `SITE_PASSWORD` is set). Settlement uses test ETH at a fixed demo rate, labeled wherever amounts are shown.
 
-The header's language menu switches the whole UI between English (the default), Korean, Japanese and Simplified Chinese, including stop reasons, dates and the printable trip statement. What is recorded stays as recorded: agent replies, ledger entries, the exported evidence files and the scripted demo requests are English in every language, and money is always shown in USD.
+The header's language menu switches the whole UI between English (the default), Korean, Japanese and Simplified Chinese, including stop reasons, dates and the printable trip statement. What is recorded stays as recorded: agent replies, ledger entries, the exported evidence files and the scripted demo requests are English in every language, and money is recorded and settled in USD (the header's Currency menu only adds approximate local equivalents beside USD amounts).

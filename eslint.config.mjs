@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored, minified OCR engine (tesseract.js worker + core), served as static files.
+    "public/tesseract/**",
   ]),
 ]);
 

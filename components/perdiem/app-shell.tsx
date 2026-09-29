@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { resolveMandateId } from "@/hooks/use-selected-mandate";
 import { useStoredMandateId, writeStoredMandateId } from "@/hooks/use-stored-mandate";
+import { CurrencySwitcher } from "./currency-switcher";
 import { EvidenceFab } from "./evidence-fab";
 import { HealthBadge } from "./health-badge";
 import { LocaleSwitcher } from "./locale-switcher";
@@ -132,6 +133,7 @@ export function AppShell() {
           <div className="ml-auto flex h-14 items-center gap-1.5 sm:gap-2">
             <HealthBadge />
             <LocaleSwitcher />
+            <CurrencySwitcher />
             <ThemeSwitcher />
           </div>
         </div>

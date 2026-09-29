@@ -52,7 +52,7 @@ export const en = {
       `The agent proposes the payment; the policy approves or stops it, exactly as for a typed request.${id ? ` Pays under ${id}.` : ""}`,
     blockedTitle: "Not payable in one click",
     blockedBody:
-      "One click needs a catalog merchant and a total in USD. Edit the request instead.",
+      "One click needs a catalog merchant, a total and its currency (converted to USD at today’s rate when it isn’t USD). Edit the request instead.",
     close: "Discard this bill",
   },
   /** Why one click is not offered. */
@@ -62,14 +62,12 @@ export const en = {
       `More than one catalog merchant is named on the bill (${names}).`,
     total_not_found: "Total not found.",
     subtotal_only: "Total not found: only a subtotal is printed.",
-    total_not_usd: (currency: string) =>
-      `Amount is in ${currency} — PerDiem pays in USD; edit the request.`,
-    currency_unknown:
-      "The bill doesn’t say which currency the total is in; edit the request.",
     total_negative: "The total is negative (a refund or credit), so there is nothing to pay.",
     nothing_due: "The bill shows nothing left to pay (amount due 0): it is already paid.",
     too_long:
       "The bill has too many item lines for one request; edit the request to shorten it.",
+    no_items:
+      "No item lines were read, so the policy couldn’t check what was bought. Edit the request to name the items.",
   },
   /** How a field was read (shown, not blocking). */
   notes: {
@@ -125,7 +123,7 @@ export const ko: typeof en = {
     source: {
       text: "텍스트 파일",
       pdf: "PDF 텍스트",
-      image: "이미지 · 영어 문자 인식",
+      image: "이미지 · 영어·한국어 문자 인식",
     },
     merchant: "가맹점",
     total: "합계",
@@ -142,7 +140,7 @@ export const ko: typeof en = {
       `에이전트가 결제를 제안하고, 정책이 직접 입력한 요청과 똑같이 승인하거나 중단합니다.${id ? ` ${id} 위임으로 결제합니다.` : ""}`,
     blockedTitle: "한 번에 결제할 수 없습니다",
     blockedBody:
-      "한 번에 결제하려면 카탈로그 가맹점과 USD 합계가 필요합니다. 요청으로 수정하세요.",
+      "한 번에 결제하려면 카탈로그 가맹점, 합계와 그 통화가 필요합니다(USD가 아니면 오늘 환율로 USD로 환산합니다). 요청으로 수정하세요.",
     close: "이 청구서 버리기",
   },
   missing: {
@@ -151,12 +149,10 @@ export const ko: typeof en = {
       `청구서에 카탈로그 가맹점이 둘 이상 적혀 있습니다(${names}).`,
     total_not_found: "합계를 찾지 못했습니다.",
     subtotal_only: "합계를 찾지 못했습니다. 소계만 적혀 있습니다.",
-    total_not_usd: (currency: string) =>
-      `금액이 ${currency}입니다. PerDiem은 USD로 결제하니 요청을 수정하세요.`,
-    currency_unknown: "청구서에 합계의 통화가 없습니다. 요청을 수정하세요.",
     total_negative: "합계가 음수(환불 또는 크레딧)라서 결제할 금액이 없습니다.",
     nothing_due: "청구서에 남은 결제 금액이 0입니다. 이미 결제된 청구서입니다.",
     too_long: "품목 줄이 너무 많아 한 번의 요청에 담을 수 없습니다. 요청을 수정해 줄이세요.",
+    no_items: "품목 줄을 읽지 못해 정책이 무엇을 샀는지 확인할 수 없습니다. 요청을 수정해 품목을 적으세요.",
   },
   notes: {
     merchant_approximate: (name: string) =>
@@ -210,7 +206,7 @@ export const ja: typeof en = {
     source: {
       text: "テキストファイル",
       pdf: "PDFのテキスト",
-      image: "画像・英語の文字認識",
+      image: "画像・英語と日本語の文字認識",
     },
     merchant: "加盟店",
     total: "合計",
@@ -227,7 +223,7 @@ export const ja: typeof en = {
       `エージェントが支払いを提案し、入力したリクエストと同じようにポリシーが承認または停止します。${id ? `${id}で支払います。` : ""}`,
     blockedTitle: "ワンクリックでは支払えません",
     blockedBody:
-      "ワンクリックで支払うには、カタログの加盟店とUSDの合計が必要です。リクエストとして編集してください。",
+      "ワンクリックで支払うには、カタログの加盟店、合計とその通貨が必要です（USD以外は本日のレートでUSDに換算します）。リクエストとして編集してください。",
     close: "この請求書を破棄",
   },
   missing: {
@@ -236,13 +232,11 @@ export const ja: typeof en = {
       `請求書にカタログの加盟店が複数記載されています（${names}）。`,
     total_not_found: "合計が見つかりません。",
     subtotal_only: "合計が見つかりません。小計しか記載されていません。",
-    total_not_usd: (currency: string) =>
-      `金額は${currency}です。PerDiemはUSDで支払うため、リクエストを編集してください。`,
-    currency_unknown: "合計の通貨が請求書に記載されていません。リクエストを編集してください。",
     total_negative: "合計がマイナス（返金またはクレジット）のため、支払う金額はありません。",
     nothing_due: "請求書の未払い額が0です。支払い済みの請求書です。",
     too_long:
       "品目の行が多すぎて1件のリクエストに収まりません。リクエストを編集して短くしてください。",
+    no_items: "品目の行を読み取れなかったため、ポリシーが購入内容を確認できません。リクエストを編集して品目を書いてください。",
   },
   notes: {
     merchant_approximate: (name: string) =>
@@ -295,7 +289,7 @@ export const zh: typeof en = {
     source: {
       text: "文本文件",
       pdf: "PDF 文字",
-      image: "图片 · 英文文字识别",
+      image: "图片 · 英文和简体中文文字识别",
     },
     merchant: "商户",
     total: "合计",
@@ -311,7 +305,7 @@ export const zh: typeof en = {
     decides: (id: string | null) =>
       `代理提出付款，策略会像处理手动输入的请求一样批准或拦截。${id ? `使用授权 ${id} 付款。` : ""}`,
     blockedTitle: "无法一键支付",
-    blockedBody: "一键支付需要目录中的商户和以 USD 计价的合计。请编辑为请求。",
+    blockedBody: "一键支付需要目录中的商户、合计及其货币（非 USD 时按今日汇率折算为 USD）。请编辑为请求。",
     close: "放弃此账单",
   },
   missing: {
@@ -319,12 +313,10 @@ export const zh: typeof en = {
     merchant_ambiguous: (names: string) => `账单上出现了多个目录商户（${names}）。`,
     total_not_found: "未找到合计。",
     subtotal_only: "未找到合计：账单上只有小计。",
-    total_not_usd: (currency: string) =>
-      `金额以 ${currency} 计价。PerDiem 以 USD 付款，请编辑请求。`,
-    currency_unknown: "账单未注明合计的币种，请编辑请求。",
     total_negative: "合计为负数（退款或抵扣），没有需要支付的金额。",
     nothing_due: "账单显示应付金额为 0，已经付清。",
     too_long: "账单明细行过多，无法放入一条请求。请编辑请求并缩短。",
+    no_items: "未能读取任何商品行，策略无法核对购买内容。请编辑请求并写明商品。",
   },
   notes: {
     merchant_approximate: (name: string) =>

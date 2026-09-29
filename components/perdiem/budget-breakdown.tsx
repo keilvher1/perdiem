@@ -5,6 +5,7 @@ import type { MandateSummary } from "@/contracts/api";
 import { fmtUsd } from "@/lib/format";
 import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
+import { LocalAmount } from "./local-amount";
 import { StateGlyph } from "./state-glyph";
 
 export type BudgetFigures = Pick<MandateSummary, "budgetUsd" | "spentUsd" | "pendingUsd" | "remainingUsd">;
@@ -15,13 +16,13 @@ const HATCH = "bg-[repeating-linear-gradient(135deg,var(--pending)_0_3px,transpa
 function Figure({
   swatch,
   label,
-  value,
+  usd,
   hint,
   valueClassName,
 }: {
   swatch?: ReactNode;
   label: string;
-  value: string;
+  usd: number;
   hint: string;
   valueClassName?: string;
 }) {
@@ -31,7 +32,10 @@ function Figure({
         {swatch}
         {label}
       </dt>
-      <dd className={cn("type-amount-sm mt-0.5 text-ink", valueClassName)}>{value}</dd>
+      <dd className={cn("type-amount-sm mt-0.5 text-ink", valueClassName)}>{fmtUsd(usd)}</dd>
+      <dd className="empty:hidden">
+        <LocalAmount usd={usd} />
+      </dd>
       <dd className="mt-0.5 text-xs text-muted-ink">{hint}</dd>
     </div>
   );
@@ -66,9 +70,11 @@ export function BudgetBreakdown({
         <div>
           <p className="type-label text-muted-ink">{b.remaining}</p>
           <p className={cn("type-amount mt-1", over ? "text-danger" : "text-ink")}>{fmtUsd(remainingUsd)}</p>
+          <LocalAmount usd={remainingUsd} className="mt-0.5 block text-sm" />
         </div>
         <p className="pb-1 text-sm text-muted-ink">
-          {b.budget} <span className="font-medium text-ink tabular-nums">{fmtUsd(budgetUsd)}</span>
+          {b.budget} <span className="font-medium text-ink tabular-nums">{fmtUsd(budgetUsd)}</span>{" "}
+          <LocalAmount usd={budgetUsd} />
         </p>
       </div>
 
@@ -89,17 +95,17 @@ export function BudgetBreakdown({
 
       {/* Three columns once the breakdown itself is 32rem wide (container query), not the viewport. */}
       <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-line pt-3 @lg:grid-cols-3">
-        <Figure label={b.spent} value={fmtUsd(spentUsd)} hint={b.spentHint} />
+        <Figure label={b.spent} usd={spentUsd} hint={b.spentHint} />
         <Figure
           swatch={<span aria-hidden className="h-1.5 w-3.5 shrink-0 rounded-[1px] bg-ink" />}
           label={b.committed}
-          value={fmtUsd(committed)}
+          usd={committed}
           hint={b.committedHint}
         />
         <Figure
           swatch={<span aria-hidden className={cn("h-1.5 w-3.5 shrink-0 rounded-[1px] ring-1 ring-pending-line", HATCH)} />}
           label={b.pending}
-          value={fmtUsd(pendingUsd)}
+          usd={pendingUsd}
           hint={b.pendingHint}
           valueClassName="text-pending"
         />

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { LedgerEntryView } from "@/contracts/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BillDrop, type MerchantLite } from "@/components/perdiem/bill-drop";
 import { DecisionWorkspace, type DecisionWorkspaceHandle } from "@/components/perdiem/decision-workspace";
 import { PageContainer, PageHeader } from "@/components/perdiem/page";
 import type { ReceiptBudget } from "@/components/perdiem/receipt-card";
@@ -56,6 +57,11 @@ function TravelerInner() {
   const loadDetail = useMemo(() => (id ? () => api.mandate(id) : null), [id]);
   const detail = useResource(loadDetail);
   const terms = detail.data?.mandate ?? null;
+  // The mandate's merchant catalog, for reading a dropped bill (components/perdiem/bill-drop.tsx).
+  const billCatalog = useMemo<MerchantLite[]>(
+    () => (terms?.catalog ?? []).map(({ id: mid, name, category }) => ({ id: mid, name, category })),
+    [terms],
+  );
   const ledger = detail.data?.ledger ?? null;
   const refreshDetail = detail.refresh;
   const refreshAll = useCallback(() => {
@@ -188,22 +194,36 @@ function TravelerInner() {
         ) : loading ? (
           <MandateStripSkeleton className="lg:hidden" />
         ) : null}
-        <ChatPanel
+        {/* A dropped or attached bill becomes a request sent through the same chat path; PerDiem pays
+            the merchant named on it, inside the mandate (not a reimbursement). */}
+        <BillDrop
           className="min-w-0 lg:sticky lg:top-32 lg:col-start-1 lg:row-start-1"
-          messages={messages}
-          pending={pending}
-          summary={summary}
-          draft={draft}
-          setDraft={setDraft}
-          canSend={Boolean(summary)}
-          onSend={(text) => void send(text)}
-          onRetry={(text, mandateId) => void send(text, mandateId)}
-          onPickChip={onPickChip}
-          onSettled={refreshAll}
-          onOpenEvidence={openEvidence}
-          budgetFor={budgetFor}
-          selectedId={selectedId}
-        />
+          mandateId={summary?.id ?? null}
+          catalog={billCatalog}
+          disabled={pending !== null}
+          onSubmitText={(text) => void send(text)}
+          onPrefill={(text) => {
+            setDraft(text);
+            document.getElementById("traveler-composer")?.focus();
+          }}
+        >
+          <ChatPanel
+            className="min-w-0"
+            messages={messages}
+            pending={pending}
+            summary={summary}
+            draft={draft}
+            setDraft={setDraft}
+            canSend={Boolean(summary)}
+            onSend={(text) => void send(text)}
+            onRetry={(text, mandateId) => void send(text, mandateId)}
+            onPickChip={onPickChip}
+            onSettled={refreshAll}
+            onOpenEvidence={openEvidence}
+            budgetFor={budgetFor}
+            selectedId={selectedId}
+          />
+        </BillDrop>
         <div className="min-w-0 space-y-4 lg:col-start-2 lg:row-start-1">
           {summary ? (
             <MandatePanel

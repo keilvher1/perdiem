@@ -7,6 +7,7 @@ import { CopyButton } from "@/components/perdiem/copy-button";
 import { StateBadge, TONE_SOFT } from "@/components/perdiem/state-badge";
 import { StateGlyph } from "@/components/perdiem/state-glyph";
 import { fmtUsd, windowState } from "@/lib/format";
+import { LocalAmount } from "@/components/perdiem/local-amount";
 import { useFmt, useT } from "@/lib/i18n/provider";
 import { authorityState, stateSpec, type AuthorityState } from "@/lib/ui-state";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,7 @@ export function MandatePanel({
         <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
           <span className={cn("type-amount", over ? "text-danger" : "text-ink")}>{fmtUsd(summary.remainingUsd)}</span>
           <span className="text-sm text-muted-ink">{tm.ofBudget(fmtUsd(summary.budgetUsd))}</span>
+          <LocalAmount usd={summary.remainingUsd} className="basis-full" />
         </p>
         <BudgetBar summary={summary} />
         {over && (
@@ -256,7 +258,8 @@ export function MandateStrip({
         <p className="text-sm text-muted-ink">
           {tm.remainingNow}{" "}
           <span className="text-base font-semibold text-ink tabular-nums">{fmtUsd(summary.remainingUsd)}</span>{" "}
-          <span className="whitespace-nowrap">{tm.ofBudget(fmtUsd(summary.budgetUsd))}</span>
+          <span className="whitespace-nowrap">{tm.ofBudget(fmtUsd(summary.budgetUsd))}</span>{" "}
+          <LocalAmount usd={summary.remainingUsd} />
         </p>
       </div>
       <AuthorityNote state={state} summary={summary} />

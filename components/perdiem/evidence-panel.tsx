@@ -13,6 +13,7 @@ import { CopyButton } from "./copy-button";
 import { SELECTED_MARKER } from "./decision-ledger";
 import { HashChip } from "./hash-chip";
 import { JsonView } from "./json-view";
+import { LocalAmount } from "./local-amount";
 import type { RuleMandate } from "./rule-summary";
 import { StateBadge, TONE_TEXT } from "./state-badge";
 import { StateGlyph } from "./state-glyph";
@@ -299,7 +300,12 @@ export function EvidencePanel({
               <span className="font-mono">{entry.proposal.merchantId}</span>
             </p>
           </div>
-          <p className="type-amount-sm text-ink">{fmtUsd(entry.proposal.amountUsd)}</p>
+          <div className="text-right">
+            <p className="type-amount-sm text-ink">{fmtUsd(entry.proposal.amountUsd)}</p>
+            <p className="empty:hidden">
+              <LocalAmount usd={entry.proposal.amountUsd} />
+            </p>
+          </div>
         </div>
 
         {decision === "stop" ? (
@@ -334,9 +340,15 @@ export function EvidencePanel({
         )}
 
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 @lg:grid-cols-4">
-          <Pair label={ev.amount}>{fmtUsd(entry.proposal.amountUsd)}</Pair>
+          <Pair label={ev.amount}>
+            {fmtUsd(entry.proposal.amountUsd)}
+            <LocalAmount usd={entry.proposal.amountUsd} className="block" />
+          </Pair>
           <Pair label={ev.fee}>{money.fee}</Pair>
-          <Pair label={ev.total}>{money.total}</Pair>
+          <Pair label={ev.total}>
+            {money.total}
+            <LocalAmount usd={entry.totalUsd} className="block" />
+          </Pair>
           <Pair label={ev.decidedAt}>
             <time dateTime={entry.at} title={f.date(entry.at, true)}>
               {f.time(entry.at)}

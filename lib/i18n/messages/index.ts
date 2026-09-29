@@ -6,6 +6,7 @@ import type { Locale } from "../config";
 import * as audit from "./audit";
 import * as common from "./common";
 import * as evidence from "./evidence";
+import * as fx from "./fx";
 import * as ledger from "./ledger";
 import * as metrics from "./metrics";
 import * as principal from "./principal";
@@ -26,6 +27,7 @@ const NAMESPACES = {
   audit,
   metrics,
   evidence,
+  fx,
   ui,
 } as const;
 

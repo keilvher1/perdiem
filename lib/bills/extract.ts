@@ -3,12 +3,16 @@
  *
  *   .txt                     File.text()
  *   .pdf                     the PDF's text layer (unpdf, pdf.js inside), rebuilt line by line
- *   .png .jpg .jpeg .webp    English OCR (tesseract.js in a Web Worker)
+ *   .png .jpg .jpeg .webp    OCR (tesseract.js in a Web Worker): English, plus Korean, Japanese or
+ *                            Simplified Chinese when that is the UI language (`ocrLanguages`)
  *
  * Both libraries are loaded with a dynamic import() the first time a file of that kind arrives, so
  * the traveler page does not carry them. OCR runs entirely on self-hosted files under
- * public/tesseract/ (worker, WebAssembly core, English model; copied by
- * lib/bills/copy-ocr-assets.mjs): no runtime CDN fetch.
+ * public/tesseract/ (worker, WebAssembly core, English model: lib/bills/copy-ocr-assets.mjs; the
+ * kor / jpn / chi_sim models, 1.5–1.9 MB each: lib/bills/fetch-ocr-langs.mjs): no runtime CDN
+ * fetch. A CJK model is fetched only when a Korean, Japanese or Chinese UI reads its first image;
+ * with an English UI, text in those scripts is not recognized in images (PDF and text bills are
+ * read in any script).
  *
  * Errors are BillFileError with a code; the UI localizes the code (lib/i18n/messages/bills.ts).
  */
@@ -83,13 +87,24 @@ export function assertBillFile(file: { name: string; type: string; size: number 
   return kind;
 }
 
-export async function fileToText(file: File): Promise<BillText> {
+/** OCR models PerDiem self-hosts (public/tesseract/<code>.traineddata.gz). */
+export type OcrLanguage = "eng" | "kor" | "jpn" | "chi_sim";
+
+/** The OCR models for a UI language: English, plus the UI language's own script. */
+export function ocrLanguagesFor(locale: string): OcrLanguage[] {
+  if (locale === "ko") return ["eng", "kor"];
+  if (locale === "ja") return ["eng", "jpn"];
+  if (locale === "zh") return ["eng", "chi_sim"];
+  return ["eng"];
+}
+
+export async function fileToText(file: File, opts: { ocrLanguages?: OcrLanguage[] } = {}): Promise<BillText> {
   const kind = assertBillFile(file);
   let text: string;
   try {
     if (kind === "text") text = await file.text();
     else if (kind === "pdf") text = await pdfText(new Uint8Array(await file.arrayBuffer()));
-    else text = await ocrText(file);
+    else text = await ocrText(file, opts.ocrLanguages ?? ["eng"]);
   } catch (e) {
     if (e instanceof BillFileError) throw e;
     throw new BillFileError("read_failed", `Could not read ${file.name}`, { cause: e });
@@ -179,11 +194,21 @@ function hasWasmSimd(): boolean {
   }
 }
 
-type OcrWorker = { recognize(image: Blob): Promise<{ data: { text: string } }> };
+type OcrWorker = { recognize(image: Blob): Promise<{ data: { text: string } }>; terminate(): Promise<unknown> };
 let ocrWorker: Promise<OcrWorker> | null = null;
+/** The models the current worker was created with ("eng+kor"). */
+let ocrLangs = "";
 
-function getOcrWorker(): Promise<OcrWorker> {
+function getOcrWorker(languages: OcrLanguage[]): Promise<OcrWorker> {
+  const langs = languages.join("+");
+  if (ocrWorker && ocrLangs !== langs) {
+    // The UI language changed: a worker with the other models replaces this one.
+    const old = ocrWorker;
+    ocrWorker = null;
+    void old.then((w) => w.terminate()).catch(() => {});
+  }
   if (!ocrWorker) {
+    ocrLangs = langs;
     ocrWorker = (async () => {
       if (!hasWasmSimd()) throw new BillFileError("ocr_unavailable", "WebAssembly SIMD is not available");
       const mod = await import("tesseract.js");
@@ -191,7 +216,7 @@ function getOcrWorker(): Promise<OcrWorker> {
       const base = new URL("/tesseract/", window.location.origin).href;
       let worker: Awaited<ReturnType<typeof T.createWorker>>;
       try {
-        worker = await T.createWorker("eng", T.OEM.LSTM_ONLY, {
+        worker = await T.createWorker(languages, T.OEM.LSTM_ONLY, {
           workerPath: `${base}worker.min.js`,
           corePath: `${base}tesseract-core-simd-lstm.wasm.js`,
           langPath: base.replace(/\/$/, ""),
@@ -206,15 +231,16 @@ function getOcrWorker(): Promise<OcrWorker> {
       await worker.setParameters({ tessedit_pageseg_mode: T.PSM.SINGLE_BLOCK, preserve_interword_spaces: "1" });
       return worker;
     })();
-    ocrWorker.catch(() => {
-      ocrWorker = null; // let a later drop try again
+    const mine = ocrWorker;
+    mine.catch(() => {
+      if (ocrWorker === mine) ocrWorker = null; // let a later drop try again
     });
   }
   return ocrWorker;
 }
 
-async function ocrText(image: Blob): Promise<string> {
-  const worker = await getOcrWorker();
+async function ocrText(image: Blob, languages: OcrLanguage[]): Promise<string> {
+  const worker = await getOcrWorker(languages);
   const { data } = await worker.recognize(image);
   return data.text;
 }

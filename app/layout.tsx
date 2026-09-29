@@ -8,6 +8,7 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell, AppShellFallback } from "@/components/perdiem/app-shell";
+import { InstallApp } from "@/components/perdiem/install-app";
 import { MandatesProvider } from "@/components/perdiem/mandates-provider";
 import { SiteFooter } from "@/components/perdiem/site-footer";
 import { ThemeProvider } from "@/components/perdiem/theme-provider";
@@ -19,6 +20,11 @@ import { LocaleProvider } from "@/lib/i18n/provider";
 export const metadata: Metadata = {
   title: "PerDiem",
   description: "Delegated spend, kept inside the line.",
+  applicationName: "PerDiem",
+  appleWebApp: { capable: true, title: "PerDiem", statusBarStyle: "default" },
+  icons: {
+    apple: [{ url: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -38,6 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <main className="flex-1">{children}</main>
                 <SiteFooter />
               </MandatesProvider>
+              <InstallApp />
               {/* Offsets keep toasts above the floating Evidence button (bottom-6, 44–48 px tall).
                   The Toaster follows the theme (components/ui/sonner.tsx reads next-themes). */}
               <Toaster

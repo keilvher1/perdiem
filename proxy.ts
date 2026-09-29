@@ -39,6 +39,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next's static build assets (no secrets there); pages and /api are covered.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Everything except Next's static build assets and the PWA/OCR static files (web app manifest,
+  // service worker, icons, self-hosted OCR engine). None of them hold data; every page and /api route stays covered.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest\\.webmanifest$|sw\\.js$|icons/[\\w-]+\\.png$|tesseract/[\\w.-]+$).*)"],
 };

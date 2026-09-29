@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LocalAmount } from "@/components/perdiem/local-amount";
 import { ErrorState } from "@/components/perdiem/states";
 import { StateGlyph } from "@/components/perdiem/state-glyph";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,10 @@ function GrantFormInner({
               onChange={(e) => setBudget(e.target.value)}
               {...err("budget")}
             />
+            {/* Helper only: the budget is entered, stored and enforced in USD. */}
+            <p className="mt-1 empty:hidden" data-budget-local="">
+              <LocalAmount usd={Number(budget) > 0 ? Number(budget) : null} />
+            </p>
             <FieldError id="err-budget" msg={errMsg("budget")} />
           </div>
           <div>
@@ -215,6 +220,9 @@ function GrantFormInner({
               onChange={(e) => setCap(e.target.value)}
               {...err("cap")}
             />
+            <p className="mt-1 empty:hidden" data-cap-local="">
+              <LocalAmount usd={Number(cap) > 0 ? Number(cap) : null} />
+            </p>
             <FieldError id="err-cap" msg={errMsg("cap")} />
           </div>
         </div>

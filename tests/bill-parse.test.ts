@@ -3,14 +3,17 @@
  * text) and lib/bills/request.ts (the chat request "Pay this bill" sends).
  * Run: npx tsx tests/bill-parse.test.ts
  *
- * The two sample bills are the exact text lib/bills/extract.ts reads from
- * public/samples/bill-yangjae-kitchen.pdf and bill-wine-and-co.pdf (PDF text layer) and from the
- * .png versions (tesseract.js, English, single-block mode).
+ * The sample bills are the exact text lib/bills/extract.ts reads from
+ * public/samples/bill-yangjae-kitchen.pdf, bill-wine-and-co.pdf and bill-yangjae-kitchen-krw.pdf
+ * (PDF text layer) and from the .png versions (tesseract.js, English, single-block mode).
+ * Bills in other currencies are converted with FX below: a trimmed copy of the real
+ * GET /api/fx body of 2026-09-29 (ExchangeRate-API).
  */
 import assert from "node:assert/strict";
 import { parseBill, type BillCatalogMerchant, type BillNoteCode, type ParsedBill } from "../lib/bills/parse";
-import { billEditText, billPayText, billTooLong, canPayBill, MAX_REQUEST_CHARS } from "../lib/bills/request";
+import { billEditText, billHasNoItems, billPayText, billTooLong, billTotal, canPayBill, MAX_REQUEST_CHARS } from "../lib/bills/request";
 import { runsToLines } from "../lib/bills/extract";
+import type { FxRates } from "../lib/fx/normalize";
 
 const catalog: BillCatalogMerchant[] = [
   { id: "m1", name: "Yangjae Kitchen", category: "meal" },
@@ -264,12 +267,15 @@ test("never invents an amount: refunds, odd number formats", () => {
   }
   // Leader dashes are not a minus sign.
   assert.equal(parseBill("Yangjae Kitchen\nTOTAL--------$12.00", catalog).totalUsd, 12);
-  // A number inside a longer run of digits and separators is not an amount.
-  for (const line of ["TOTAL $1.234,56", "TOTAL $12.000"]) {
+  // "$12.000" could be 12 or 12,000 (USD has 2 decimals, and one dot group is not proof of
+  // thousands): no amount rather than a wrong one. "$1.234,56" is unambiguous (dot thousands,
+  // decimal comma) and reads 1,234.56.
+  for (const line of ["TOTAL $12.000", "TOTAL $1.234.5"]) {
     const b = parseBill(`Yangjae Kitchen\n${line}`, catalog);
     assert.equal(b.totalAmount, null, line);
     assert.equal(canPayBill(b), false, line);
   }
+  assert.equal(parseBill("Yangjae Kitchen\nTOTAL $1.234,56", catalog).totalUsd, 1234.56);
 });
 
 test("a receipt already paid (amount / balance due $0.00) is not paid again", () => {
@@ -323,6 +329,184 @@ test("approximate merchant: a whole line one character off, never part of anothe
   const cheese = parseBill("Wine and Cheese Bar\n1 x Cheese plate $12.00\nTOTAL $12.00", catalog);
   assert.equal(cheese.merchant, null);
   assert.equal(canPayBill(cheese), false);
+});
+
+// ---------------------------------------------------------------------------------------------
+// Bills in other currencies: converted to USD with the day's rate (settlement is always USD)
+// ---------------------------------------------------------------------------------------------
+
+const FX: FxRates = {
+  base: "USD",
+  date: "2026-09-29",
+  rates: { AUD: 1.425042, CNY: 6.721579, EUR: 0.879241, GBP: 0.754467, JPY: 157.315109, KRW: 1358.968392, USD: 1 },
+  source: { name: "ExchangeRate-API", url: "https://www.exchangerate-api.com", attribution: "Rates By Exchange Rate API" },
+  fetchedAt: "2026-09-29T09:00:00.000Z",
+};
+
+/** public/samples/bill-yangjae-kitchen-krw.pdf, text layer. */
+const YANGJAE_KRW_PDF = `Yangjae Kitchen
+Korean home cooking
+27 Yangjae-daero 12-gil, Seocho-gu
+Seoul 06770, Republic of Korea
+Tel +82 2-555-0142
+R E C E I P T
+Bill no. YK-0929-0415
+Date 2026-09-29 12:24
+Table 4
+ITEM AMOUNT
+1 x Bibimbap lunch ₩16,000
+Subtotal ₩16,000
+TOTAL ₩16,000
+All amounts in KRW (Korean won). Thank you for dining with us.`;
+
+/** tesseract.js (English) on public/samples/bill-yangjae-kitchen-krw.png: "₩" comes out as "¥" or not at all. */
+const YANGJAE_KRW_OCR = `Yangjae Kitchen
+
+Korean home cooking
+
+Date                  2026-09-29 12:24
+
+ITEM                                                                   AMOUNT
+1 x Bibimbap lunch                                     16,000
+Subtotal                                                              ¥¢16,000
+TOTAL                                                       ¥16,000
+All amounts in KRW (Korean won). Thank you for dining with us.
+`;
+
+const KRW_TEXT =
+  "Pay this bill from Yangjae Kitchen: 1 x Bibimbap lunch, total $11.77. Bill total 16,000 KRW converted at 1 USD = 1,358.968392 KRW (ExchangeRate-API, 2026-09-29).";
+
+test("KRW sample bill (PDF): ₩16,000 → $11.77 at the day's rate; the request states the conversion", () => {
+  const b = parseBill(YANGJAE_KRW_PDF, catalog);
+  assert.equal(b.merchant?.id, "m1");
+  assert.equal(b.totalAmount, 16000);
+  assert.equal(b.currency, "KRW");
+  assert.equal(b.totalUsd, null, "the parser never converts");
+  assert.equal(b.date, "2026-09-29");
+  assert.deepEqual(b.items, ["1 x Bibimbap lunch"]);
+  // Without rates: no one click, and nothing is converted by guess.
+  assert.equal(canPayBill(b), false);
+  assert.equal(billTotal(b).problem, "no_rate");
+  assert.equal(billEditText(b), "Pay this bill from Yangjae Kitchen: 1 x Bibimbap lunch, total $[amount in USD] (the bill says KRW 16,000).");
+  // With rates: 16,000 / 1,358.968392 = 11.7736… → $11.77 (half up to the cent).
+  const t = billTotal(b, { fx: FX });
+  assert.equal(t.conversion?.usd, 11.77);
+  assert.equal(t.conversion?.rate, 1358.968392);
+  assert.equal(billPayText(b, { fx: FX }), KRW_TEXT);
+  assert.equal(billEditText(b, { fx: FX }), KRW_TEXT);
+  assert.ok(KRW_TEXT.length <= MAX_REQUEST_CHARS);
+});
+
+test("KRW sample bill (English OCR of the PNG): the stated KRW settles the misread ¥, with a note", () => {
+  const b = parseBill(YANGJAE_KRW_OCR, catalog);
+  assert.equal(b.totalAmount, 16000);
+  assert.equal(b.currency, "KRW");
+  assert.ok(codes(b).includes("currency_inferred"));
+  assert.deepEqual(b.items, ["1 x Bibimbap lunch"]);
+  assert.equal(billPayText(b, { fx: FX }), KRW_TEXT);
+});
+
+test("JPY bill (Japanese text, bare ¥): read as JPY from the kana, converted", () => {
+  const b = parseBill(`ヤンジェ キッチン\nYangjae Kitchen\n2026年9月29日\nビビンバ 1点  ¥1,800\n合計  ¥1,800`, catalog);
+  assert.equal(b.merchant?.id, "m1");
+  assert.equal(b.totalAmount, 1800);
+  assert.equal(b.currency, "JPY");
+  assert.ok(codes(b).includes("currency_inferred"));
+  assert.equal(b.date, "2026-09-29");
+  assert.equal(
+    billPayText(b, { fx: FX }),
+    "Pay this bill from Yangjae Kitchen: ビビンバ 1点, total $11.44. Bill total 1,800 JPY converted at 1 USD = 157.315109 JPY (ExchangeRate-API, 2026-09-29).",
+  );
+});
+
+test("CNY bill (Simplified labels, bare ¥): read as CNY, converted", () => {
+  const b = parseBill(`良才厨房\nYangjae Kitchen\n2026年9月29日\n拌饭 1份  ¥88.00\n合计  ¥88.00`, catalog);
+  assert.equal(b.totalAmount, 88);
+  assert.equal(b.currency, "CNY");
+  assert.equal(billTotal(b, { fx: FX }).conversion?.usd, 13.09);
+  assert.match(billPayText(b, { fx: FX })!, /total \$13\.09\. Bill total 88\.00 CNY converted at 1 USD = 6\.721579 CNY \(ExchangeRate-API, 2026-09-29\)\.$/);
+});
+
+test("EUR bill (decimal comma, € after the amount): converted", () => {
+  const b = parseBill(`Yangjae Kitchen\nRechnung\nDatum 29.09.2026\n1 x Bibimbap  12,50 €\nSumme  12,50 €`, catalog);
+  assert.equal(b.totalAmount, 12.5);
+  assert.equal(b.currency, "EUR");
+  assert.deepEqual(b.items, ["1 x Bibimbap"]);
+  assert.equal(
+    billPayText(b, { fx: FX }),
+    "Pay this bill from Yangjae Kitchen: 1 x Bibimbap, total $14.22. Bill total 12.50 EUR converted at 1 USD = 0.879241 EUR (ExchangeRate-API, 2026-09-29).",
+  );
+});
+
+test("ambiguous ¥: not payable until the traveler chooses JPY or CNY; a chosen currency converts", () => {
+  const b = parseBill(`Yangjae Kitchen\n1 x Bibimbap lunch ¥1,200\nTOTAL ¥1,200`, catalog);
+  assert.equal(b.currency, null);
+  assert.deepEqual(b.ambiguousWith, ["JPY", "CNY"]);
+  assert.equal(billTotal(b, { fx: FX }).problem, "no_currency");
+  assert.equal(canPayBill(b, { fx: FX }), false);
+  assert.equal(billEditText(b, { fx: FX }), "Pay this bill from Yangjae Kitchen: 1 x Bibimbap lunch, total $[amount in USD] (the bill says 1,200 in JPY or CNY).");
+  assert.match(billPayText(b, { fx: FX, currency: "JPY" })!, /total \$7\.63\. Bill total 1,200 JPY converted at 1 USD = 157\.315109 JPY/);
+  // A misread currency can be corrected too (USD bill → CAD would need a CAD rate: none here).
+  assert.equal(billTotal(parseBill(YANGJAE_PDF, catalog), { fx: FX, currency: "CAD" }).problem, "no_rate");
+  assert.equal(billPayText(parseBill(YANGJAE_PDF, catalog), { fx: FX, currency: "USD" }), "Pay this bill from Yangjae Kitchen: 1 x Bibimbap lunch, total $12.00.");
+});
+
+test("a USD bill needs no rates, and its request is unchanged", () => {
+  const b = parseBill(YANGJAE_PDF, catalog);
+  assert.equal(billPayText(b), billPayText(b, { fx: FX }));
+  assert.equal(billTotal(b).conversion?.rate, 1);
+});
+
+test("a long bill in KRW: one click refused (items never dropped); the edit text shortens items, never amounts", () => {
+  const lines = Array.from({ length: 40 }, (_, i) => `1 x Conference supplies pack number ${i + 1} ₩1,000`).join("\n");
+  const b = parseBill(`Daiso Yangjae\n${lines}\nTOTAL ₩40,000`, catalog);
+  assert.equal(b.currency, "KRW");
+  assert.equal(billPayText(b, { fx: FX }), null);
+  assert.equal(billTooLong(b, { fx: FX }), true);
+  const edit = billEditText(b, { fx: FX });
+  assert.ok(edit.length <= MAX_REQUEST_CHARS, `${edit.length}`);
+  assert.match(edit, /, … \(\+\d+ more lines on the bill\), total \$29\.43\. Bill total 40,000 KRW converted at 1 USD = 1,358\.968392 KRW \(ExchangeRate-API, 2026-09-29\)\.$/);
+});
+
+test("items: two-line items, section headings, modifiers and bare prices reach the request", () => {
+  // The description on one line, quantity and price on the next.
+  const two = parseBill(
+    `Yangjae Kitchen\nHouse red wine (glass)\n  1 x $9.00      $9.00\nBibimbap lunch\n  1 x $12.00     $12.00\nTOTAL $21.00`,
+    catalog,
+  );
+  assert.deepEqual([...two.items, ...two.moreItems], ["House red wine (glass)", "Bibimbap lunch"]);
+  assert.equal(billPayText(two), "Pay this bill from Yangjae Kitchen: House red wine (glass), Bibimbap lunch, total $21.00.");
+  // A section heading and a modifier inside the item block; money inside such a line comes out.
+  const section = parseBill(
+    `Yangjae Kitchen\n1 x Bibimbap $12.00\nWINE\n1 x Glass of house red $9.00\n  + wine pairing ($5.00 value)\nTOTAL $21.00`,
+    catalog,
+  );
+  assert.deepEqual([...section.items, ...section.moreItems], ["1 x Bibimbap", "WINE", "1 x Glass of house red", "wine pairing (value)"]);
+  assert.match(billPayText(section)!, /WINE, 1 x Glass of house red, wine pairing \(value\), total \$21\.00\.$/);
+  // Bare prices (a won bill) under a column header, Korean or English.
+  const krw = parseBill(`Yangjae Kitchen\n품목 수량 금액\n비빔밥 1 9000\nHouse wine 1 7000\n합계 16,000원`, catalog);
+  assert.deepEqual(krw.items, ["비빔밥 1", "House wine 1"]);
+  // Header lines above the item block (address, phone) never become items.
+  assert.deepEqual(parseBill(YANGJAE_PDF, catalog).items, ["1 x Bibimbap lunch"]);
+  // An item that merely contains a header word (table, time, tax, guest) is still an item.
+  const words = parseBill(
+    `Yangjae Kitchen\nTable 7\n1 x Bibimbap lunch $12.00\n1 x Table wine (bottle) $25.00\n1 x Tax-free gift set $9.00\nTax $1.00\nTOTAL $47.00`,
+    catalog,
+  );
+  assert.deepEqual([...words.items, ...words.moreItems], ["1 x Bibimbap lunch", "1 x Table wine (bottle)", "1 x Tax-free gift set"]);
+  assert.match(billPayText(words)!, /Table wine \(bottle\), 1 x Tax-free gift set, total \$47\.00\.$/);
+});
+
+test("no item line read: not one click (the policy would see nothing of what was bought)", () => {
+  const b = parseBill(`Yangjae Kitchen\nコーヒー 450\nWine 800\n合計 1,250円`, catalog);
+  assert.equal(b.merchant?.id, "m1");
+  assert.equal(b.totalAmount, 1250);
+  assert.deepEqual([...b.items, ...b.moreItems], []);
+  assert.equal(billPayText(b, { fx: FX }), null);
+  assert.equal(billHasNoItems(b), true);
+  assert.match(billEditText(b, { fx: FX }), /^Pay this bill from Yangjae Kitchen: purchase, total \$7\.95\. Bill total 1,250 JPY/);
+  assert.equal(canPayBill(parseBill(`Yangjae Kitchen\nTOTAL $12.00`, catalog)), false);
+  assert.equal(billHasNoItems(parseBill(YANGJAE_PDF, catalog)), false);
 });
 
 test("PDF runs → lines (same baseline joined, columns spaced)", () => {

@@ -22,6 +22,8 @@ const SAMPLES = [
   { file: "bill-yangjae-kitchen.png", note: "APPROVE on man_A (OCR)" },
   { file: "bill-wine-and-co.pdf", note: "STOP ×3 on man_A" },
   { file: "bill-wine-and-co.png", note: "STOP ×3 on man_A (OCR)" },
+  { file: "bill-yangjae-kitchen-krw.pdf", note: "₩16,000 → USD at today’s rate" },
+  { file: "bill-yangjae-kitchen-krw.png", note: "₩16,000 → USD (OCR)" },
 ];
 
 type LogLine = { n: number; kind: "onSubmitText" | "onPrefill"; text: string; at: string };
