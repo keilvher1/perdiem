@@ -28,6 +28,23 @@ export interface BillPayOptions {
   currency?: string | null;
   /** Exchange rates (GET /api/fx): needed for any total not in USD. */
   fx?: FxRates | null;
+  /** The mandate's blocked keywords, and the bill's full text: see mentionClause. */
+  blockedKeywords?: readonly string[];
+  sourceText?: string;
+}
+
+/**
+ * Safety net for item lines the parser did not keep (a two-line item, a line after the subtotal):
+ * any blocked keyword that appears anywhere on the bill but not in the request is appended, so the
+ * policy's keyword check (a substring match on the traveler's words) always sees it.
+ */
+export function mentionClause(composed: string, opts: BillPayOptions): string {
+  const src = (opts.sourceText ?? "").toLowerCase();
+  const have = composed.toLowerCase();
+  const hits = [
+    ...new Set((opts.blockedKeywords ?? []).map((k) => k.trim().toLowerCase()).filter((k) => k && src.includes(k) && !have.includes(k))),
+  ];
+  return hits.length > 0 ? ` The bill also mentions: ${hits.join(", ")}.` : "";
 }
 
 /** Why a bill has no USD total. */
@@ -110,7 +127,8 @@ export function billHasNoItems(bill: ParsedBill): boolean {
  * edits it instead ("Edit as request" shortens the item list visibly).
  */
 export function billPayText(bill: ParsedBill, opts: BillPayOptions = {}): string | null {
-  const text = fullPayText(bill, billTotal(bill, opts));
+  const base = fullPayText(bill, billTotal(bill, opts));
+  const text = base === null ? null : base + mentionClause(base, opts);
   return text !== null && text.length <= MAX_REQUEST_CHARS ? text : null;
 }
 
@@ -124,7 +142,8 @@ export function canPayBill(bill: ParsedBill, opts: BillPayOptions = {}): boolean
 
 /** Merchant and total were read, but the bill has too many item lines for one request. */
 export function billTooLong(bill: ParsedBill, opts: BillPayOptions = {}): boolean {
-  const text = fullPayText(bill, billTotal(bill, opts));
+  const base = fullPayText(bill, billTotal(bill, opts));
+  const text = base === null ? null : base + mentionClause(base, opts);
   return text !== null && text.length > MAX_REQUEST_CHARS;
 }
 
@@ -155,9 +174,12 @@ export function billEditText(bill: ParsedBill, opts: BillPayOptions = {}): strin
   const build = (items: string[], more: number) =>
     `Pay this bill from ${merchant}: ${items.length > 0 ? items.join(", ") : "purchase"}${more > 0 ? `, … (+${more} more lines on the bill)` : ""}, total ${total}`;
   const items = itemLines(bill);
-  let text = build(items, 0);
+  // The keyword note is computed against the full item list and always kept, even when items are cut.
+  const note = mentionClause(build(items, 0), opts);
+  let text = build(items, 0) + note;
   for (let keep = items.length - 1; text.length > MAX_REQUEST_CHARS && keep >= 0; keep--) {
-    text = build(items.slice(0, keep), items.length - keep);
+    const cut = build(items.slice(0, keep), items.length - keep);
+    text = cut + mentionClause(cut, opts);
   }
   return text;
 }

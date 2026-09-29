@@ -93,6 +93,8 @@ function PrincipalInner() {
   const f = useFmt();
   const tp = t.principal.page;
   const [grantOpen, setGrantOpen] = useState(false);
+  /** "Grant a new mandate": the sheet gives the keyboard focus back to it when it closes. */
+  const grantRef = useRef<HTMLButtonElement>(null);
 
   /** Replace some search params and keep the rest (?m=, ?d= and anything else). */
   const replaceParams = useCallback(
@@ -167,7 +169,7 @@ function PrincipalInner() {
   };
 
   const grantButton = (
-    <Button type="button" size="lg" onClick={() => setGrantOpen(true)} className="px-3.5">
+    <Button ref={grantRef} type="button" size="lg" onClick={() => setGrantOpen(true)} className="px-3.5">
       <Plus aria-hidden />
       {tp.grantNew}
     </Button>
@@ -320,7 +322,7 @@ function PrincipalInner() {
 
       {!noMandates && <BoundaryExplainer className="mt-10" />}
 
-      <GrantSheet open={grantOpen} onOpenChange={setGrantOpen} onCreated={onCreated} />
+      <GrantSheet open={grantOpen} onOpenChange={setGrantOpen} onCreated={onCreated} returnFocusRef={grantRef} />
     </PageContainer>
   );
 }

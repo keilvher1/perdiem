@@ -53,10 +53,10 @@ export function CurrencySwitcher() {
       <SelectTrigger
         size="sm"
         aria-label={t.label}
-        className="bg-surface text-xs text-ink max-sm:gap-1 max-sm:px-2 max-sm:[&>svg:last-child]:hidden"
+        className="bg-surface text-xs text-ink max-lg:gap-1 max-lg:px-2 max-lg:[&>svg:last-child]:hidden"
         data-currency-switcher=""
       >
-        <Coins aria-hidden className="size-3.5 text-muted-ink max-sm:hidden" />
+        <Coins aria-hidden className="size-3.5 text-muted-ink max-lg:hidden" />
         <SelectValue>
           <span className="tabular-nums">{value}</span>
         </SelectValue>

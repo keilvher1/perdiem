@@ -113,11 +113,24 @@ function TravelerInner() {
     }
   };
 
+  /**
+   * The mandate a scripted chip switched to. The URL (and so `id`) changes only after a router round
+   * trip, so a Send in that window must go to the chip's mandate, not the one being left.
+   */
+  const chipTarget = useRef<string | null>(null);
+  useEffect(() => {
+    if (chipTarget.current === id) chipTarget.current = null;
+  }, [id]);
+
   const onPickChip = (text: string, prefix: string, forSelected: boolean) => {
     setDraft(text);
-    if (forSelected) return;
+    if (forSelected) {
+      chipTarget.current = null;
+      return;
+    }
     const target = findByPrefix(mandates, prefix, id);
     if (target) {
+      chipTarget.current = target.id;
       // Like select(), but ?d= goes: it names a decision of the mandate being left.
       writeStoredMandateId(target.id);
       const sp = new URLSearchParams(window.location.search);
@@ -151,6 +164,22 @@ function TravelerInner() {
     // The stacked detail view on mobile, focus on the panel heading everywhere.
     workspaceRef.current?.showDetail();
   }, [selectedId, ledger, openRequest]);
+
+  // A ?d= the page opened with that is not in this mandate's history (a stale or another mandate's
+  // link) is dropped once the history has loaded, as on Principal, so shared links and language
+  // switches do not carry a dead selection. Only that one: a ?d= set here (the newest reply, a
+  // receipt, the history) can name an entry the history has not reloaded yet.
+  const arrivedWith = useRef(selectedId);
+  useEffect(() => {
+    const want = arrivedWith.current;
+    if (!want || !ledger) return;
+    arrivedWith.current = null;
+    if (want !== selectedId || pendingOpen.current === want || ledger.some((e) => e.id === want)) return;
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete("d");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [ledger, selectedId, pathname, router]);
 
   const noMandates = mandates !== null && mandates.length === 0;
 
@@ -200,6 +229,7 @@ function TravelerInner() {
           className="min-w-0 lg:sticky lg:top-32 lg:col-start-1 lg:row-start-1"
           mandateId={summary?.id ?? null}
           catalog={billCatalog}
+          blockedKeywords={terms?.blockedKeywords ?? []}
           disabled={pending !== null}
           onSubmitText={(text) => void send(text)}
           onPrefill={(text) => {
@@ -215,7 +245,7 @@ function TravelerInner() {
             draft={draft}
             setDraft={setDraft}
             canSend={Boolean(summary)}
-            onSend={(text) => void send(text)}
+            onSend={(text) => void send(text, chipTarget.current ?? id)}
             onRetry={(text, mandateId) => void send(text, mandateId)}
             onPickChip={onPickChip}
             onSettled={refreshAll}
@@ -275,7 +305,7 @@ function TravelerFallback() {
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="h-[calc(100dvh-10rem)] min-h-[30rem] rounded-lg border border-line bg-surface lg:h-[calc(100dvh-14rem)] lg:min-h-[36rem]" />
+        <div className="h-[calc(100dvh-10rem)] min-h-[30rem] rounded-lg border border-line bg-surface lg:h-[calc(100dvh-17.5rem)] lg:min-h-[30rem]" />
         <MandatePanelSkeleton className="max-lg:hidden" />
       </div>
     </PageContainer>

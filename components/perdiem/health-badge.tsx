@@ -44,8 +44,8 @@ export function HealthBadge() {
             <StateGlyph glyph={look.glyph} className={cn("size-2.5", TONE_TEXT[look.tone])} />
             <span className="font-medium text-ink">{h.testnet}</span>
           </span>
-          <span aria-hidden className="hidden h-4 w-px bg-line sm:block" />
-          <span className="hidden px-2 sm:block">Sepolia</span>
+          <span aria-hidden className="hidden h-4 w-px bg-line lg:block" />
+          <span className="hidden px-2 lg:block">Sepolia</span>
           <span aria-hidden className="hidden h-4 w-px bg-line xl:block" />
           <span className="hidden px-2 tabular-nums xl:block">
             {h.demoRate(data ? `$${f.int(data.demoEthUsd)}` : error ? "—" : "…")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import { Anchor } from "lucide-react";
 import { toast } from "sonner";
 import type { CreateMandateRequest, CreateMandateResponse, Merchant } from "@/contracts/api";
@@ -74,10 +74,13 @@ function GrantFormInner({
   merchants,
   initialNow,
   onCreated,
+  onBusyChange,
 }: {
   merchants: Merchant[];
   initialNow: number;
   onCreated: (res: CreateMandateResponse) => void;
+  /** Lets the sheet refuse to close while the grant is anchoring (a closed sheet would lose `busy`). */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const t = useT();
   const tg = t.principal.grant;
@@ -150,6 +153,7 @@ function GrantFormInner({
       expiresAt: new Date(end).toISOString(),
     };
     setBusy(true);
+    onBusyChange?.(true);
     try {
       const res = await api.createMandate(body);
       onCreated(res);
@@ -159,6 +163,7 @@ function GrantFormInner({
       toast.error(tg.notCreated, { description: apiErr.message });
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   };
 
@@ -317,7 +322,17 @@ function GrantFormInner({
           {busy ? tg.submitting : tg.submit}
         </Button>
         <SheetClose asChild>
-          <Button type="button" variant="outline" size="lg">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            aria-disabled={busy || undefined}
+            className="aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+            onClick={(e) => {
+              // Cancelling cannot stop a grant already on its way to Sepolia: stay open until it lands.
+              if (busy) e.preventDefault();
+            }}
+          >
             {tg.cancel}
           </Button>
         </SheetClose>
@@ -328,7 +343,13 @@ function GrantFormInner({
 }
 
 /** Loads the merchant catalog, then the form. */
-function GrantFormBody({ onCreated }: { onCreated: (res: CreateMandateResponse) => void }) {
+function GrantFormBody({
+  onCreated,
+  onBusyChange,
+}: {
+  onCreated: (res: CreateMandateResponse) => void;
+  onBusyChange?: (busy: boolean) => void;
+}) {
   const merchants = useResource(loadMerchants);
   const now = useNow(60_000);
   const tg = useT().principal.grant;
@@ -340,7 +361,9 @@ function GrantFormBody({ onCreated }: { onCreated: (res: CreateMandateResponse) 
     );
   }
   if (merchants.data && now !== null) {
-    return <GrantFormInner merchants={merchants.data.merchants} initialNow={now} onCreated={onCreated} />;
+    return (
+      <GrantFormInner merchants={merchants.data.merchants} initialNow={now} onCreated={onCreated} onBusyChange={onBusyChange} />
+    );
   }
   return (
     <div className="space-y-5 px-5 py-5" aria-busy="true" aria-label={tg.loadingForm}>
@@ -367,22 +390,56 @@ export function GrantSheet({
   open,
   onOpenChange,
   onCreated,
+  returnFocusRef,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (res: CreateMandateResponse) => void;
+  /**
+   * The button that opened the sheet. The sheet is opened from state (no SheetTrigger), so Radix has
+   * nothing to give the focus back to on close; this does, instead of dropping it to <body>.
+   */
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const t = useT();
   const tg = t.principal.grant;
+  // While the grant is anchoring the sheet stays open (Cancel, Esc and outside clicks are ignored):
+  // closing would unmount the form, lose its busy state and allow a second grant and anchor.
+  const busyRef = useRef(false);
+  const setBusy = useCallback((busy: boolean) => {
+    busyRef.current = busy;
+  }, []);
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" closeLabel={t.common.close} className="gap-0 bg-surface p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-xl">
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && busyRef.current) return;
+        onOpenChange(next);
+      }}
+    >
+      <SheetContent
+        side="right"
+        closeLabel={t.common.close}
+        className="gap-0 bg-surface p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-xl"
+        onCloseAutoFocus={(e) => {
+          const el = returnFocusRef?.current;
+          if (!el?.isConnected) return;
+          e.preventDefault();
+          el.focus();
+        }}
+      >
         <SheetHeader className="border-b border-line px-5 pt-5 pb-4">
           <SheetTitle className="type-section pr-8 text-ink">{tg.title}</SheetTitle>
           <SheetDescription className="text-muted-ink">{tg.description}</SheetDescription>
         </SheetHeader>
         {/* SheetContent unmounts when closed, so every opening starts from fresh defaults. */}
-        <GrantFormBody onCreated={onCreated} />
+        <GrantFormBody
+          onCreated={(res) => {
+            busyRef.current = false;
+            onCreated(res);
+          }}
+          onBusyChange={setBusy}
+        />
       </SheetContent>
     </Sheet>
   );

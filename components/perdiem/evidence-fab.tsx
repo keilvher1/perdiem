@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, ChevronRight, FileCheck, ListChecks, Printer } from "lucide-react";
@@ -327,25 +327,31 @@ function scopeRows(checks: Checks, t: ReturnType<typeof useT>["evidence"]["check
           state: verificationState(r.anchor.matches),
           detail: null,
         };
-  const replayOk = r.replay.filter((x) => x.consistent && x.mandateHashMatches).length;
+  // Counted in checks, as the audit page counts the same areas (computeAreas): two per decision
+  // (same decision, this mandate's hash), four per payment (memo, receipt, recipient, amount).
+  const replayOf = r.replay.length * 2;
+  const replayOk = r.replay.reduce((n, x) => n + Number(x.consistent) + Number(x.mandateHashMatches), 0);
   const replay: ScopeRow =
     r.replay.length === 0
       ? { key: "replay", state: null, detail: t.detail.noDecisions }
       : {
           key: "replay",
-          state: verificationState(replayOk === r.replay.length),
-          detail: t.detail.count(replayOk, r.replay.length),
+          state: verificationState(replayOk === replayOf),
+          detail: t.detail.count(replayOk, replayOf),
         };
-  const txOk = r.transactions.filter(
-    (x) => x.memoMatches && x.receiptHashMatches && x.recipientMatches && x.amountMatches,
-  ).length;
+  const txOf = r.transactions.length * 4;
+  const txOk = r.transactions.reduce(
+    (n, x) =>
+      n + Number(x.memoMatches) + Number(x.receiptHashMatches) + Number(x.recipientMatches) + Number(x.amountMatches),
+    0,
+  );
   const payments: ScopeRow =
     r.transactions.length === 0
       ? { key: "payments", state: null, detail: t.detail.noPayments }
       : {
           key: "payments",
-          state: verificationState(txOk === r.transactions.length),
-          detail: t.detail.count(txOk, r.transactions.length),
+          state: verificationState(txOk === txOf),
+          detail: t.detail.count(txOk, txOf),
         };
   return [anchor, replay, payments];
 }
@@ -441,6 +447,14 @@ export function EvidenceFab({
 
   const loadRecords = useCallback(() => api.mandate(id), [id]);
   const records = useResource(open ? loadRecords : null);
+  // Reopening shows the last records until a new load lands: force a refresh on every opening so
+  // `refreshing` is true (downloads disabled) instead of offering stale records.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpen.current && records.data) records.refresh();
+    wasOpen.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the open transition matters
+  }, [open]);
 
   const runChecks = async () => {
     setChecks((c) => ({

@@ -42,16 +42,18 @@ export function LedgerTable({
 
   return (
     <TableShell className={cn(maxHeightClass, className)}>
-      <Tbl className="min-w-[600px] md:min-w-[860px]">
+      {/* Phones: Time and Merchant only, with the total and the execution state under the merchant
+          (their own columns from sm), so no payment reads as having no amount or status. */}
+      <Tbl className="sm:min-w-[600px] md:min-w-[860px]">
         {caption && <caption className="sr-only">{caption}</caption>}
         <THead>
           <tr>
             <Th className="pl-4">{tp.col.time}</Th>
-            <Th>{tp.col.merchant}</Th>
+            <Th className="max-sm:pr-4">{tp.col.merchant}</Th>
             <Th numeric className="max-md:hidden">{tp.col.amount}</Th>
             <Th numeric className="max-md:hidden">{tp.col.fee}</Th>
-            <Th numeric>{tp.col.total}</Th>
-            <Th className="max-sm:pr-4">{tp.col.execution}</Th>
+            <Th numeric className="max-sm:hidden">{tp.col.total}</Th>
+            <Th className="max-sm:hidden">{tp.col.execution}</Th>
             <Th className="max-sm:hidden">{tp.col.tx}</Th>
             <Th className="pr-4 max-md:hidden">{tp.col.receipt}</Th>
           </tr>
@@ -61,6 +63,8 @@ export function LedgerTable({
             const exec = executionState(e);
             const noFee = e.feeSource === "none";
             const source = e.feeSource ? (tl.feeSourceValue[e.feeSource] ?? e.feeSource) : null;
+            // Same rule as EvidencePanel: a feeSource "none" total holds no fee.
+            const total = noFee ? t.ui.evidence.values.amountOnly(fmtUsd(e.totalUsd)) : fmtUsd(e.totalUsd);
             return (
               <Tr key={e.id} data-entry-id={e.id} className={cn(e.id === selectedId && "selected-marker hover:bg-cobalt-soft")}>
                 <Td className="pl-4 whitespace-nowrap">
@@ -69,12 +73,19 @@ export function LedgerTable({
                   </time>
                   <span className="text-xs text-muted-ink">{f.rel(e.at, pastNow(e.at, now))}</span>
                 </Td>
-                <Td>
+                <Td className="max-sm:pr-4">
                   <div className="max-w-[200px] truncate font-medium text-ink" title={e.merchantName ?? e.proposal.merchantId}>
                     {e.merchantName ?? e.proposal.merchantId}
                   </div>
-                  <div className="text-xs text-muted-ink">
+                  <div className="text-xs text-muted-ink max-sm:hidden">
                     {e.merchantCategory != null ? (t.common.category[e.merchantCategory] ?? e.merchantCategory) : "—"}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 sm:hidden">
+                    <span className="font-medium tabular-nums">
+                      <span className="sr-only">{tp.col.total}: </span>
+                      {total}
+                    </span>
+                    {exec && <StateBadge family="execution" state={exec} />}
                   </div>
                 </Td>
                 <Td numeric className="max-md:hidden">{fmtUsd(e.proposal.amountUsd)}</Td>
@@ -84,11 +95,10 @@ export function LedgerTable({
                     {e.actualFeeUsd !== undefined ? tl.actualFee(fmtUsd(e.actualFeeUsd)) : (source ?? "")}
                   </div>
                 </Td>
-                <Td numeric className="font-medium">
-                  {/* Same rule as EvidencePanel: a feeSource "none" total holds no fee. */}
-                  {noFee ? t.ui.evidence.values.amountOnly(fmtUsd(e.totalUsd)) : fmtUsd(e.totalUsd)}
+                <Td numeric className="font-medium max-sm:hidden">
+                  {total}
                 </Td>
-                <Td className="max-sm:pr-4">{exec && <StateBadge family="execution" state={exec} />}</Td>
+                <Td className="max-sm:hidden">{exec && <StateBadge family="execution" state={exec} />}</Td>
                 <Td className="max-sm:hidden max-md:pr-4">
                   <HashChip value={e.txHash} href={e.explorerUrl} what={tl.txWhat} emptyText={tp.notBroadcast} />
                 </Td>

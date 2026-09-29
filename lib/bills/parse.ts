@@ -203,6 +203,11 @@ function isNegative(line: string, index: number, end: number): boolean {
 function parseNumber(raw: string, code: string | null): number | null {
   const minor = code !== null && isCurrencyCode(code) ? minorUnits(code) : null;
   const three = (int: string, dec: string) => (dec.length === 3 && minor !== 3 ? null : Number(`${int}.${dec}`));
+  // "0.500" / "0,500": a leading 0 is never a thousands group; read it as a decimal (or nothing).
+  if (/^0[.,'’ ]\d/.test(raw)) {
+    const z = /^0[.,](\d{1,3})$/.exec(raw);
+    return z ? three("0", z[1]) : null;
+  }
   let m = /^(\d{1,3}(?:,\d{3})+)(?:\.(\d{1,3}))?$/.exec(raw);
   if (m) return m[2] === undefined ? Number(m[1].replace(/,/g, "")) : three(m[1].replace(/,/g, ""), m[2]);
   m = /^(\d{1,3}(?:['’]\d{3})+)(?:\.(\d{1,3}))?$/.exec(raw);

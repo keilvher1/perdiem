@@ -21,14 +21,15 @@ export function LocaleSwitcher() {
       <SelectTrigger
         size="sm"
         aria-label={t.shell.language.label}
-        // Phones: no chevron and tighter padding, so the header keeps one row in every language.
-        className="bg-surface text-xs text-ink max-sm:gap-1 max-sm:px-2 max-sm:[&>svg:last-child]:hidden"
+        // Below lg: no chevron and tighter padding, so the header's top row stays one row (phones in
+        // every language, tablets beside the nav) and the sticky header stays short.
+        className="bg-surface text-xs text-ink max-lg:gap-1 max-lg:px-2 max-lg:[&>svg:last-child]:hidden"
       >
         <Languages aria-hidden className="size-3.5 text-muted-ink" />
-        {/* Phones: the icon alone (the accessible name still says "Language"). Radix drops a
+        {/* Below lg: the icon alone (the accessible name still says "Language"). Radix drops a
             className on SelectValue, so the visible label is its own span. */}
         <SelectValue>
-          <span lang={HTML_LANG[locale]} className="max-sm:sr-only">
+          <span lang={HTML_LANG[locale]} className="max-lg:sr-only">
             {LOCALE_LABELS[locale]}
           </span>
         </SelectValue>

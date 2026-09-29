@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Database, ReceiptText } from "lucide-react";
@@ -24,6 +24,9 @@ const NAV = [
   { key: "audit", base: "/audit" },
   { key: "metrics", base: "/metrics" },
 ] as const;
+
+/** The pages that read ?m=; only these get it written back (not /audit/<id>, the labs or a 404). */
+const M_PAGES = new Set(["/traveler", "/principal", "/metrics"]);
 
 function auditIdFromPath(pathname: string): string | null {
   const m = /^\/audit\/([^/]+)/.exec(pathname);
@@ -62,6 +65,24 @@ export function AppShell() {
   const t = useT();
   const { mandates, error, refresh } = useMandates();
   const stored = useStoredMandateId();
+  const headerRef = useRef<HTMLElement>(null);
+
+  // The sticky header's height changes with the width and the language (it wraps to 2–3 rows on
+  // phones and tablets). <html> scroll-padding-top reads it (app/globals.css), so what keyboard
+  // focus, scrollIntoView() or an #anchor brings into view is never left under the header.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const update = () => root.style.setProperty("--app-header-offset", `${Math.ceil(el.getBoundingClientRect().height) + 14}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--app-header-offset");
+    };
+  }, []);
 
   const auditId = auditIdFromPath(pathname);
   const current = auditId ?? resolveMandateId(mandates, params.get("m"), stored);
@@ -75,13 +96,13 @@ export function AppShell() {
   useEffect(() => {
     if (!current || !exists) return;
     writeStoredMandateId(current);
-    if (auditId || pathname === "/audit" || pathname === "/") return;
+    if (!M_PAGES.has(pathname)) return;
     if (params.get("m") !== current) {
       const sp = new URLSearchParams(params.toString());
       sp.set("m", current);
       router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
     }
-  }, [current, exists, auditId, pathname, params, router]);
+  }, [current, exists, pathname, params, router]);
 
   const onSelect = (id: string) => {
     writeStoredMandateId(id);
@@ -104,8 +125,8 @@ export function AppShell() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 px-4 sm:gap-x-6 sm:px-6 lg:gap-x-8">
+      <header ref={headerRef} className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 px-4 sm:gap-x-4 sm:px-6 lg:gap-x-8">
           <div className="flex h-14 min-w-0 items-center">
             <Wordmark />
           </div>

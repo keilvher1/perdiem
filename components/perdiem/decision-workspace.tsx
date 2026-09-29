@@ -67,22 +67,27 @@ export function DecisionWorkspace({
   const selected = entries.find((e) => e.id === selectedId) ?? null;
   const stacked = detailOpen && selected !== null;
 
+  // Focus on the panel heading is requested here and taken in the effect below, once the open
+  // panel has committed: it is display:none before. A page whose selection goes through the URL
+  // (Traveler: router.replace of ?d=) renders the selected entry a few frames after the click.
+  const [focusRequest, setFocusRequest] = useState(0);
+  const focusDone = useRef(0);
   const select = (id: string) => {
     onSelect(id);
     setDetailOpen(true);
-    if (!isSideBySide()) requestAnimationFrame(() => headingRef.current?.focus());
+    if (!isSideBySide()) setFocusRequest((n) => n + 1);
   };
   const back = () => {
     setDetailOpen(false);
     requestAnimationFrame(() => ledgerRef.current?.focusSelected());
   };
-  // showDetail(): focus the heading once the open panel has committed (it may be display:none before).
-  const [focusRequest, setFocusRequest] = useState(0);
   useEffect(() => {
-    if (focusRequest === 0) return;
+    // Wait until the panel shows an entry (below lg it is hidden until then).
+    if (focusRequest === focusDone.current || !stacked) return;
+    focusDone.current = focusRequest;
     // Beside the ledger the caller keeps the scroll position; stacked, focus brings it into view.
     headingRef.current?.focus({ preventScroll: isSideBySide() });
-  }, [focusRequest]);
+  }, [focusRequest, stacked]);
   useImperativeHandle(
     ref,
     () => ({

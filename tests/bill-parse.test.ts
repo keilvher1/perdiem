@@ -519,4 +519,23 @@ test("PDF runs → lines (same baseline joined, columns spaced)", () => {
   assert.deepEqual(lines, ["1 x Bibimbap lunch  $12.00", "TOTAL  $12.00"]);
 });
 
+test("QA CR-3: a blocked keyword the item parser dropped is still named in the request", () => {
+  const text = "Yangjae Kitchen\n1 x Bibimbap $12.00\nTable wine (house red)\n1 x $25.00  $25.00\nTotal $37.00";
+  const bill = parseBill(text, catalog);
+  const opts = { blockedKeywords: ["alcohol", "wine", "gift"], sourceText: text };
+  const pay = billPayText(bill, opts);
+  assert.ok(pay === null || pay.toLowerCase().includes("wine"), `pay text hides the wine: ${pay}`);
+  assert.ok(billEditText(bill, opts).toLowerCase().includes("wine"));
+  // Without the options the request is unchanged (old callers).
+  const plain = billPayText(bill);
+  if (plain !== null && pay !== null && !plain.toLowerCase().includes("wine")) assert.ok(pay.endsWith("The bill also mentions: wine."));
+});
+
+test("QA CR-6: a leading 0 group is a decimal, never thousands", () => {
+  const bill = parseBill("Yangjae Kitchen\n1 x Gum 0.500 €\nTOTAL 0.500 €", catalog);
+  assert.notEqual(bill.totalAmount, 500);
+  const b2 = parseBill("Yangjae Kitchen\n1 x Gum 0,50 €\nTOTAL 0,50 €", catalog);
+  assert.equal(b2.totalAmount, 0.5);
+});
+
 console.log(`\n${passed} bill-parse tests passed`);

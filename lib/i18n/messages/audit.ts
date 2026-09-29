@@ -338,6 +338,8 @@ export const en = {
       counted: "Counted",
       remaining: "Remaining",
       openingBudget: "Opening budget",
+      /** Screen only, below sm: the annex is wider than a phone. */
+      scrollHint: "Wider than the screen: scroll the table sideways for every column.",
       empty: "No decisions recorded yet.",
       /** The traveler's own request text (data), quoted. */
       quote: (text: string) => `“${text}”`,
@@ -686,6 +688,7 @@ export const ko: typeof en = {
       counted: "집계액",
       remaining: "잔액",
       openingBudget: "시작 예산",
+      scrollHint: "화면보다 넓은 표입니다. 옆으로 밀어 모든 열을 확인하세요.",
       empty: "아직 기록된 결정이 없습니다.",
       quote: (text) => `“${text}”`,
       status: {
@@ -1033,6 +1036,7 @@ export const ja: typeof en = {
       counted: "計上額",
       remaining: "残額",
       openingBudget: "当初予算",
+      scrollHint: "画面より幅の広い表です。横にスクロールするとすべての列を確認できます。",
       empty: "記録された判定はまだありません。",
       quote: (text) => `「${text}」`,
       status: {
@@ -1369,6 +1373,7 @@ export const zh: typeof en = {
       counted: "计入金额",
       remaining: "剩余",
       openingBudget: "期初预算",
+      scrollHint: "表格比屏幕宽，左右滑动可查看所有列。",
       empty: "暂无决策记录。",
       quote: (text) => `“${text}”`,
       status: {

@@ -514,7 +514,9 @@ function Statement({
             approved: count("approved"),
           })}
         </p>
-        <div className="relative overflow-x-auto print:overflow-visible">
+        {/* Phones: the annex scrolls sideways; say so, and shade the edge that has more beyond it. */}
+        <p className="mb-1 text-[10px] text-muted-ink sm:hidden print:hidden">{R.ledger.scrollHint}</p>
+        <div className="scroll-shadow-x relative overflow-x-auto print:overflow-visible">
           <table className="w-full min-w-[40rem] border-collapse text-[10.5px] leading-[1.35] print:min-w-0">
             <thead className="report-thead">
               <tr className="border-y border-line-strong bg-surface-2 text-left text-[9.5px] tracking-wide text-muted-ink uppercase">

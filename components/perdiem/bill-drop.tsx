@@ -83,8 +83,8 @@ type ErrorCode = BillFileErrorCode | "one_file";
 
 type State =
   | { kind: "idle" }
-  | { kind: "reading"; name: string; fileKind: BillFileKind }
-  | { kind: "preview"; name: string; fileKind: BillFileKind; text: string }
+  | { kind: "reading"; name: string; fileKind: BillFileKind; forMandate: string | null }
+  | { kind: "preview"; name: string; fileKind: BillFileKind; text: string; forMandate: string | null }
   | { kind: "error"; name: string | null; code: ErrorCode };
 
 type Copy = (typeof BILLS)["en"];
@@ -100,6 +100,7 @@ function hasFiles(e: { dataTransfer: DataTransfer | null }): boolean {
 export function BillDrop({
   mandateId,
   catalog,
+  blockedKeywords,
   disabled = false,
   onSubmitText,
   onPrefill,
@@ -112,6 +113,8 @@ export function BillDrop({
   mandateId: string | null;
   /** The mandate's merchant catalog (id, name, category). */
   catalog: MerchantLite[];
+  /** The mandate's blocked keywords: any found on the bill is named in the request (policy safety net). */
+  blockedKeywords?: readonly string[];
   /** No new bill and no Pay / Edit while true (e.g. a request is in flight). */
   disabled?: boolean;
   /** "Pay this bill": the request sentence, sent like a typed request. */
@@ -126,7 +129,16 @@ export function BillDrop({
 }) {
   const locale = useLocale();
   const t = BILLS[locale];
-  const [state, setState] = useState<State>({ kind: "idle" });
+  const [storedState, setState] = useState<State>({ kind: "idle" });
+  // A bill read (or being read) under one mandate is never paid under another: after a mandate
+  // switch it is treated as discarded.
+  const state: State = useMemo(
+    () =>
+      (storedState.kind === "reading" || storedState.kind === "preview") && storedState.forMandate !== mandateId
+        ? { kind: "idle" }
+        : storedState,
+    [storedState, mandateId],
+  );
   /** A currency the traveler chose for the read bill (null: the one read off the bill). */
   const [currency, setCurrency] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -148,7 +160,12 @@ export function BillDrop({
   const bill = useMemo(() => (state.kind === "preview" ? parseBill(state.text, catalog) : null), [state, catalog]);
   // Today's rates, loaded once a bill is read (the currency list and any conversion need them).
   const fx = useFxRates(state.kind === "preview");
-  const payOpts: BillPayOptions = { currency, fx: fx.rates };
+  const payOpts: BillPayOptions = {
+    currency,
+    fx: fx.rates,
+    blockedKeywords,
+    sourceText: state.kind === "preview" ? state.text : undefined,
+  };
 
   const readFile = useCallback(async (file: File) => {
     const id = ++run.current;
@@ -160,14 +177,15 @@ export function BillDrop({
       setState({ kind: "error", name: file.name, code: errorCode(e) });
       return;
     }
-    setState({ kind: "reading", name: file.name, fileKind });
+    const forMandate = mandateId;
+    setState({ kind: "reading", name: file.name, fileKind, forMandate });
     try {
       const { text } = await fileToText(file, { ocrLanguages: ocrLanguagesFor(locale) });
-      if (run.current === id) setState({ kind: "preview", name: file.name, fileKind, text });
+      if (run.current === id) setState({ kind: "preview", name: file.name, fileKind, text, forMandate });
     } catch (e) {
       if (run.current === id) setState({ kind: "error", name: file.name, code: errorCode(e) });
     }
-  }, [locale]);
+  }, [locale, mandateId]);
 
   const openFilePicker = useCallback(() => {
     if (!blocked) inputRef.current?.click();
@@ -339,6 +357,7 @@ export function BillDrop({
         mandateId={mandateId}
         blocked={blocked}
         canEdit={onPrefill !== undefined}
+        blockedKeywords={blockedKeywords}
         headingRef={headingRef}
         onPay={pay}
         onEdit={edit}
@@ -459,6 +478,7 @@ function BillCard({
   onEdit,
   onClose,
   onAnother,
+  blockedKeywords,
 }: {
   t: Copy;
   state: Exclude<State, { kind: "idle" }>;
@@ -474,6 +494,7 @@ function BillCard({
   onEdit: () => void;
   onClose: () => void;
   onAnother: () => void;
+  blockedKeywords?: readonly string[];
 }) {
   const headingId = useId();
   const onKeyDown = (e: KeyboardEvent) => {
@@ -561,6 +582,7 @@ function BillCard({
       mandateId={mandateId}
       blocked={blocked}
       canEdit={canEdit}
+      blockedKeywords={blockedKeywords}
       headingId={headingId}
       headingRef={headingRef}
       headingClass={heading}
@@ -606,6 +628,7 @@ function BillPreview({
   onPay,
   onEdit,
   onClose,
+  blockedKeywords,
 }: {
   t: Copy;
   name: string;
@@ -626,10 +649,12 @@ function BillPreview({
   onPay: () => void;
   onEdit: () => void;
   onClose: () => void;
+  blockedKeywords?: readonly string[];
 }) {
   const { common, fx: tf } = useT();
   const f = useFmt();
-  const opts: BillPayOptions = { currency: chosenCurrency, fx: fx.rates };
+  // The same options as the Pay action, so the sentence shown is exactly the one sent.
+  const opts: BillPayOptions = { currency: chosenCurrency, fx: fx.rates, blockedKeywords, sourceText: text };
   const total = billTotal(bill, opts);
   const payText = billPayText(bill, opts);
   const payable = payText !== null;

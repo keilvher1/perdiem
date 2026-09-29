@@ -361,7 +361,10 @@ export function QuickChips({
               )}
             >
               <span className="text-[11px] text-muted-ink tabular-nums">#{c.steps.join("/")}</span>
-              <span className="truncate">{c.text}</span>
+              {/* The scripted requests are English (they are sent to the model as written). */}
+              <span lang="en" className="truncate">
+                {c.text}
+              </span>
               {!forSelected && (
                 <span className="shrink-0 rounded-sm border border-line bg-surface-2 px-1 text-[10px] text-muted-ink">
                   {tc.forMandate(c.prefix)}
@@ -480,10 +483,13 @@ export function ChatPanel({
   const empty = messages.length === 0 && !busy;
 
   return (
+    // lg: the height left under the header and the page title (≈ 14.25rem) minus the "Attach bill"
+    // strip BillDrop puts under the panel (≈ 2.25rem) and a 1rem margin, so the composer and the
+    // strip are both on screen at first load (1920×1080, 1440×900, 1024×768).
     <section
       aria-labelledby={titleId}
       className={cn(
-        "flex h-[calc(100dvh-10rem)] min-h-[30rem] flex-col overflow-hidden rounded-lg border border-line bg-surface lg:h-[calc(100dvh-14rem)] lg:min-h-[36rem]",
+        "flex h-[calc(100dvh-10rem)] min-h-[30rem] flex-col overflow-hidden rounded-lg border border-line bg-surface lg:h-[calc(100dvh-17.5rem)] lg:min-h-[30rem]",
         className,
       )}
     >

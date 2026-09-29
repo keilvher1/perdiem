@@ -69,7 +69,8 @@ export const en = {
     },
     detail: {
       notAnchored: "not anchored",
-      count: (ok: number, n: number) => `${ok} of ${n}`,
+      /** Checks, not entries: the same wording and numbers as the audit page's areas. */
+      count: (ok: number, n: number) => `${ok} of ${n} passed`,
       noDecisions: "no decisions yet",
       noPayments: "none broadcast",
     },
@@ -164,7 +165,7 @@ export const ko: typeof en = {
     },
     detail: {
       notAnchored: "앵커 없음",
-      count: (ok, n) => `${n}건 중 ${ok}건`,
+      count: (ok, n) => `${n}건 중 ${ok}건 통과`,
       noDecisions: "아직 결정 없음",
       noPayments: "전송된 결제 없음",
     },
@@ -257,7 +258,7 @@ export const ja: typeof en = {
     },
     detail: {
       notAnchored: "アンカーなし",
-      count: (ok, n) => `${n} 件中 ${ok} 件`,
+      count: (ok, n) => `${n} 件中 ${ok} 件合格`,
       noDecisions: "判定はまだありません",
       noPayments: "送信された支払いなし",
     },
@@ -350,7 +351,7 @@ export const zh: typeof en = {
     },
     detail: {
       notAnchored: "未锚定",
-      count: (ok, n) => `${ok}/${n}`,
+      count: (ok, n) => `${n} 项中 ${ok} 项通过`,
       noDecisions: "尚无决策",
       noPayments: "无已广播付款",
     },

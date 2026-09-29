@@ -1451,6 +1451,29 @@ function AuditInner() {
     },
     [select],
   );
+  // Arriving with ?d= (the Evidence drawer's "Open this decision on the audit page", a link from
+  // Principal): once the records and the checks are in (so nothing above still changes height),
+  // bring that decision into view. Only for the ?d= the page opened with, as on Principal.
+  const arrivedWith = useRef(d);
+  useEffect(() => {
+    const want = arrivedWith.current;
+    if (!want || !entries || audit.loading) return;
+    arrivedWith.current = null;
+    if (!entries.some((e) => e.id === want)) return;
+    requestAnimationFrame(() => {
+      if (!isSideBySide()) {
+        // Below lg the stacked "Audit of this decision" view is already open on it.
+        stackRef.current?.scrollIntoView({ block: "start" });
+        return;
+      }
+      // The section heading first (list and evidence in view), then the row if it is still below the fold.
+      document.getElementById("audit-decisions")?.scrollIntoView({ block: "start" });
+      const row = rowRefs.current.get(want);
+      const r = row?.getBoundingClientRect();
+      if (row && r && r.bottom > window.innerHeight) row.scrollIntoView({ block: "center" });
+    });
+  }, [entries, audit.loading]);
+
   const back = () => {
     setDetailOpen(false);
     const sel = selected?.id;

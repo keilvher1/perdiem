@@ -15,7 +15,7 @@ export const en = {
     eyebrow: "Metrics",
     title: "Model usage and efficiency",
     description:
-      "Is the model setting efficient while keeping the quality it needs? Tokens, cost, latency and energy per flow on one basis, next to what turning thinking off changed on the same prompts.",
+      "Is the model setting efficient while keeping the quality it needs? Tokens, cost, latency and energy per flow on one basis, next to what turning thinking off changed on the same prompts. All figures cover every mandate on this deployment.",
     updated: (rel: string) => `Updated ${rel}`,
     refresh: "Refresh",
     refreshing: "Refreshing…",
@@ -135,7 +135,7 @@ export const en = {
     sourceMock:
       "Mock data: sample rows from docs/fixtures/usage.json, not the measurement file (docs/reasoning-comparison.json).",
     derived:
-      "Prompt-token averages, the cost and energy totals and the change column are worked out on this page from these rows.",
+      "Prompt-token averages, the cost and energy totals and the change column are worked out on this page from these rows. Energy here applies the flat per-token assumption, which ignores the longer decode time with thinking on, so the real saving is likely larger.",
   },
   energy: {
     title: "Energy estimate",
@@ -197,7 +197,7 @@ export const ko: typeof en = {
     eyebrow: "지표",
     title: "모델 사용량과 효율",
     description:
-      "현재 모델 설정이 필요한 품질을 유지하면서 효율적인지 확인합니다. 흐름별 토큰, 비용, 지연, 에너지를 같은 기준으로 보여 주고, 같은 프롬프트에서 사고 모드를 끈 결과와 나란히 비교합니다.",
+      "현재 모델 설정이 필요한 품질을 유지하면서 효율적인지 확인합니다. 흐름별 토큰, 비용, 지연, 에너지를 같은 기준으로 보여 주고, 같은 프롬프트에서 사고 모드를 끈 결과와 나란히 비교합니다. 모든 수치는 이 배포의 전체 위임을 합친 값입니다.",
     updated: (rel) => `업데이트: ${rel}`,
     refresh: "새로고침",
     refreshing: "새로고침 중…",
@@ -310,7 +310,7 @@ export const ko: typeof en = {
     source: "출처: docs/reasoning-comparison.json(npm run compare로 생성).",
     sourceMock:
       "모의 데이터: 측정 파일(docs/reasoning-comparison.json)이 아니라 docs/fixtures/usage.json의 예시 행입니다.",
-    derived: "프롬프트 토큰 평균, 비용·에너지 합계, 변화 열은 이 행들로 이 페이지에서 계산합니다.",
+    derived: "프롬프트 토큰 평균, 비용·에너지 합계, 변화 열은 이 행들로 이 페이지에서 계산합니다. 여기서 에너지는 토큰당 고정 가정을 적용하므로 사고 모드를 켰을 때 늘어나는 디코딩 시간은 반영하지 않습니다. 실제 절감 폭은 이보다 클 가능성이 큽니다.",
   },
   energy: {
     title: "에너지 추정",
@@ -363,7 +363,7 @@ export const ja: typeof en = {
     eyebrow: "指標",
     title: "モデルの使用量と効率",
     description:
-      "現在のモデル設定が、必要な品質を保ちながら効率的かを確認します。フローごとのトークン、コスト、レイテンシ、エネルギーを同じ基準で示し、同じプロンプトで思考をオフにした結果と並べて比較します。",
+      "現在のモデル設定が、必要な品質を保ちながら効率的かを確認します。フローごとのトークン、コスト、レイテンシ、エネルギーを同じ基準で示し、同じプロンプトで思考をオフにした結果と並べて比較します。すべての数値は、このデプロイ上の全委任の合計です。",
     updated: (rel) => `更新：${rel}`,
     refresh: "更新",
     refreshing: "更新中…",
@@ -477,7 +477,7 @@ export const ja: typeof en = {
     source: "出典：docs/reasoning-comparison.json（npm run compare で生成）。",
     sourceMock:
       "モックデータ：測定ファイル（docs/reasoning-comparison.json）ではなく、docs/fixtures/usage.json のサンプル行です。",
-    derived: "入力トークンの平均、コストとエネルギーの合計、変化の列は、これらの行からこのページで計算しています。",
+    derived: "入力トークンの平均、コストとエネルギーの合計、変化の列は、これらの行からこのページで計算しています。ここでのエネルギーはトークン当たりの一定の仮定を当てはめたもので、思考モードをオンにしたときに長くなるデコード時間は含みません。実際の削減幅はこれより大きい可能性があります。",
   },
   energy: {
     title: "エネルギー推定",
@@ -530,7 +530,7 @@ export const zh: typeof en = {
     eyebrow: "指标",
     title: "模型用量与效率",
     description:
-      "当前模型设置能否在保持所需质量的同时保持高效？按相同口径列出各流程的 token、成本、延迟与能耗，并与同一组提示下关闭思考的结果并列对比。",
+      "当前模型设置能否在保持所需质量的同时保持高效？按相同口径列出各流程的 token、成本、延迟与能耗，并与同一组提示下关闭思考的结果并列对比。所有数字均为本部署中全部授权的合计。",
     updated: (rel) => `更新：${rel}`,
     refresh: "刷新",
     refreshing: "正在刷新…",
@@ -639,7 +639,7 @@ export const zh: typeof en = {
     quote: (prompt) => `“${prompt}”`,
     source: "来源：docs/reasoning-comparison.json（由 npm run compare 生成）。",
     sourceMock: "模拟数据：示例行来自 docs/fixtures/usage.json，而非测量文件（docs/reasoning-comparison.json）。",
-    derived: "提示 token 平均值、成本与能耗合计以及变化列，均由本页根据这些行计算。",
+    derived: "提示 token 平均值、成本与能耗合计以及变化列，均由本页根据这些行计算。此处能耗按每 token 固定假设计算，未计入开启思考模式时更长的解码时间，因此实际节省可能更大。",
   },
   energy: {
     title: "能耗估算",

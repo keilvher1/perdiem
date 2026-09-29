@@ -74,15 +74,16 @@ export function EvidenceActions({
   const t = useT().evidence.actions;
   const mock = API_MODE === "mock";
   const ready = records !== null && records.mandate.id === id;
-  const disabled = mock || !ready;
+  // Also while a (re)load runs: a download must never save records older than what is on the page.
+  const disabled = mock || !ready || loading;
   const pending = ready ? records.ledger.filter((e) => e.status === "pending" || e.status === "approved").length : 0;
 
   const saveMandate = () => {
-    if (!ready || mock) return;
+    if (!ready || mock || loading) return;
     downloadJson(mandateFileName(records.mandate.id), toExportedMandate(records.mandate));
   };
   const saveLedger = () => {
-    if (!ready || mock) return;
+    if (!ready || mock || loading) return;
     downloadJson(ledgerFileName(records.mandate.id), toExportedLedger(records.ledger));
   };
   const saveBoth = () => {

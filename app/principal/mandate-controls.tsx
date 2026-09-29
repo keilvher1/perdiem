@@ -56,6 +56,9 @@ export function MandateControls({
   // After a revoke the trigger disappears; the state sentence takes the focus instead.
   const revokedRef = useRef(false);
   const stateRef = useRef<HTMLParagraphElement>(null);
+  // Otherwise it returns to Revoke: the dialog opens from state (no DialogTrigger), so Radix alone
+  // would drop it to <body>.
+  const revokeRef = useRef<HTMLButtonElement>(null);
   const t = useT();
   const f = useFmt();
   const tc = t.principal.controls;
@@ -146,6 +149,7 @@ export function MandateControls({
             )}
             {/* Revoke sits apart from pause / resume: a different, final action. */}
             <Button
+              ref={revokeRef}
               type="button"
               variant="outline"
               size="lg"
@@ -172,10 +176,16 @@ export function MandateControls({
         <DialogContent
           closeLabel={t.common.close}
           onCloseAutoFocus={(e) => {
-            if (!revokedRef.current) return;
-            revokedRef.current = false;
+            if (revokedRef.current) {
+              revokedRef.current = false;
+              e.preventDefault();
+              stateRef.current?.focus();
+              return;
+            }
+            const trigger = revokeRef.current;
+            if (!trigger?.isConnected) return;
             e.preventDefault();
-            stateRef.current?.focus();
+            trigger.focus();
           }}
         >
           <DialogHeader>

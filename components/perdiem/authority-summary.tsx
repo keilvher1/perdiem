@@ -14,11 +14,22 @@ export type AuthorityMandate = Pick<
   "id" | "traveler" | "principal" | "status" | "startsAt" | "expiresAt"
 >;
 
-function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  wrap = false,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  /** Wrap instead of truncating (a value that must be read whole, e.g. the trip window). */
+  wrap?: boolean;
+  className?: string;
+}) {
   return (
     <div className={cn("min-w-0", className)}>
       <dt className="type-label text-muted-ink">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-ink">{children}</dd>
+      <dd className={cn("mt-0.5 text-sm text-ink", wrap ? "text-pretty" : "truncate")}>{children}</dd>
     </div>
   );
 }
@@ -79,7 +90,7 @@ export function AuthoritySummary({
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line px-4 py-3 sm:px-5 @3xl:grid-cols-4">
         <Field label={a.traveler}>{mandate.traveler}</Field>
         <Field label={a.principal}>{mandate.principal}</Field>
-        <Field label={a.window} className="col-span-2 @3xl:col-span-1">
+        <Field label={a.window} wrap className="col-span-2 @3xl:col-span-1">
           <span className="tabular-nums">{a.range(f.date(mandate.startsAt), f.date(mandate.expiresAt, true))}</span>
         </Field>
         <Field label={a.deadline} className="col-span-2 @3xl:col-span-1">
