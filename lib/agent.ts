@@ -56,6 +56,18 @@ function spentUsd(ledger: LedgerEntry[]): number {
 }
 
 /** Exported so scripts/compare-reasoning.ts measures the exact production prompt. */
+/** Upper bound for the fee estimate inside a chat request (see handleTravelerMessage step 2). */
+export const FEE_TIMEOUT_MS = 15_000;
+
+/** Rejects when `p` has not settled after `ms`; the underlying request is left to finish on its own. */
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms`)), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
 export function systemPrompt(m: Mandate): string {
   const catalog = m.catalog.map((x) => `${x.id} | ${x.name} | ${x.category}`).join("\n");
   return [
@@ -123,7 +135,10 @@ export async function handleTravelerMessage(userText: string, deps: AgentDeps): 
   if (merchant && Number.isFinite(proposal.amountUsd) && proposal.amountUsd > 0) {
     try {
       const placeholderReceipt = paymentCalldata(mh, mh); // same byte length as the real calldata
-      const est = await estimateFeeUsd(merchant.wallet, proposal.amountUsd, placeholderReceipt);
+      // Bounded: an RPC that hangs (viem retries each transport before falling back) could otherwise
+      // outlast the 60 s function limit and leave no record. On timeout the fee is unknown and the
+      // policy fails closed with FEE_UNAVAILABLE, recorded like any other stop.
+      const est = await withTimeout(estimateFeeUsd(merchant.wallet, proposal.amountUsd, placeholderReceipt), FEE_TIMEOUT_MS);
       feeUsd = est.feeUsd;
       feeSource = est.source;
     } catch {
