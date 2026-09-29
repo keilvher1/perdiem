@@ -34,9 +34,13 @@ type Ctx = { params: Promise<{ mandateId: string }> };
 export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { mandateId } = await ctx.params;
-    const row = await getMandate(mandateId);
+    // Both reads in parallel; errors keep the sequential order: getMandate, then 404, then listLedger.
+    const [mandateRead, ledgerRead] = await Promise.allSettled([getMandate(mandateId), listLedger(mandateId)]);
+    if (mandateRead.status === "rejected") throw mandateRead.reason;
+    const row = mandateRead.value;
     if (!row) throw new HttpError(404, "MANDATE_NOT_FOUND", `No mandate ${mandateId}.`);
-    const ledger = await listLedger(mandateId);
+    if (ledgerRead.status === "rejected") throw ledgerRead.reason;
+    const ledger = ledgerRead.value;
 
     const audit = await auditRecords(row.mandate, row.anchorTx, ledger);
     const body: AuditResponse = {

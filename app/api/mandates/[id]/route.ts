@@ -27,9 +27,13 @@ const PatchSchema = z.object({ status: z.enum(["active", "paused", "revoked"]) }
 export async function GET(_req: Request, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
-    const row = await getMandate(id);
+    // Both reads in parallel; errors keep the sequential order: getMandate, then 404, then listLedger.
+    const [mandateRead, ledgerRead] = await Promise.allSettled([getMandate(id), listLedger(id)]);
+    if (mandateRead.status === "rejected") throw mandateRead.reason;
+    const row = mandateRead.value;
     if (!row) throw new HttpError(404, "MANDATE_NOT_FOUND", `No mandate ${id}.`);
-    const ledger = await listLedger(id);
+    if (ledgerRead.status === "rejected") throw ledgerRead.reason;
+    const ledger = ledgerRead.value;
     const body: MandateDetailResponse = { mandate: toDetail(row, ledger), ledger: ledger.map((e) => toEntryView(e, row)) };
     return noStore(NextResponse.json<MandateDetailResponse>(body));
   } catch (err) {

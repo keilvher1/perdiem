@@ -12,9 +12,13 @@ export async function GET(req: NextRequest) {
   try {
     const mandateId = req.nextUrl.searchParams.get("mandateId")?.trim();
     if (!mandateId) throw new HttpError(400, "VALIDATION_FAILED", "mandateId query parameter is required.");
-    const row = await getMandate(mandateId);
+    // Both reads in parallel; errors keep the sequential order: getMandate, then 404, then listLedger.
+    const [mandateRead, ledgerRead] = await Promise.allSettled([getMandate(mandateId), listLedger(mandateId)]);
+    if (mandateRead.status === "rejected") throw mandateRead.reason;
+    const row = mandateRead.value;
     if (!row) throw new HttpError(404, "MANDATE_NOT_FOUND", `No mandate ${mandateId}.`);
-    const entries = await listLedger(mandateId);
+    if (ledgerRead.status === "rejected") throw ledgerRead.reason;
+    const entries = ledgerRead.value;
     const body: LedgerResponse = { entries: entries.map((e) => toEntryView(e, row)) };
     return noStore(NextResponse.json<LedgerResponse>(body));
   } catch (err) {
