@@ -11,6 +11,8 @@ type ExecutionCopy = { approved: string; pending: string; settled: string; faile
 type VerificationCopy = { not_run: string; running: string; match: string; mismatch: string; unverifiable: string };
 
 export const en = {
+  /** Between items of a list of names (merchants, categories, keywords). */
+  listSep: ", ",
   shell: {
     /** The product message next to the wordmark. */
     message: "The AI pays. You hold the authority.",
@@ -231,6 +233,7 @@ export const en = {
 };
 
 export const ko: typeof en = {
+  listSep: ", ",
   shell: {
     message: "결제는 AI가. 권한은 당신이.",
     home: "PerDiem 홈",
@@ -440,6 +443,7 @@ export const ko: typeof en = {
 };
 
 export const ja: typeof en = {
+  listSep: "、",
   shell: {
     message: "支払いはAIが。権限はあなたが。",
     home: "PerDiem ホーム",
@@ -649,6 +653,7 @@ export const ja: typeof en = {
 };
 
 export const zh: typeof en = {
+  listSep: "、",
   shell: {
     message: "支付交给 AI。权限握在你手中。",
     home: "PerDiem 首页",

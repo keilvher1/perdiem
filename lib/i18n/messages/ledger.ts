@@ -3,11 +3,11 @@
  * The other languages are typed `typeof en`, so a missing key is a compile error.
  * Ledger data (merchant names, memos, the traveler's words, hashes, APPROVE / STOP) is never
  * translated.
+ *
+ * `quote`, `txWhat`, `receiptHashWhat`, `mandateHashWhat` and `feeSourceValue` are also read by the
+ * shared EvidencePanel; `payments` is the principal screen's payments table (LedgerTable).
  */
 export const en = {
-  details: "Details",
-  showDetails: (id: string) => `Show details for ${id}`,
-  hideDetails: (id: string) => `Hide details for ${id}`,
   col: {
     time: "Time",
     merchant: "Merchant",
@@ -42,12 +42,27 @@ export const en = {
   kilnResponseId: "Kiln response id",
   toolArgs: "Tool call arguments (raw, from the model)",
   stopReasons: "Stop reasons",
+  payments: {
+    title: "Payments",
+    description:
+      "Every approved request and what happened to it on Sepolia. A stop sends nothing, so it has no row here.",
+    empty: "No approved payment under this mandate yet.",
+    caption: (id: string) => `Approved payments under ${id}`,
+    col: {
+      time: "Time",
+      merchant: "Merchant",
+      amount: "Amount",
+      fee: "Network fee",
+      total: "Total",
+      execution: "Execution",
+      tx: "Transaction",
+      receipt: "Receipt hash",
+    },
+    notBroadcast: "not broadcast",
+  },
 };
 
 export const ko: typeof en = {
-  details: "상세",
-  showDetails: (id) => `${id} 상세 보기`,
-  hideDetails: (id) => `${id} 상세 숨기기`,
   col: {
     time: "시각",
     merchant: "가맹점",
@@ -80,12 +95,27 @@ export const ko: typeof en = {
   kilnResponseId: "Kiln 응답 ID",
   toolArgs: "도구 호출 인수 (모델 원본)",
   stopReasons: "중단 사유",
+  payments: {
+    title: "결제 내역",
+    description:
+      "승인된 요청과 Sepolia에서의 처리 결과를 모두 표시합니다. 중단된 요청은 아무것도 전송하지 않으므로 여기에 없습니다.",
+    empty: "이 위임으로 승인된 결제가 아직 없습니다.",
+    caption: (id) => `${id} 위임으로 승인된 결제`,
+    col: {
+      time: "시각",
+      merchant: "가맹점",
+      amount: "금액",
+      fee: "네트워크 수수료",
+      total: "합계",
+      execution: "실행",
+      tx: "트랜잭션",
+      receipt: "영수증 해시",
+    },
+    notBroadcast: "전송 전",
+  },
 };
 
 export const ja: typeof en = {
-  details: "詳細",
-  showDetails: (id) => `${id} の詳細を表示`,
-  hideDetails: (id) => `${id} の詳細を隠す`,
   col: {
     time: "時刻",
     merchant: "加盟店",
@@ -118,12 +148,27 @@ export const ja: typeof en = {
   kilnResponseId: "Kiln レスポンス ID",
   toolArgs: "ツール呼び出しの引数（モデルの生出力）",
   stopReasons: "停止理由",
+  payments: {
+    title: "支払い",
+    description:
+      "承認された依頼と、Sepolia上での処理結果をすべて表示します。停止された依頼は何も送信しないため、ここには表示されません。",
+    empty: "この委任で承認された支払いはまだありません。",
+    caption: (id) => `${id} で承認された支払い`,
+    col: {
+      time: "時刻",
+      merchant: "加盟店",
+      amount: "金額",
+      fee: "ネットワーク手数料",
+      total: "合計",
+      execution: "実行",
+      tx: "トランザクション",
+      receipt: "レシートハッシュ",
+    },
+    notBroadcast: "未送信",
+  },
 };
 
 export const zh: typeof en = {
-  details: "详情",
-  showDetails: (id) => `显示 ${id} 的详情`,
-  hideDetails: (id) => `隐藏 ${id} 的详情`,
   col: {
     time: "时间",
     merchant: "商户",
@@ -156,4 +201,21 @@ export const zh: typeof en = {
   kilnResponseId: "Kiln 响应 ID",
   toolArgs: "工具调用参数（模型原始输出）",
   stopReasons: "拦截原因",
+  payments: {
+    title: "付款记录",
+    description: "列出每个已批准的请求及其在 Sepolia 上的处理结果。已拦截的请求不会发送任何内容，因此不在此列出。",
+    empty: "此授权下暂无已批准的付款。",
+    caption: (id) => `${id} 下已批准的付款`,
+    col: {
+      time: "时间",
+      merchant: "商户",
+      amount: "金额",
+      fee: "网络手续费",
+      total: "合计",
+      execution: "执行",
+      tx: "交易",
+      receipt: "收据哈希",
+    },
+    notBroadcast: "未广播",
+  },
 };

@@ -53,11 +53,12 @@ function compare(
   const val = (x: number | string | undefined) => (r ? fmtReasonValue(r.code, x, f.locale) : null);
   const category = (x: string) => t.common.category[x] ?? x;
   const merchantNames = (ids: string[]) =>
-    ids.map((id) => m?.catalog.find((x) => x.id === id)?.name ?? id).join(", ");
+    ids.map((id) => m?.catalog.find((x) => x.id === id)?.name ?? id).join(t.ui.listSep);
   switch (c.code) {
     case "MANDATE_NOT_ACTIVE":
       // Passing this check means the status was "active" when the decision was made.
-      return { requested: r ? val(r.observed) : c.result === "passed" ? v.active : null, allowed: v.active };
+      // The status at decision time is recorded only when the check failed (reason.observed).
+      return { requested: r ? val(r.observed) : null, allowed: v.active };
     case "BEFORE_START":
       return {
         requested: f.date(e.at, true),
@@ -89,12 +90,12 @@ function compare(
         : typeof r?.limit === "string"
           ? r.limit.split(",").map((s) => s.trim())
           : null;
-      return { requested: req ? category(req) : null, allowed: allowed ? allowed.map(category).join(", ") : null };
+      return { requested: req ? category(req) : null, allowed: allowed ? allowed.map(category).join(t.ui.listSep) : null };
     }
     case "BLOCKED_KEYWORD":
       return {
         requested: r ? `“${String(r.observed ?? "")}”` : v.noHit,
-        allowed: m ? v.noneOf(m.blockedKeywords.join(", ")) : null,
+        allowed: m ? v.noneOf(m.blockedKeywords.join(t.ui.listSep)) : null,
       };
     case "INVALID_AMOUNT":
       return { requested: fmtUsd(e.proposal.amountUsd), allowed: v.positive };
@@ -104,10 +105,14 @@ function compare(
         allowed: m ? v.atMost(fmtUsd(m.perTxCapUsd)) : r ? v.atMost(val(r.limit) ?? "") : null,
       };
     case "FEE_UNAVAILABLE":
+      // feeSource "none" (unknown merchant) records fee 0, which is not a real fee: "— (none)".
       return {
         requested: r
           ? v.feeUnknown
-          : v.withSource(fmtUsd(e.feeUsd), t.ledger.feeSourceValue[e.feeSource ?? ""] ?? e.feeSource ?? "—"),
+          : v.withSource(
+              e.feeSource === "none" ? "—" : fmtUsd(e.feeUsd),
+              t.ledger.feeSourceValue[e.feeSource ?? ""] ?? e.feeSource ?? "—",
+            ),
         allowed: v.feeRequired,
       };
     case "OVER_BUDGET_WITH_FEES":
@@ -148,7 +153,8 @@ function feeAndTotal(e: LedgerEntryView, t: Messages): { fee: string; total: str
     return { fee: v.feeUnknown, total: v.amountOnly(fmtUsd(e.totalUsd)) };
   }
   if (e.feeSource === "none") {
-    return { fee: v.withSource(fmtUsd(e.feeUsd), source ?? "none"), total: v.amountOnly(fmtUsd(e.totalUsd)) };
+    // The recorded 0 is a placeholder, not a fee: "— (none)", as LedgerTable shows it.
+    return { fee: v.withSource("—", source ?? "none"), total: v.amountOnly(fmtUsd(e.totalUsd)) };
   }
   return { fee: source ? v.withSource(fmtUsd(e.feeUsd), source) : fmtUsd(e.feeUsd), total: fmtUsd(e.totalUsd) };
 }

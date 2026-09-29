@@ -156,3 +156,14 @@ export function verificationState(
   if (result === false) return "mismatch";
   return "not_run";
 }
+
+/**
+ * `now` for the relative time of something that already happened (a decision, a settlement): the
+ * polled clock can lag a just-recorded entry by a few seconds, which would read "in 6 s". Never
+ * earlier than the event itself, so it reads "just now". null stays null (absolute date).
+ */
+export function pastNow(iso: string, now: number | null): number | null {
+  if (now === null) return null;
+  const at = Date.parse(iso);
+  return Number.isFinite(at) ? Math.max(now, at) : now;
+}

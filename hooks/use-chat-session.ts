@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import type { ChatResponse, LedgerEntryView, UsageRecord } from "@/contracts/api";
+import { useEffect, useSyncExternalStore } from "react";
+import type { ChatResponse, LedgerEntryView, MandateDetail, UsageRecord } from "@/contracts/api";
 import { api, toApiClientError } from "@/lib/api-client";
 
 /**
@@ -162,4 +162,45 @@ export function updateChatEntry(entry: LedgerEntryView): void {
 export function clearChatSession(): void {
   if (snapshot.pending) return;
   set(EMPTY);
+}
+
+/**
+ * Mandate terms by id for the receipts' "allowed" values (a conversation can span several
+ * mandates). Fetched once per id: the terms are hashed and never change, and a receipt uses them
+ * only when their hash equals the entry's mandate hash. Status and money are NOT read from here
+ * (they go stale); the page reads those from the mandates list.
+ */
+const terms = new Map<string, MandateDetail | "loading">();
+const termsListeners = new Set<() => void>();
+
+function subscribeTerms(cb: () => void) {
+  termsListeners.add(cb);
+  return () => {
+    termsListeners.delete(cb);
+  };
+}
+
+async function loadTerms(id: string): Promise<void> {
+  if (terms.has(id)) return;
+  terms.set(id, "loading");
+  try {
+    const res = await api.mandate(id);
+    terms.set(id, res.mandate);
+  } catch {
+    // Forget the failure so a later receipt can try again; the receipt shows "—" meanwhile.
+    terms.delete(id);
+  }
+  termsListeners.forEach((l) => l());
+}
+
+export function useMandateTerms(id: string): MandateDetail | null {
+  const slot = useSyncExternalStore(
+    subscribeTerms,
+    () => terms.get(id) ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    void loadTerms(id);
+  }, [id]);
+  return slot && slot !== "loading" ? slot : null;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ComponentProps } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type ComponentProps, type Ref } from "react";
 import type { LedgerEntryView } from "@/contracts/api";
 import { cn } from "@/lib/utils";
 import { DecisionLedger, type DecisionLedgerHandle } from "./decision-ledger";
@@ -15,12 +15,24 @@ function isSideBySide(): boolean {
   }
 }
 
+/** Lets a page open the evidence for the decision it selected elsewhere (a receipt, a link). */
+export interface DecisionWorkspaceHandle {
+  /**
+   * Shows the selected decision's evidence and moves keyboard focus to the panel heading: below lg
+   * it opens the stacked detail view (scrolled into view); beside the ledger it only focuses.
+   * Call it after the new `selectedId` has rendered.
+   */
+  showDetail(): void;
+}
+
 /**
  * Ledger + evidence as one unit. Desktop (≥ lg): two columns, the panel sticky beside the list and
  * scrolling inside itself when it is taller than the viewport.
  * Mobile: the list; selecting a row opens the panel as a stacked detail view with "Back to
  * ledger" (focus moves to the panel heading, and back to the row on return). The selection is
- * the parent's (`selectedId` / `onSelect`), so a page can also drive it from elsewhere.
+ * the parent's (`selectedId` / `onSelect`), so a page can also drive it from elsewhere. Mounted with a
+ * `selectedId` (a ?d= link), the stacked view starts open on it, without moving focus; `ref`
+ * (`showDetail()`) opens it later for a selection made outside the ledger.
  */
 export function DecisionWorkspace({
   entries,
@@ -32,6 +44,7 @@ export function DecisionWorkspace({
   stickyTopClass = "lg:top-32",
   panelMaxHeightClass = "lg:max-h-[calc(100dvh-9rem)]",
   className,
+  ref,
 }: {
   entries: LedgerEntryView[];
   mandate?: EvidenceMandate | null;
@@ -45,8 +58,10 @@ export function DecisionWorkspace({
   /** Height cap of the sticky panel; keep it ≈ 100dvh − the sticky offset − 1rem. */
   panelMaxHeightClass?: string;
   className?: string;
+  ref?: Ref<DecisionWorkspaceHandle>;
 }) {
-  const [detailOpen, setDetailOpen] = useState(false);
+  // A deep link (?d= on arrival) opens the stacked view at once; the entries may still be loading.
+  const [detailOpen, setDetailOpen] = useState(() => selectedId !== null);
   const ledgerRef = useRef<DecisionLedgerHandle>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const selected = entries.find((e) => e.id === selectedId) ?? null;
@@ -61,6 +76,23 @@ export function DecisionWorkspace({
     setDetailOpen(false);
     requestAnimationFrame(() => ledgerRef.current?.focusSelected());
   };
+  // showDetail(): focus the heading once the open panel has committed (it may be display:none before).
+  const [focusRequest, setFocusRequest] = useState(0);
+  useEffect(() => {
+    if (focusRequest === 0) return;
+    // Beside the ledger the caller keeps the scroll position; stacked, focus brings it into view.
+    headingRef.current?.focus({ preventScroll: isSideBySide() });
+  }, [focusRequest]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      showDetail() {
+        setDetailOpen(true);
+        setFocusRequest((n) => n + 1);
+      },
+    }),
+    [],
+  );
 
   return (
     <div className={cn("grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start", className)}>

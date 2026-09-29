@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Leaf } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { FlowName } from "@/contracts/api";
 import type { ChatMessage } from "@/hooks/use-chat-session";
+import { StateGlyph } from "@/components/perdiem/state-glyph";
 import { fmtUsd } from "@/lib/format";
 import { useFmt, useT } from "@/lib/i18n/provider";
-import { Panel } from "@/components/perdiem/page";
 import { cn } from "@/lib/utils";
 
 const CORE_FLOWS: FlowName[] = ["propose", "status_fastpath", "stop_template"];
@@ -16,8 +16,12 @@ const FLOW_LABEL: Partial<Record<FlowName, string>> = {
   stop_template: "stop_template",
 };
 
-/** "This session": tokens per flow from the replies' usage arrays, approved vs stopped. */
-export function SessionRail({ messages }: { messages: ChatMessage[] }) {
+/**
+ * Quiet desktop footnote to the conversation: this session's replies and decisions, tokens per
+ * flow from the replies' usage arrays (0-token refusals), and how a request is decided. The full
+ * numbers live on /metrics; this stays out of the payment flow's way.
+ */
+export function SessionRail({ messages, mandateId }: { messages: ChatMessage[]; mandateId: string | null }) {
   const t = useT();
   const f = useFmt();
   const tr = t.traveler.rail;
@@ -26,6 +30,7 @@ export function SessionRail({ messages }: { messages: ChatMessage[] }) {
   let approved = 0;
   let stopped = 0;
   let answered = 0;
+  let modelCalls = 0;
   for (const m of messages) {
     if (m.kind !== "agent") continue;
     answered += 1;
@@ -37,113 +42,129 @@ export function SessionRail({ messages }: { messages: ChatMessage[] }) {
       row.tokens += u.totalTokens;
       row.cost += u.costUsd ?? 0;
       flows.set(u.flow, row);
+      if (u.totalTokens > 0) modelCalls += 1;
     }
   }
   const rows = [...flows.entries()];
-  const modelCalls = messages.reduce(
-    (a, m) => a + (m.kind === "agent" ? m.usage.filter((u) => u.totalTokens > 0).length : 0),
-    0,
-  );
   const tokens = rows.reduce((a, [, r]) => a + r.tokens, 0);
   const cost = rows.reduce((a, [, r]) => a + r.cost, 0);
+  const metricsHref = mandateId ? `/metrics?m=${encodeURIComponent(mandateId)}` : "/metrics";
 
   return (
-    <aside aria-label={tr.title} className="hidden space-y-4 lg:block">
-      <Panel as="div" className="p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">{tr.title}</h2>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg bg-zinc-50 px-2 py-2">
-            <p className="text-lg font-semibold text-zinc-900 tabular-nums">{answered}</p>
-            <p className="text-[11px] text-zinc-500">{tr.replies}</p>
+    <aside aria-label={tr.title} className="hidden rounded-lg border border-line bg-surface lg:block">
+      <div className="px-4 py-4 sm:px-5">
+        <h2 className="type-label text-muted-ink">{tr.title}</h2>
+        <dl className="mt-2 grid grid-cols-3 gap-2">
+          <div>
+            <dt className="text-xs text-muted-ink">{tr.replies}</dt>
+            <dd className="text-lg font-semibold text-ink tabular-nums">{f.int(answered)}</dd>
           </div>
-          <div className="rounded-lg bg-emerald-50 px-2 py-2">
-            <p className="text-lg font-semibold text-emerald-700 tabular-nums">{approved}</p>
-            <p className="text-[11px] text-emerald-800/80">{tr.approved}</p>
+          <div>
+            <dt className="flex items-center gap-1 text-xs text-muted-ink">
+              <StateGlyph glyph="circle" className="size-2.5 text-approve" />
+              {tr.approved}
+            </dt>
+            <dd className="text-lg font-semibold text-ink tabular-nums">{f.int(approved)}</dd>
           </div>
-          <div className="rounded-lg bg-rose-50 px-2 py-2">
-            <p className="text-lg font-semibold text-rose-700 tabular-nums">{stopped}</p>
-            <p className="text-[11px] text-rose-800/80">{tr.stopped}</p>
+          <div>
+            <dt className="flex items-center gap-1 text-xs text-muted-ink">
+              <StateGlyph glyph="square" className="size-2.5 text-stop" />
+              {tr.stopped}
+            </dt>
+            <dd className="text-lg font-semibold text-ink tabular-nums">{f.int(stopped)}</dd>
           </div>
-        </div>
+        </dl>
 
         <table className="mt-4 w-full text-xs">
           <caption className="sr-only">{tr.caption}</caption>
           <thead>
-            <tr className="text-zinc-500">
-              <th scope="col" className="pb-1.5 text-left font-medium">{tr.flow}</th>
-              <th scope="col" className="pb-1.5 text-right font-medium">{tr.calls}</th>
-              <th scope="col" className="pb-1.5 text-right font-medium">{tr.tokens}</th>
+            <tr className="text-muted-ink">
+              <th scope="col" className="pb-1.5 text-left font-medium">
+                {tr.flow}
+              </th>
+              <th scope="col" className="pb-1.5 text-right font-medium">
+                {tr.calls}
+              </th>
+              <th scope="col" className="pb-1.5 text-right font-medium">
+                {tr.tokens}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(([flow, r]) => {
-              const zero = r.calls > 0 && r.tokens === 0;
-              return (
-                <tr key={flow} className="border-t border-zinc-100">
-                  <td className="py-1.5 font-mono text-[11px] text-zinc-700">{FLOW_LABEL[flow] ?? flow}</td>
-                  <td className="py-1.5 text-right text-zinc-600 tabular-nums">{r.calls}</td>
-                  <td className={cn("py-1.5 text-right tabular-nums", zero ? "font-medium text-emerald-700" : "text-zinc-900")}>
-                    {f.int(r.tokens)}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map(([flow, r]) => (
+              <tr key={flow} className="border-t border-line">
+                <td className="py-1.5 font-mono text-[11px] text-ink">{FLOW_LABEL[flow] ?? flow}</td>
+                <td className="py-1.5 text-right text-muted-ink tabular-nums">{f.int(r.calls)}</td>
+                <td className={cn("py-1.5 text-right tabular-nums", r.calls > 0 && r.tokens === 0 ? "font-medium text-ink" : "text-ink")}>
+                  {f.int(r.tokens)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
-        <dl className="mt-3 space-y-1 border-t border-zinc-100 pt-3 text-xs">
-          <div className="flex justify-between">
-            <dt className="text-zinc-500">{tr.modelCalls}</dt>
-            <dd className="text-zinc-900 tabular-nums">{modelCalls}</dd>
+        <dl className="mt-2 space-y-1 border-t border-line pt-2 text-xs">
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-ink">{tr.modelCalls}</dt>
+            <dd className="text-ink tabular-nums">{f.int(modelCalls)}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-zinc-500">{tr.tokens}</dt>
-            <dd className="text-zinc-900 tabular-nums">{f.int(tokens)}</dd>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-ink">{tr.tokens}</dt>
+            <dd className="text-ink tabular-nums">{f.int(tokens)}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-zinc-500">{tr.kilnCost}</dt>
-            <dd className="text-zinc-900 tabular-nums">{fmtUsd(cost)}</dd>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-ink">{tr.kilnCost}</dt>
+            <dd className="text-ink tabular-nums">{fmtUsd(cost)}</dd>
           </div>
         </dl>
-        <p className="mt-4 flex gap-2 rounded-lg bg-emerald-50/70 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-100 ring-inset">
-          <Leaf aria-hidden className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
-          <span>{tr.zeroTokenNote}</span>
-        </p>
+        <p className="mt-3 text-xs text-muted-ink">{tr.zeroTokenNote}</p>
         <Link
-          href="/metrics"
-          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-700 underline-offset-2 hover:underline"
+          href={metricsHref}
+          className="mt-2 inline-flex items-center gap-1 rounded-sm text-xs font-medium text-cobalt underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
         >
           {tr.metricsLink} <ArrowRight aria-hidden className="size-3" />
         </Link>
-      </Panel>
+      </div>
 
-      <Panel as="div" className="p-5">
-        <h2 className="text-sm font-semibold text-zinc-900">{tr.howTitle}</h2>
-        <ol className="mt-3 space-y-2.5 text-xs text-zinc-600">
-          <li className="flex gap-2">
-            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-zinc-100 font-mono text-[10px] text-zinc-600">1</span>
+      <div className="border-t border-line px-4 py-4 sm:px-5">
+        <h2 className="type-label text-muted-ink">{tr.howTitle}</h2>
+        <ol className="mt-2.5 space-y-2.5 text-xs text-muted-ink">
+          <li className="flex gap-2.5">
+            <span aria-hidden className="w-3 shrink-0 font-semibold text-ink tabular-nums">
+              1
+            </span>
             <span>
-              <span className="font-medium text-zinc-800">{tr.step1.strong}</span>
+              <span className="font-medium text-ink">{tr.step1.strong}</span>
               {tr.step1.rest}
             </span>
           </li>
-          <li className="flex gap-2">
-            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-zinc-100 font-mono text-[10px] text-zinc-600">2</span>
+          <li className="flex gap-2.5">
+            <span aria-hidden className="w-3 shrink-0 font-semibold text-ink tabular-nums">
+              2
+            </span>
             <span>
-              <span className="font-medium text-zinc-800">{tr.step2.strong}</span>
+              <span className="font-medium text-ink">{tr.step2.strong}</span>
               {tr.step2.rest}
             </span>
           </li>
-          <li className="flex gap-2">
-            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-zinc-100 font-mono text-[10px] text-zinc-600">3</span>
+          <li className="flex gap-2.5">
+            <span aria-hidden className="w-3 shrink-0 font-semibold text-ink tabular-nums">
+              3
+            </span>
             <span>
-              <span className="font-medium text-zinc-800">{tr.step3.approved}</span>
+              <span className="inline-flex items-baseline gap-1 font-medium text-approve">
+                <StateGlyph glyph="circle" className="size-2" />
+                {tr.step3.approved}
+              </span>
               {tr.step3.approvedRest}
-              <span className="font-medium text-zinc-800">{tr.step3.stopped}</span>
+              <span className="inline-flex items-baseline gap-1 font-medium text-stop">
+                <StateGlyph glyph="square" className="size-2" />
+                {tr.step3.stopped}
+              </span>
               {tr.step3.stoppedRest}
             </span>
           </li>
         </ol>
-      </Panel>
+      </div>
     </aside>
   );
 }

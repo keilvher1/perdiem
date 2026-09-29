@@ -64,10 +64,12 @@ export function useSelectedMandate() {
         return;
       }
       const sp = new URLSearchParams(params.toString());
+      // ?d= names a decision of the mandate being left: it goes with a new ?m= (every other param stays).
+      if (next !== id) sp.delete("d");
       sp.set("m", next);
       router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
     },
-    [params, pathname, router],
+    [params, pathname, router, id],
   );
 
   return { id, summary, mandates, error, loading, refresh, select, addOptimistic };

@@ -61,7 +61,7 @@ export function BudgetBreakdown({
   const over = remainingUsd < 0;
 
   return (
-    <section aria-label={b.title} className={cn("rounded-lg border border-line bg-surface px-4 py-4 sm:px-5", className)}>
+    <section aria-label={b.title} className={cn("@container rounded-lg border border-line bg-surface px-4 py-4 sm:px-5", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <div>
           <p className="type-label text-muted-ink">{b.remaining}</p>
@@ -87,7 +87,8 @@ export function BudgetBreakdown({
         </p>
       )}
 
-      <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-line pt-3 sm:grid-cols-3">
+      {/* Three columns once the breakdown itself is 32rem wide (container query), not the viewport. */}
+      <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-line pt-3 @lg:grid-cols-3">
         <Figure label={b.spent} value={fmtUsd(spentUsd)} hint={b.spentHint} />
         <Figure
           swatch={<span aria-hidden className="h-1.5 w-3.5 shrink-0 rounded-[1px] bg-ink" />}

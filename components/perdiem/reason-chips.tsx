@@ -4,9 +4,13 @@ import type { StopReason } from "@/contracts/api";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocale, useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
+import { StateGlyph } from "./state-glyph";
 import { fmtReasonValue, localizeReason } from "./stop-codes";
 
-/** One chip per StopReason: monospace [CODE] + message; tooltip shows observed / limit. */
+/**
+ * One chip per StopReason: amber square + monospace [CODE] + message; the tooltip shows observed /
+ * limit. A rule stop is amber with a square, never the red error look.
+ */
 export function ReasonChips({
   reasons,
   compact = false,
@@ -27,10 +31,11 @@ export function ReasonChips({
           <span
             tabIndex={detail || compact ? 0 : undefined}
             className={cn(
-              "inline-flex max-w-full items-baseline gap-1.5 rounded-sm bg-stop-soft px-2 py-0.5 text-xs text-stop ring-1 ring-stop-line ring-inset outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "inline-flex max-w-full items-baseline gap-1.5 rounded-sm border border-stop-line bg-stop-soft px-1.5 py-0.5 text-xs text-stop outline-none focus-visible:ring-2 focus-visible:ring-ring",
               compact && "whitespace-nowrap",
             )}
           >
+            <StateGlyph glyph="square" className="size-2 shrink-0 self-center" />
             <span className="font-mono text-[11px] font-semibold tracking-tight">[{r.code}]</span>
             {!compact && <span className="text-ink">{message}</span>}
           </span>
@@ -50,36 +55,39 @@ export function ReasonChips({
   );
 }
 
-/** Roomier list for receipt cards: code, message and observed vs limit on their own line. */
+/** Roomier list: square + code + message, and observed vs limit on their own line. */
 export function ReasonList({ reasons }: { reasons: StopReason[] }) {
   const locale = useLocale();
   const t = useT();
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-line">
       {reasons.map((r, i) => {
         const { message } = localizeReason(r, locale);
         const observed = fmtReasonValue(r.code, r.observed, locale);
         const limit = fmtReasonValue(r.code, r.limit, locale);
         return (
-          <li key={`${r.code}-${i}`} className="rounded-md bg-stop-soft px-3 py-2 ring-1 ring-stop-line ring-inset">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="font-mono text-[11px] font-semibold text-stop">[{r.code}]</span>
-              <span className="text-sm text-ink">{message}</span>
-            </div>
-            {(observed !== null || limit !== null) && (
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-ink">
-                {observed !== null && (
-                  <span>
-                    {t.receipt.reasons.observed} <span className="text-ink tabular-nums">{observed}</span>
-                  </span>
-                )}
-                {limit !== null && (
-                  <span>
-                    {t.receipt.reasons.limit} <span className="text-ink tabular-nums">{limit}</span>
-                  </span>
-                )}
+          <li key={`${r.code}-${i}`} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
+            <StateGlyph glyph="square" className="mt-1 size-2.5 shrink-0 text-stop" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <span className="text-sm text-ink">{message}</span>
+                <span className="font-mono text-[11px] text-muted-ink">[{r.code}]</span>
               </div>
-            )}
+              {(observed !== null || limit !== null) && (
+                <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-ink">
+                  {observed !== null && (
+                    <span>
+                      {t.receipt.reasons.observed} <span className="text-ink tabular-nums">{observed}</span>
+                    </span>
+                  )}
+                  {limit !== null && (
+                    <span>
+                      {t.receipt.reasons.limit} <span className="text-ink tabular-nums">{limit}</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </li>
         );
       })}

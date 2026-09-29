@@ -89,6 +89,8 @@ export function AppShell() {
       return;
     }
     const sp = new URLSearchParams(params.toString());
+    // ?d= names a decision of the mandate being left: it goes (every other param stays).
+    if (id !== current) sp.delete("d");
     sp.set("m", id);
     router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
   };
@@ -102,7 +104,7 @@ export function AppShell() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-line bg-surface print:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 px-4 sm:px-6 lg:gap-x-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 px-4 sm:gap-x-6 sm:px-6 lg:gap-x-8">
           <div className="flex h-14 min-w-0 items-center">
             <Wordmark />
           </div>

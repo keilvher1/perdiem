@@ -1,13 +1,16 @@
 /**
- * "traveler" namespace. `en` is the reference: its strings must equal the English UI copy exactly.
- * The other languages are typed `typeof en`, so a missing key is a compile error.
+ * "traveler" namespace. `en` is the reference; the other languages are typed `typeof en`, so a
+ * missing key is a compile error.
  *
  * Not translated on purpose: the scripted demo request texts (sent to the model), agent replies,
  * server error messages and codes, mandate ids, flow ids, merchant names and blocked keywords.
  */
 export const en = {
   page: {
-    heading: "Traveler — ask the agent to pay, inside the mandate",
+    title: "Request a payment",
+    description:
+      "The agent proposes; policy code approves or stops each payment against your mandate and records why.",
+    clear: "Clear conversation",
     loadError: "Couldn’t load mandates",
     emptyTitle: "No mandates yet",
     emptyDescription:
@@ -18,17 +21,28 @@ export const en = {
     toastSwitched: (id: string) => `Switched to ${id}`,
     toastSwitchedDescription:
       "This scripted request belongs to another mandate.",
+    historyTitle: "Decision history",
+    historyDescription: (id: string) =>
+      `Every approval and stop recorded under ${id}. Select one to see its reason, the 12 rule checks and the raw records.`,
+    historyLabel: (id: string) => `Decisions under ${id}`,
+    historyError: "Couldn’t load the decision history",
   },
   chat: {
+    /** Localized one-line reply shown instead of the server's English text (not used for English). */
+    replyHeadline: (decision: "APPROVE" | "STOP", failed: boolean, merchant: string, amount: string) =>
+      decision === "STOP"
+        ? `Stopped. Nothing was sent to ${merchant} for ${amount}.`
+        : failed
+          ? `Approved ${merchant} ${amount}, but the broadcast did not confirm. Check the ledger before retrying.`
+          : `Approved. Paying ${merchant} ${amount}.`,
     ariaLabel: "Conversation with the agent",
-    title: "Ask the agent to pay",
-    subtitle:
-      "The agent only proposes. Policy code approves or stops every payment before anything reaches the chain, and records why.",
-    clear: "Clear",
-    emptyTitle: "No requests yet — try a quick prompt",
+    agent: "Agent",
+    you: "You",
+    emptyTitle: "No requests yet",
     emptyDescription:
-      "Pick a scripted request below or type your own, e.g. “Order a bibimbap lunch from Yangjae Kitchen, $12”.",
-    thinking: "Proposing, then checking the mandate…",
+      "Pick a scripted request below or type your own. Every decision comes back as a receipt: what was decided, why, and what the mandate allows.",
+    thinking:
+      "The agent is proposing a payment; the policy then checks it against the 12 rules.",
     composerLabel: "Message to the agent",
     placeholder: (id: string) => `Ask for a purchase under ${id}…`,
     placeholderNoMandate: "Choose a mandate first",
@@ -73,40 +87,30 @@ export const en = {
     },
   },
   mandate: {
+    title: "Your mandate",
+    /** Accessible name of the compact status strip (mobile). */
+    stripLabel: "Mandate status and remaining budget",
     paused:
-      "The principal paused this mandate. Requests will be stopped and recorded.",
+      "The principal paused this mandate. New requests are stopped and recorded until it is resumed. A payment already broadcast is not cancelled.",
     revoked:
-      "The principal revoked this mandate. Every request will be stopped and recorded.",
+      "The principal revoked this mandate. Revoking is final: every new request is stopped and recorded. A payment already broadcast is not cancelled.",
     expired: (date: string) =>
-      `This mandate expired on ${date}. Requests will be stopped and recorded.`,
+      `The trip window closed on ${date}. New requests are stopped and recorded.`,
     scheduled: (date: string) =>
-      `This mandate opens on ${date}. Requests before then will be stopped.`,
-    actingFor: "Acting for",
-    /** "<id>" + before + <principal> + after. */
-    grantedByBefore: " · granted by ",
-    grantedByAfter: "",
-    remainingBudget: "Remaining budget",
-    ofBudget: (budget: string) => `of ${budget}`,
-    remainingValueText: (remaining: string, budget: string) =>
-      `${remaining} of ${budget} remaining`,
-    spent: (amount: string) => `Spent ${amount}`,
-    pending: (amount: string) => `${amount} pending`,
-    ledgerEntries: (n: number) =>
-      `${n} ledger ${n === 1 ? "entry" : "entries"}`,
-    perTxCap: "Per-payment cap",
-    tripWindow: "Trip window",
-    categories: "Categories",
-    permittedMerchants: "Permitted merchants",
-    blockedWords: "Blocked words",
-    none: "none",
+      `The trip window opens on ${date}. Requests before then are stopped and recorded.`,
+    remainingNow: "Remaining now",
+    ofBudget: (budget: string) => `of ${budget} budget`,
+    rulesTitle: "What you can ask for",
+    perPayment: (v: string) => `up to ${v}`,
+    termsError: "Couldn’t load the mandate terms",
     /** Joins translated category names. */
     listSep: ", ",
   },
   rail: {
     title: "This session",
-    replies: "replies",
-    approved: "approved",
-    stopped: "stopped",
+    replies: "Replies",
+    approved: "Approved",
+    stopped: "Stopped",
     caption: "Tokens used per flow in this session",
     flow: "Flow",
     calls: "Calls",
@@ -137,7 +141,10 @@ export const en = {
 
 export const ko: typeof en = {
   page: {
-    heading: "출장자 — 위임 범위 안에서 에이전트에게 결제를 요청합니다",
+    title: "결제 요청",
+    description:
+      "에이전트가 제안하고, 정책 코드가 위임을 기준으로 결제를 승인하거나 중단한 뒤 그 이유를 기록합니다.",
+    clear: "대화 지우기",
     loadError: "위임을 불러오지 못했습니다",
     emptyTitle: "아직 위임이 없습니다",
     emptyDescription:
@@ -147,17 +154,27 @@ export const ko: typeof en = {
     toastOutcomeUnknown: "결과 불명: 다시 시도하기 전에 장부를 확인하세요",
     toastSwitched: (id: string) => `${id} 위임으로 전환했습니다`,
     toastSwitchedDescription: "이 시나리오 요청은 다른 위임에 속합니다.",
+    historyTitle: "결정 이력",
+    historyDescription: (id: string) =>
+      `${id} 위임에 기록된 모든 승인과 중단입니다. 하나를 선택하면 사유, 12개 규칙 검사, 원본 기록을 볼 수 있습니다.`,
+    historyLabel: (id: string) => `${id} 위임의 결정`,
+    historyError: "결정 이력을 불러오지 못했습니다",
   },
   chat: {
+    replyHeadline: (decision: "APPROVE" | "STOP", failed: boolean, merchant: string, amount: string) =>
+      decision === "STOP"
+        ? `${merchant} ${amount} 결제를 중단했습니다. 아무것도 보내지 않았습니다.`
+        : failed
+          ? `${merchant} ${amount} 결제를 승인했지만 전송이 확인되지 않았습니다. 다시 보내기 전에 장부를 확인하세요.`
+          : `${merchant} ${amount} 결제를 승인했습니다.`,
     ariaLabel: "에이전트와의 대화",
-    title: "에이전트에게 결제 요청",
-    subtitle:
-      "에이전트는 제안만 합니다. 체인으로 전송되기 전에 정책 코드가 모든 결제를 승인하거나 중단하고, 그 이유를 기록합니다.",
-    clear: "지우기",
-    emptyTitle: "아직 요청이 없습니다 — 빠른 요청으로 시작해 보세요",
+    agent: "에이전트",
+    you: "나",
+    emptyTitle: "아직 요청이 없습니다",
     emptyDescription:
-      "아래에서 시나리오 요청을 고르거나 직접 입력하세요(예: “Order a bibimbap lunch from Yangjae Kitchen, $12”).",
-    thinking: "제안한 뒤 위임을 확인하는 중…",
+      "아래에서 시나리오 요청을 고르거나 직접 입력하세요. 모든 결정은 영수증으로 돌아옵니다. 무엇이 결정되었는지, 왜 그런지, 위임이 무엇을 허용하는지 확인할 수 있습니다.",
+    thinking:
+      "에이전트가 결제를 제안하고 있습니다. 이어서 정책이 12개 규칙으로 검사합니다.",
     composerLabel: "에이전트에게 보낼 메시지",
     placeholder: (id: string) => `${id} 위임으로 구매 요청…`,
     placeholderNoMandate: "먼저 위임을 선택하세요",
@@ -165,8 +182,8 @@ export const ko: typeof en = {
     keyHint: "Enter로 보내기 · Shift+Enter로 줄바꿈",
     tokens: (n: string) => `${n} 토큰`,
     noModel: "모델 호출 없이 응답",
-    dividerBefore: "이제부터",
-    dividerAfter: "위임으로 진행",
+    dividerBefore: "이제부터 ",
+    dividerAfter: " 위임으로 진행",
   },
   chips: {
     heading: "시나리오 데모 요청",
@@ -198,36 +215,28 @@ export const ko: typeof en = {
     },
   },
   mandate: {
-    paused: "위임자가 이 위임을 일시정지했습니다. 요청은 중단되고 기록됩니다.",
+    title: "내 위임",
+    stripLabel: "위임 상태와 남은 예산",
+    paused:
+      "위임자가 이 위임을 일시정지했습니다. 재개될 때까지 새 요청은 중단되고 기록됩니다. 이미 전송된 결제는 취소되지 않습니다.",
     revoked:
-      "위임자가 이 위임을 철회했습니다. 모든 요청은 중단되고 기록됩니다.",
+      "위임자가 이 위임을 철회했습니다. 철회는 되돌릴 수 없으며, 모든 새 요청은 중단되고 기록됩니다. 이미 전송된 결제는 취소되지 않습니다.",
     expired: (date: string) =>
-      `이 위임은 ${date}에 만료되었습니다. 요청은 중단되고 기록됩니다.`,
+      `출장 기간이 ${date}에 끝났습니다. 새 요청은 중단되고 기록됩니다.`,
     scheduled: (date: string) =>
-      `이 위임은 ${date}에 시작됩니다. 그 전의 요청은 중단됩니다.`,
-    actingFor: "대리 대상",
-    grantedByBefore: " · ",
-    grantedByAfter: " 발급",
-    remainingBudget: "예산 잔액",
-    ofBudget: (budget: string) => `/ ${budget}`,
-    remainingValueText: (remaining: string, budget: string) =>
-      `예산 ${budget} 중 잔액 ${remaining}`,
-    spent: (amount: string) => `사용액 ${amount}`,
-    pending: (amount: string) => `대기 중 ${amount}`,
-    ledgerEntries: (n: number) => `장부 항목 ${n}건`,
-    perTxCap: "1회 결제 한도",
-    tripWindow: "출장 기간",
-    categories: "분류",
-    permittedMerchants: "허용 가맹점",
-    blockedWords: "차단 키워드",
-    none: "없음",
+      `출장 기간은 ${date}에 시작됩니다. 그 전의 요청은 중단되고 기록됩니다.`,
+    remainingNow: "현재 잔액",
+    ofBudget: (budget: string) => `예산 ${budget} 중`,
+    rulesTitle: "요청할 수 있는 범위",
+    perPayment: (v: string) => `${v} 이하`,
+    termsError: "위임 조건을 불러오지 못했습니다",
     listSep: ", ",
   },
   rail: {
     title: "이번 세션",
     replies: "응답",
-    approved: "승인됨",
-    stopped: "중단됨",
+    approved: "승인",
+    stopped: "중단",
     caption: "이번 세션의 흐름별 토큰 사용량",
     flow: "흐름",
     calls: "호출",
@@ -258,7 +267,10 @@ export const ko: typeof en = {
 
 export const ja: typeof en = {
   page: {
-    heading: "出張者 — 委任の範囲内でエージェントに支払いを依頼します",
+    title: "支払いを依頼",
+    description:
+      "エージェントが提案し、ポリシーコードが委任に照らして支払いを承認または停止し、その理由を記録します。",
+    clear: "会話をクリア",
     loadError: "委任を読み込めませんでした",
     emptyTitle: "委任はまだありません",
     emptyDescription:
@@ -268,26 +280,36 @@ export const ja: typeof en = {
     toastOutcomeUnknown: "結果不明：再試行する前に台帳を確認してください",
     toastSwitched: (id: string) => `${id} に切り替えました`,
     toastSwitchedDescription: "このシナリオの依頼は別の委任に属しています。",
+    historyTitle: "判定履歴",
+    historyDescription: (id: string) =>
+      `${id} に記録されたすべての承認と停止です。1 件を選ぶと、理由、12 のルールチェック、元の記録を確認できます。`,
+    historyLabel: (id: string) => `${id} の判定`,
+    historyError: "判定履歴を読み込めませんでした",
   },
   chat: {
+    replyHeadline: (decision: "APPROVE" | "STOP", failed: boolean, merchant: string, amount: string) =>
+      decision === "STOP"
+        ? `${merchant}への${amount}の支払いを停止しました。何も送金していません。`
+        : failed
+          ? `${merchant}への${amount}の支払いを承認しましたが、送信を確認できませんでした。再送する前に台帳を確認してください。`
+          : `${merchant}への${amount}の支払いを承認しました。`,
     ariaLabel: "エージェントとの会話",
-    title: "エージェントに支払いを依頼",
-    subtitle:
-      "エージェントは提案するだけです。チェーンに何かが届く前に、ポリシーコードがすべての支払いを承認または停止し、その理由を記録します。",
-    clear: "クリア",
-    emptyTitle: "まだ依頼はありません — クイック依頼を試してください",
+    agent: "エージェント",
+    you: "自分",
+    emptyTitle: "まだ依頼はありません",
     emptyDescription:
-      "下のシナリオ依頼を選ぶか、自分で入力してください（例：「Order a bibimbap lunch from Yangjae Kitchen, $12」）。",
-    thinking: "提案し、委任を確認しています…",
+      "下のシナリオ依頼を選ぶか、自分で入力してください。すべての判定はレシートとして返ります。何が決まり、なぜそうなり、委任が何を許可しているかを確認できます。",
+    thinking:
+      "エージェントが支払いを提案しています。続いてポリシーが 12 のルールでチェックします。",
     composerLabel: "エージェントへのメッセージ",
     placeholder: (id: string) => `${id} の委任で購入を依頼…`,
     placeholderNoMandate: "先に委任を選択してください",
     send: "送信",
-    keyHint: "Enter で送信 · Shift+Enter で改行",
+    keyHint: "Enter で送信・Shift+Enter で改行",
     tokens: (n: string) => `${n} トークン`,
     noModel: "モデルを使わずに応答",
-    dividerBefore: "ここから",
-    dividerAfter: "の委任で実行",
+    dividerBefore: "ここから ",
+    dividerAfter: " の委任で実行",
   },
   chips: {
     heading: "シナリオのデモ依頼",
@@ -321,36 +343,27 @@ export const ja: typeof en = {
     },
   },
   mandate: {
+    title: "あなたの委任",
+    stripLabel: "委任の状態と残りの予算",
     paused:
-      "委任者がこの委任を一時停止しました。依頼は停止され、記録されます。",
+      "委任者がこの委任を一時停止しました。再開されるまで、新しい依頼は停止され記録されます。すでに送信された支払いは取り消されません。",
     revoked:
-      "委任者がこの委任を取り消しました。すべての依頼は停止され、記録されます。",
+      "委任者がこの委任を取り消しました。取り消しは元に戻せません。新しい依頼はすべて停止され記録されます。すでに送信された支払いは取り消されません。",
     expired: (date: string) =>
-      `この委任は ${date} に期限切れになりました。依頼は停止され、記録されます。`,
+      `出張期間は ${date} に終了しました。新しい依頼は停止され記録されます。`,
     scheduled: (date: string) =>
-      `この委任は ${date} に開始します。それまでの依頼は停止されます。`,
-    actingFor: "代理対象",
-    grantedByBefore: " · ",
-    grantedByAfter: " が付与",
-    remainingBudget: "予算残額",
-    ofBudget: (budget: string) => `/ ${budget}`,
-    remainingValueText: (remaining: string, budget: string) =>
-      `予算 ${budget} のうち残額 ${remaining}`,
-    spent: (amount: string) => `使用額 ${amount}`,
-    pending: (amount: string) => `保留中 ${amount}`,
-    ledgerEntries: (n: number) => `台帳エントリ ${n} 件`,
-    perTxCap: "1回あたりの上限",
-    tripWindow: "出張期間",
-    categories: "カテゴリ",
-    permittedMerchants: "許可された加盟店",
-    blockedWords: "ブロックキーワード",
-    none: "なし",
+      `出張期間は ${date} に始まります。それまでの依頼は停止され記録されます。`,
+    remainingNow: "現在の残額",
+    ofBudget: (budget: string) => `予算 ${budget} のうち`,
+    rulesTitle: "依頼できる範囲",
+    perPayment: (v: string) => `${v} まで`,
+    termsError: "委任の条件を読み込めませんでした",
     listSep: "、",
   },
   rail: {
     title: "このセッション",
     replies: "応答",
-    approved: "承認済み",
+    approved: "承認",
     stopped: "停止",
     caption: "このセッションのフロー別トークン使用量",
     flow: "フロー",
@@ -382,7 +395,10 @@ export const ja: typeof en = {
 
 export const zh: typeof en = {
   page: {
-    heading: "出差人 — 在授权范围内请代理付款",
+    title: "申请付款",
+    description:
+      "代理提出付款，策略代码对照你的授权批准或拦截每一笔付款，并记录原因。",
+    clear: "清空对话",
     loadError: "无法加载授权",
     emptyTitle: "暂无授权",
     emptyDescription: "委托方需先授予差旅补贴授权，代理才能提出付款。",
@@ -391,26 +407,35 @@ export const zh: typeof en = {
     toastOutcomeUnknown: "结果未知：重试前请先查看账本",
     toastSwitched: (id: string) => `已切换到 ${id}`,
     toastSwitchedDescription: "该预设请求属于另一项授权。",
+    historyTitle: "判定记录",
+    historyDescription: (id: string) =>
+      `${id} 下记录的所有批准和拦截。选择一条即可查看原因、12 项规则检查和原始记录。`,
+    historyLabel: (id: string) => `${id} 下的判定`,
+    historyError: "无法加载判定记录",
   },
   chat: {
+    replyHeadline: (decision: "APPROVE" | "STOP", failed: boolean, merchant: string, amount: string) =>
+      decision === "STOP"
+        ? `已拦截向 ${merchant} 支付 ${amount}，未发送任何款项。`
+        : failed
+          ? `已批准向 ${merchant} 支付 ${amount}，但未能确认发送。重试前请先查看账本。`
+          : `已批准向 ${merchant} 支付 ${amount}。`,
     ariaLabel: "与代理的对话",
-    title: "请代理付款",
-    subtitle:
-      "代理只负责提议。任何内容上链之前，策略代码都会批准或拦截每一笔付款，并记录原因。",
-    clear: "清空",
-    emptyTitle: "暂无请求 — 试试快捷请求",
+    agent: "代理",
+    you: "我",
+    emptyTitle: "暂无请求",
     emptyDescription:
-      "从下方选择预设请求，或自行输入（例如：“Order a bibimbap lunch from Yangjae Kitchen, $12”）。",
-    thinking: "正在提议并核对授权…",
+      "从下方选择预设请求，或自行输入。每项判定都会以收据形式返回：判定结果、原因，以及授权允许的范围。",
+    thinking: "代理正在提出付款，随后策略会按 12 条规则进行检查。",
     composerLabel: "发给代理的消息",
     placeholder: (id: string) => `在 ${id} 授权下请求购买…`,
     placeholderNoMandate: "请先选择授权",
     send: "发送",
-    keyHint: "Enter 发送 · Shift+Enter 换行",
+    keyHint: "Enter 发送，Shift+Enter 换行",
     tokens: (n: string) => `${n} token`,
     noModel: "未调用模型即作答",
-    dividerBefore: "此后按",
-    dividerAfter: "授权执行",
+    dividerBefore: "此后按 ",
+    dividerAfter: " 授权执行",
   },
   chips: {
     heading: "预设演示请求",
@@ -442,27 +467,19 @@ export const zh: typeof en = {
     },
   },
   mandate: {
-    paused: "委托方已暂停该授权。请求将被拦截并记录。",
-    revoked: "委托方已撤销该授权。所有请求都将被拦截并记录。",
-    expired: (date: string) => `该授权已于 ${date} 到期。请求将被拦截并记录。`,
+    title: "你的授权",
+    stripLabel: "授权状态和剩余预算",
+    paused: "委托方已暂停该授权。在恢复之前，新请求会被拦截并记录。已广播的付款不会被取消。",
+    revoked: "委托方已撤销该授权。撤销不可恢复，所有新请求都会被拦截并记录。已广播的付款不会被取消。",
+    expired: (date: string) =>
+      `差旅期间已于 ${date} 结束。新请求会被拦截并记录。`,
     scheduled: (date: string) =>
-      `该授权将于 ${date} 生效。在此之前的请求将被拦截。`,
-    actingFor: "代理对象",
-    grantedByBefore: " · 由 ",
-    grantedByAfter: " 授予",
-    remainingBudget: "剩余预算",
-    ofBudget: (budget: string) => `/ ${budget}`,
-    remainingValueText: (remaining: string, budget: string) =>
-      `预算 ${budget}，剩余 ${remaining}`,
-    spent: (amount: string) => `已用 ${amount}`,
-    pending: (amount: string) => `待确认 ${amount}`,
-    ledgerEntries: (n: number) => `${n} 条账本记录`,
-    perTxCap: "单笔上限",
-    tripWindow: "差旅期间",
-    categories: "类别",
-    permittedMerchants: "许可商户",
-    blockedWords: "屏蔽关键词",
-    none: "无",
+      `差旅期间将于 ${date} 开始。在此之前的请求会被拦截并记录。`,
+    remainingNow: "当前剩余",
+    ofBudget: (budget: string) => `预算 ${budget}`,
+    rulesTitle: "可申请的范围",
+    perPayment: (v: string) => `不超过 ${v}`,
+    termsError: "无法加载授权条款",
     listSep: "、",
   },
   rail: {

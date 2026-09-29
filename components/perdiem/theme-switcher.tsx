@@ -40,7 +40,7 @@ export function ThemeSwitcher() {
   const Icon = ICONS[value];
   return (
     <Select value={value} onValueChange={(v) => isThemeChoice(v) && setTheme(v)}>
-      <SelectTrigger size="sm" aria-label={t.ui.theme.label} className="bg-surface text-xs text-ink">
+      <SelectTrigger size="sm" aria-label={t.ui.theme.label} className="bg-surface text-xs text-ink max-sm:gap-1 max-sm:px-2 max-sm:[&>svg:last-child]:hidden">
         <SelectValue>
           <Icon aria-hidden className="size-3.5 text-muted-ink" />
           <span className="max-md:sr-only">{t.ui.theme[value]}</span>

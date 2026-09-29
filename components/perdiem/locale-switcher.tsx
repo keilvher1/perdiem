@@ -21,7 +21,8 @@ export function LocaleSwitcher() {
       <SelectTrigger
         size="sm"
         aria-label={t.shell.language.label}
-        className="bg-surface text-xs text-ink"
+        // Phones: no chevron and tighter padding, so the header keeps one row in every language.
+        className="bg-surface text-xs text-ink max-sm:gap-1 max-sm:px-2 max-sm:[&>svg:last-child]:hidden"
       >
         <Languages aria-hidden className="size-3.5 text-muted-ink" />
         {/* Phones: the icon alone (the accessible name still says "Language"). Radix drops a

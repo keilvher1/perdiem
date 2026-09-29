@@ -58,7 +58,7 @@ export function AuthoritySummary({
   return (
     <section
       aria-label={`${a.mandate} ${mandate.id}`}
-      className={cn("rounded-lg border border-line bg-surface", className)}
+      className={cn("@container rounded-lg border border-line bg-surface", className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 py-3.5 sm:px-5">
         <div className="min-w-0">
@@ -75,13 +75,14 @@ export function AuthoritySummary({
           </div>
         )}
       </div>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line px-4 py-3 sm:px-5 lg:grid-cols-4">
+      {/* Columns follow the summary's own width (container queries), not the viewport. */}
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line px-4 py-3 sm:px-5 @3xl:grid-cols-4">
         <Field label={a.traveler}>{mandate.traveler}</Field>
         <Field label={a.principal}>{mandate.principal}</Field>
-        <Field label={a.window} className="col-span-2 lg:col-span-1">
+        <Field label={a.window} className="col-span-2 @3xl:col-span-1">
           <span className="tabular-nums">{a.range(f.date(mandate.startsAt), f.date(mandate.expiresAt, true))}</span>
         </Field>
-        <Field label={a.deadline} className="col-span-2 lg:col-span-1">
+        <Field label={a.deadline} className="col-span-2 @3xl:col-span-1">
           <span className={cn("tabular-nums", w === "expired" ? "text-muted-ink" : "text-ink")}>{deadline}</span>
         </Field>
       </dl>

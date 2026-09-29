@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Ban, CirclePause, LoaderCircle, Play } from "lucide-react";
+import { useRef, useState } from "react";
+import { Ban, CirclePause, Play } from "lucide-react";
 import { toast } from "sonner";
 import type { MandateDetail, MandateStatus } from "@/contracts/api";
 import { api, toApiClientError } from "@/lib/api-client";
-import { fmtUsd } from "@/lib/format";
 import { useFmt, useT } from "@/lib/i18n/provider";
+import { authorityState } from "@/lib/ui-state";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,11 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { HashChip } from "@/components/perdiem/hash-chip";
-import { Panel, StatTile } from "@/components/perdiem/page";
-import {
-  effectiveMandateStatus,
-  StatusPill,
-} from "@/components/perdiem/status-pill";
+import { StateGlyph } from "@/components/perdiem/state-glyph";
 
 type Action = "pause" | "resume" | "revoke";
 const TARGET: Record<Action, MandateStatus> = {
@@ -31,25 +28,49 @@ const TARGET: Record<Action, MandateStatus> = {
   revoke: "revoked",
 };
 
-/** Selected mandate: tiles, Pause / Resume / Revoke (Revoke is confirmed and final), hashes. */
+/** Danger outline (revoke trigger) and fill (confirm): the red tone is kept for this one destructive action. */
+const DANGER_OUTLINE =
+  "border-danger-line bg-surface text-danger hover:bg-danger-soft hover:text-danger dark:border-danger-line dark:bg-surface dark:hover:bg-danger-soft";
+const DANGER_FILL =
+  "bg-danger text-surface hover:bg-danger/90 focus-visible:ring-danger/40";
+
+/**
+ * Authority controls for the selected mandate: what the current state means for new requests, the
+ * state-appropriate action (active → Pause, paused → Resume) and Revoke as a separate danger action
+ * behind a confirmation. The copy promises only what PATCH /api/mandates/[id] does: new requests
+ * only, nothing already broadcast is cancelled, revoke is final (409 afterwards).
+ */
 export function MandateControls({
   mandate,
   now,
   onChanged,
+  className,
 }: {
   mandate: MandateDetail;
   now: number | null;
   onChanged: () => void;
+  className?: string;
 }) {
   const [busy, setBusy] = useState<Action | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // After a revoke the trigger disappears; the state sentence takes the focus instead.
+  const revokedRef = useRef(false);
+  const stateRef = useRef<HTMLParagraphElement>(null);
   const t = useT();
   const f = useFmt();
   const tc = t.principal.controls;
-  const eff = effectiveMandateStatus(mandate, now);
+  const state = authorityState(mandate, now);
   const revoked = mandate.status === "revoked";
 
+  const stateText =
+    state === "expired"
+      ? tc.state.expired(f.date(mandate.expiresAt, true))
+      : state === "scheduled"
+        ? tc.state.scheduled(f.date(mandate.startsAt, true))
+        : tc.state[state];
+
   const run = async (action: Action) => {
+    if (busy !== null) return;
     setBusy(action);
     try {
       const res = await api.updateMandateStatus(mandate.id, TARGET[action]);
@@ -58,10 +79,12 @@ export function MandateControls({
         toast.success(tc.paused(mandate.id), { description: tc.pausedHint });
       else if (s === "active")
         toast.success(tc.resumed(mandate.id), { description: tc.resumedHint });
-      else
+      else {
+        revokedRef.current = true;
         toast.success(tc.revokedToast(mandate.id), {
           description: tc.revokedHint,
         });
+      }
       onChanged();
     } catch (e) {
       const err = toApiClientError(e);
@@ -74,160 +97,178 @@ export function MandateControls({
     }
   };
 
+  // Busy buttons are aria-disabled, not disabled: a disabled button drops the keyboard focus
+  // to <body> (focus fixup), and the pause / resume button keeps its place while it toggles.
+  const busyProps = {
+    "aria-disabled": busy !== null || undefined,
+    className: "aria-disabled:cursor-not-allowed aria-disabled:opacity-60",
+  };
+
   return (
-    <Panel className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-mono text-base font-semibold text-zinc-900">
-              {mandate.id}
-            </h2>
-            <StatusPill status={eff} />
-          </div>
-          <p className="mt-1 text-sm text-zinc-500">
-            {tc.byline(
-              <span key="traveler" className="font-medium text-zinc-700">
-                {mandate.traveler}
-              </span>,
-              <span key="principal" className="font-medium text-zinc-700">
-                {mandate.principal}
-              </span>,
-              fmtUsd(mandate.perTxCapUsd),
-            )}
-          </p>
-          <p className="mt-0.5 text-xs text-zinc-500 tabular-nums">
-            {f.date(mandate.startsAt)} → {f.date(mandate.expiresAt, true)} ·{" "}
-            {mandate.allowedCategories
-              .map((c) => t.common.category[c] ?? c)
-              .join(t.principal.listSep)}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {mandate.status === "paused" ? (
-            <Button
-              type="button"
-              onClick={() => void run("resume")}
-              disabled={busy !== null || revoked}
-            >
-              {busy === "resume" ? (
-                <LoaderCircle aria-hidden className="animate-spin" />
-              ) : (
+    <section
+      aria-labelledby="authority-controls-title"
+      className={cn(
+        "flex flex-col rounded-lg border border-line bg-surface px-4 py-4 sm:px-5",
+        className,
+      )}
+    >
+      <div className="flex-1">
+        <h2 id="authority-controls-title" className="type-label text-muted-ink">
+          {tc.title}
+        </h2>
+        <p ref={stateRef} tabIndex={-1} className="mt-1.5 text-sm leading-6 text-pretty text-ink outline-none">
+          {stateText}
+        </p>
+
+        {!revoked && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {mandate.status === "paused" ? (
+              <Button
+                type="button"
+                size="lg"
+                {...busyProps}
+                onClick={() => void run("resume")}
+              >
                 <Play aria-hidden />
-              )}
-              {tc.resume}
-            </Button>
-          ) : (
+                {busy === "resume" ? tc.resuming : tc.resume}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                {...busyProps}
+                onClick={() => void run("pause")}
+              >
+                <CirclePause aria-hidden />
+                {busy === "pause" ? tc.pausing : tc.pause}
+              </Button>
+            )}
+            {/* Revoke sits apart from pause / resume: a different, final action. */}
             <Button
               type="button"
               variant="outline"
-              onClick={() => void run("pause")}
-              disabled={busy !== null || revoked}
+              size="lg"
+              aria-disabled={busyProps["aria-disabled"]}
+              className={cn("sm:ml-auto", DANGER_OUTLINE, busyProps.className)}
+              onClick={() => busy === null && setConfirmOpen(true)}
             >
-              {busy === "pause" ? (
-                <LoaderCircle aria-hidden className="animate-spin" />
-              ) : (
-                <CirclePause aria-hidden />
-              )}
-              {tc.pause}
+              <Ban aria-hidden />
+              {busy === "revoke" ? tc.revoking : tc.revoke}
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-            onClick={() => setConfirmOpen(true)}
-            disabled={busy !== null || revoked}
-          >
-            <Ban aria-hidden />
-            {revoked ? tc.revoked : tc.revoke}
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
-      {revoked && (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 ring-inset">
-          {tc.revokedNotice}
-        </p>
-      )}
-      {eff === "expired" && !revoked && (
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 ring-inset">
-          {tc.expiredNotice(f.date(mandate.expiresAt, true))}
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatTile label={tc.budget} value={fmtUsd(mandate.budgetUsd)} />
-        <StatTile
-          label={tc.spent}
-          value={fmtUsd(mandate.spentUsd)}
-          hint={tc.spentHint}
-        />
-        <StatTile
-          label={tc.pending}
-          value={fmtUsd(mandate.pendingUsd)}
-          tone={mandate.pendingUsd > 0 ? "amber" : "default"}
-          hint={tc.pendingHint}
-        />
-        <StatTile
-          label={tc.remaining}
-          value={fmtUsd(mandate.remainingUsd)}
-          tone={mandate.remainingUsd <= 0 ? "rose" : "emerald"}
-          hint={tc.remainingHint(
-            Math.max(
-              0,
-              Math.round((mandate.remainingUsd / mandate.budgetUsd) * 100),
-            ),
-          )}
-        />
-      </div>
-
-      <div className="grid gap-3 border-t border-zinc-100 pt-4 sm:grid-cols-2">
-        <div>
-          <p className="mb-1 text-xs text-zinc-500">{tc.mandateHash}</p>
-          <HashChip value={mandate.hash} what={tc.mandateHashWhat} />
-        </div>
-        <div>
-          <p className="mb-1 text-xs text-zinc-500">{tc.anchorTx}</p>
-          <HashChip
-            value={mandate.anchorTx}
-            href={mandate.anchorUrl}
-            what={tc.anchorTxWhat}
-            emptyText={tc.notAnchored}
-          />
-        </div>
-      </div>
+      {/* Pinned to the bottom so it lines up with the budget figures beside it. */}
+      <p className="mt-4 border-t border-line pt-3 text-xs leading-5 text-pretty text-muted-ink">
+        {tc.note}
+      </p>
 
       <Dialog
         open={confirmOpen}
         onOpenChange={(o) => busy === null && setConfirmOpen(o)}
       >
-        <DialogContent closeLabel={t.common.close}>
+        <DialogContent
+          closeLabel={t.common.close}
+          onCloseAutoFocus={(e) => {
+            if (!revokedRef.current) return;
+            revokedRef.current = false;
+            e.preventDefault();
+            stateRef.current?.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{tc.confirmTitle(mandate.id)}</DialogTitle>
-            <DialogDescription>{tc.confirmBody}</DialogDescription>
+            <DialogDescription asChild className="mt-1 space-y-2 text-sm text-ink">
+              <ul>
+                {tc.confirmPoints.map((p, i) => (
+                  <li key={i} className="flex gap-2.5">
+                    {i === tc.confirmPoints.length - 1 ? (
+                      // The revoked glyph (⊘) marks the sentence that says it is final.
+                      <StateGlyph
+                        glyph="slash"
+                        className="mt-1 size-3 shrink-0 text-ink"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="mt-2 mx-[3px] size-1.5 shrink-0 rounded-[1px] bg-muted-ink"
+                      />
+                    )}
+                    <span
+                      className={cn(
+                        i === tc.confirmPoints.length - 1 && "font-medium",
+                      )}
+                    >
+                      {p}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={busy !== null}>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                {...busyProps}
+              >
                 {tc.keep}
               </Button>
             </DialogClose>
             <Button
               type="button"
-              className="bg-rose-600 text-white hover:bg-rose-700"
+              size="lg"
+              aria-disabled={busyProps["aria-disabled"]}
+              className={cn(DANGER_FILL, busyProps.className)}
               onClick={() => void run("revoke")}
-              disabled={busy !== null}
             >
-              {busy === "revoke" ? (
-                <LoaderCircle aria-hidden className="animate-spin" />
-              ) : (
-                <Ban aria-hidden />
-              )}
-              {tc.confirm}
+              <Ban aria-hidden />
+              {busy === "revoke" ? tc.revoking : tc.confirm}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Panel>
+    </section>
+  );
+}
+
+/** The terms' hash and its Sepolia anchor transaction, as one quiet line under the rules. */
+export function MandateAnchor({
+  mandate,
+  className,
+}: {
+  mandate: MandateDetail;
+  className?: string;
+}) {
+  const t = useT();
+  const tc = t.principal.controls;
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-6 gap-y-2 px-1 text-xs text-muted-ink",
+        className,
+      )}
+    >
+      <span className="font-medium">
+        {mandate.anchorTx ? t.principal.page.anchored : t.principal.page.notAnchored}
+      </span>
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
+        {tc.mandateHash}
+        <HashChip value={mandate.hash} what={tc.mandateHashWhat} />
+      </span>
+      <span className="flex min-w-0 flex-wrap items-center gap-2">
+        {tc.anchorTx}
+        <HashChip
+          value={mandate.anchorTx}
+          href={mandate.anchorUrl}
+          what={tc.anchorTxWhat}
+          emptyText={tc.notAnchored}
+        />
+      </span>
+    </div>
   );
 }

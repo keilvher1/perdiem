@@ -348,6 +348,16 @@
   }
   html {
     @apply font-sans;
+    /* The sticky app header must not cover what keyboard focus, scrollIntoView() or an #anchor
+       brings into view: ≈ 151 px below sm (the nav has its own row), ≈ 105 px from sm. Pages do
+       not add their own scroll-mt-* for the header. */
+    scroll-padding-top: 10.5rem;
+    @media (width >= 40rem) {
+      scroll-padding-top: 7.5rem;
+    }
+    @media print {
+      scroll-padding-top: 0;
+    }
   }
   /* Japanese and Chinese: native system fonts first (correct Han / kana forms), Pretendard after.
      Matches <html lang> and any element that declares its own language (e.g. the language menu). */

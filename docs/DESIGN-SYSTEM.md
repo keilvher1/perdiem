@@ -148,10 +148,10 @@ integers: `useFmt()`. Stop reasons: `localizeReason(reason, locale)`.
 
 `next-themes` (`components/perdiem/theme-provider.tsx`): `attribute="class"`, `defaultTheme="light"`,
 `enableSystem`, storage key `perdiem-theme`. Header menu Light / Dark / System (`ThemeSwitcher`). Light is the
-default (the demo video is filmed in light). The Sonner toaster follows the theme. **Screens still using
-hard-coded `zinc-*`/`bg-white` classes are unreadable in dark mode until they move to tokens** (today:
-`app/traveler/*`, `app/principal/*`, `app/audit/*`, `app/metrics/*`); every screen must be checked in dark
-before the theme menu is shown to anyone.
+default (the demo video is filmed in light). The Sonner toaster follows the theme. Every screen is on
+the tokens (no `zinc-*`, `slate-*`, `indigo-*`, `emerald-*`, `rose-*`, `amber-*`, `gray-*`, `bg-white` or
+`text-white` in `app/` or `components/perdiem/`); a new screen must be checked in light and dark, at 1440 and
+390 px, in all four languages.
 
 ## 4. State families (`lib/ui-state.ts`)
 
@@ -203,8 +203,9 @@ passed all 12). Failed checks carry the localized reason. This reads the record;
 
 Fee caveat: `evaluate()` records fee 0 when the fee is unknown (`FEE_UNAVAILABLE`), and `lib/agent.ts` passes
 fee 0 with `feeSource: "none"` for an unknown merchant (so a live unknown-merchant stop has no
-`FEE_UNAVAILABLE` and its fee check reads "passed" with "$0.00 (none)"). Neither 0 is a real fee: show the
-fee as unknown / "none" and the total as "amount only", never a bare "$0.00" (`EvidencePanel` does).
+`FEE_UNAVAILABLE` and its fee check reads "passed" with "— (none)"). Neither 0 is a real fee: show the
+fee as unknown / "— (none)" and the total as "amount only", never "$0.00" (`EvidencePanel`, `LedgerTable` and
+the printable statement do).
 
 ## 6. Components (`components/perdiem/`)
 
@@ -212,19 +213,28 @@ fee as unknown / "none" and the total as "amount only", never a bare "$0.00" (`E
 |---|---|---|
 | `StateBadge` | `family`, `state`, `size?: "sm" \| "md"`, `variant?: "soft" \| "plain"` | glyph + label + sr-only "Decision: …" |
 | `StateGlyph` | `glyph`, `className` | 12×12 SVG in `currentColor`, aria-hidden |
-| `AuthoritySummary` | `mandate` (id, traveler, principal, status, window), `now`, `actions?`, `headingLevel?` | authority badge, window, deadline; `actions` slot for pause / resume / revoke |
-| `RuleSummary` | `mandate` (terms + catalog), `defaultOpen?` | one line (budget · cap · N merchants · categories · window) + full list (merchants by name, blocked keywords) |
-| `BudgetBreakdown` | `budget` (`budgetUsd`, `spentUsd`, `pendingUsd`, `remainingUsd`) | remaining as the key amount; spent = approved-or-settled (solid) + pending (hatched, "already reserved") |
+| `AuthoritySummary` | `mandate` (id, traveler, principal, status, window), `now`, `actions?`, `headingLevel?` | authority badge, window, deadline; `actions` slot for pause / resume / revoke; 4 columns from a 48rem container |
+| `RuleSummary` | `mandate` (terms + catalog), `defaultOpen?`, `headingLevel?: 2 \| 3` (default 3) | one line (budget · cap · N merchants · categories · window) + full list (merchants by name, blocked keywords); label column from a 32rem container |
+| `BudgetBreakdown` | `budget` (`budgetUsd`, `spentUsd`, `pendingUsd`, `remainingUsd`) | remaining as the key amount; spent = approved-or-settled (solid) + pending (hatched, "already reserved"); 3 columns from a 32rem container |
 | `DecisionLedger` | `entries` (oldest first), `selectedId`, `onSelect`, `now?`, `order?`, `filter?`/`onFilterChange?`/`defaultFilter?`, `loading?`, `label?`, `maxHeightClass?`, `ref` (`focusSelected()`) | filters All / Approved / Stopped / Pending with counts; single-select listbox, roving tabindex, ↑ ↓ Home End Enter/Space; layout follows its own width (container queries) |
 | `EvidencePanel` | `entry`, `mandate?` (terms + `id?` + `hash?`; `MandateDetail` fits), `onBack?`, `backClassName?`, `headingRef?` | 1 decision + reason → 2 the 12 checks (requested vs allowed) → 3 raw evidence (tx + Etherscan, receipt and mandate hash, JSON collapsed); same selected marker as the row; one polite live region (mounted even when empty). Allowed values are used only when `mandate.id` (if given) is the entry's and `mandate.hash` (if given) equals `entry.mandateHash`; a different hash shows a red "Mismatch" note |
-| `DecisionWorkspace` | `entries`, `mandate?`, `selectedId`, `onSelect`, `now?`, `ledgerProps?`, `stickyTopClass?`, `panelMaxHeightClass?` | ledger + panel: adjacent sticky column ≥ lg, stacked detail view with "Back to ledger" below lg (focus moves in and back) |
+| `DecisionWorkspace` | `entries`, `mandate?`, `selectedId`, `onSelect`, `now?`, `ledgerProps?`, `stickyTopClass?`, `panelMaxHeightClass?`, `ref?` (`DecisionWorkspaceHandle`: `showDetail()`) | ledger + panel: adjacent sticky column ≥ lg, stacked detail view with "Back to ledger" below lg (focus moves in and back). Mounted with a `selectedId` (a `?d=` link) the stacked view starts open, without moving focus; `showDetail()` opens it (and focuses the panel heading) for a selection made elsewhere, e.g. a receipt's "Open evidence" |
 | `ThemeSwitcher`, `LocaleSwitcher`, `HealthBadge`, `MandateSelector`, `AppShell`, `SiteFooter` | — | the console shell |
 | `StatusPill` (legacy) | `status` | same tones and glyphs as the state model; new code uses `StateBadge` |
-| `ReceiptCard`, `LedgerTable`, `EvidenceFab` (drawer), `EvidenceActions` (light tone) | unchanged | colours moved to tokens: stop = amber + square, approval = green + circle, failed payment / check error = red + triangle, pending notes = pending tone. Structure and copy unchanged (the traveler / principal / audit teams own their redesign) |
+| `LedgerTable` | `entries` (oldest first), `now`, `caption?`, `selectedId?`, `className?`, `maxHeightClass?`; also exports `countPayments(entries)` | the **payments** register on /principal: approved entries only (stops send nothing), newest first; execution state, fee as recorded (+ actual once mined), total, tx and receipt hashes. A feeSource "none" row shows fee "—" and the total as "amount only". Rows are not interactive (select in the DecisionLedger); the selected decision's row carries the selected marker |
+| `ReceiptCard` | `entry`, `terms?` (used only when id and hash match), `budgetNow?`, `onOpenEvidence?`, `selected?`, `className?` | the traveler's structured receipt: decision → reason and what to change → payment state; `<article aria-label="Receipt <id>: …">` (capture hook) |
+| `EvidenceFab` (drawer), `EvidenceActions` | mounted by `AppShell` | "This decision" (the page's `?d=`, opening the page's own panel or `/audit/<id>?d=`), the mandate's records, download and "Run checks" (not run → running → match / mismatch / can't verify per scope). `[data-evidence-fab]` is the capture hook |
 
-Selection: the parent owns `selectedId`. The selected row and the panel header share the
-`selected-marker` utility (cobalt left rule + cobalt-soft background). Requested vs allowed values come only
-from the entry, the mandate terms, or the recorded reason's observed / limit; "—" when the data does not say.
+Selection: the parent owns `selectedId`, and it lives in the URL as `?d=<ledger entry id>` next to `?m=`
+(principal, audit and traveler keep them in sync with `router.replace(…, { scroll: false })` and keep every
+other param; changing the mandate drops `?d=`). Links between screens carry `?m=` and, for a decision,
+`?d=`. The selected row and the panel header share the `selected-marker` utility (cobalt left rule +
+cobalt-soft background). Requested vs allowed values come only from the entry, the mandate terms, or the
+recorded reason's observed / limit; "—" when the data does not say.
+
+Sticky header: `html { scroll-padding-top }` (10.5rem below sm, 7.5rem from sm; `app/globals.css`) keeps
+whatever focus, `scrollIntoView()` or an anchor brings into view clear of the app header. Pages do not add
+their own `scroll-mt-*` for it.
 
 ## 7. Layout rules
 

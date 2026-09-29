@@ -13,7 +13,7 @@ import type { LedgerEntryView } from "@/contracts/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtUsd } from "@/lib/format";
 import { useFmt, useLocale, useT } from "@/lib/i18n/provider";
-import { decisionState, executionState } from "@/lib/ui-state";
+import { decisionState, executionState, pastNow } from "@/lib/ui-state";
 import { cn } from "@/lib/utils";
 import { StateBadge } from "./state-badge";
 import { localizeReason } from "./stop-codes";
@@ -279,7 +279,7 @@ export function DecisionLedger({
                     title={f.date(e.at, true)}
                   >
                     <time dateTime={e.at}>{f.time(e.at)}</time>
-                    <span className="hidden text-xs text-muted-ink @xl:block">{f.rel(e.at, now)}</span>
+                    <span className="hidden text-xs text-muted-ink @xl:block">{f.rel(e.at, pastNow(e.at, now))}</span>
                   </p>
                   <span className="flex flex-wrap items-center gap-1.5 @xl:col-start-3 @xl:row-start-2 @xl:justify-end @4xl:contents">
                     <span className="@4xl:col-start-4 @4xl:row-start-1">
