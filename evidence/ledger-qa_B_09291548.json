@@ -1,0 +1,32 @@
+[
+  {
+    "id": "led_1790696971614_wd3t",
+    "mandateId": "qa_B_09291548",
+    "mandateHash": "0xae549ec94a4f985ea73c842be81ae2485398cb824eed366e60cb2d806ab023b7",
+    "proposal": {
+      "memo": "Dinner from Yangjae Kitchen",
+      "amountUsd": 10,
+      "merchantId": "m1",
+      "sourceText": "Dinner from Yangjae Kitchen, $10",
+      "requestedAt": "2026-09-29T15:49:31.614Z"
+    },
+    "merchantName": "Yangjae Kitchen",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "OVER_BUDGET_WITH_FEES",
+        "limit": 10,
+        "message": "Amount $10.00 + network fee $0.110566 = $10.110566 exceeds remaining budget $10.00.",
+        "observed": 10.110565871109792
+      }
+    ],
+    "feeUsd": 0.110565871109792,
+    "feeSource": "estimate",
+    "totalUsd": 10.110565871109792,
+    "status": "stopped",
+    "receiptHash": "0x4e5ccb0ff119b33c24a0c04ae89ffe71ddc0d8a2d2f96a2416032210a47a6b8c",
+    "kilnResponseId": "chat-5bb397a64c094717968a1a493ee3cad3",
+    "toolArgsRaw": "{\"amount_usd\": 10, \"memo\": \"Dinner from Yangjae Kitchen\", \"merchant_id\": \"m1\"}",
+    "at": "2026-09-29T15:49:31.614Z"
+  }
+]

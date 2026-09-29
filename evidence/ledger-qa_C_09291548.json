@@ -1,0 +1,32 @@
+[
+  {
+    "id": "led_1790696993042_331y",
+    "mandateId": "qa_C_09291548",
+    "mandateHash": "0xccf99928ae5fbb5a88c1ec7816775819993d7daf22f07a4e51fbac02e30e3620",
+    "proposal": {
+      "memo": "Coffee at Starbucks",
+      "amountUsd": 5,
+      "merchantId": "m7",
+      "sourceText": "Coffee at Starbucks, $5",
+      "requestedAt": "2026-09-29T15:49:53.042Z"
+    },
+    "merchantName": "Starbucks aT Center",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "EXPIRED",
+        "limit": "2026-09-25T00:00:00.000Z",
+        "message": "Mandate deadline has passed.",
+        "observed": "2026-09-29T15:49:53.042Z"
+      }
+    ],
+    "feeUsd": 0.115524248138048,
+    "feeSource": "estimate",
+    "totalUsd": 5.115524248138048,
+    "status": "stopped",
+    "receiptHash": "0x6ff852ab8ce33bff27751f179e52daeec4cc651702bf3b07fa53c27cd15324a8",
+    "kilnResponseId": "chat-71244516c3a54bcbb0affaa676fb7bed",
+    "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+    "at": "2026-09-29T15:49:53.042Z"
+  }
+]

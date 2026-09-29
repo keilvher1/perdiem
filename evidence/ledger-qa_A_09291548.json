@@ -1,0 +1,181 @@
+[
+  {
+    "id": "led_1790696955479_lahl",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "Order a bibimbap lunch",
+      "amountUsd": 12,
+      "merchantId": "m1",
+      "sourceText": "Order a bibimbap lunch from Yangjae Kitchen, $12",
+      "requestedAt": "2026-09-29T15:49:15.479Z"
+    },
+    "merchantName": "Yangjae Kitchen",
+    "decision": "APPROVE",
+    "reasons": [],
+    "feeUsd": 0.118738236283168,
+    "feeSource": "estimate",
+    "totalUsd": 12.118738236283168,
+    "status": "settled",
+    "txHash": "0x1447ca31e24653cc27fc8d56e9c11f15b8898ba5343c0d89bcba81139ca80cf2",
+    "receiptHash": "0x673008430541503d4ba6ef36040ebf5c907cd017b9f74d8ef36790546b211f51",
+    "actualFeeUsd": 0.10915634473632,
+    "settledAt": "2026-09-29T15:49:27.926Z",
+    "kilnResponseId": "chat-511896dc9a474000b05c491d30fe5cbf",
+    "toolArgsRaw": "{\"amount_usd\": 12, \"memo\": \"Order a bibimbap lunch\", \"merchant_id\": \"m1\"}",
+    "at": "2026-09-29T15:49:15.479Z"
+  },
+  {
+    "id": "led_1790696968399_ucsk",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "Taxi to Incheon airport",
+      "amountUsd": 85,
+      "merchantId": "m2",
+      "sourceText": "Taxi to Incheon airport, about $85",
+      "requestedAt": "2026-09-29T15:49:28.399Z"
+    },
+    "merchantName": "Kakao T Taxi",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "OVER_PER_TX_CAP",
+        "limit": 40,
+        "message": "Single payment cap is $40.",
+        "observed": 85
+      }
+    ],
+    "feeUsd": 0.110565871109792,
+    "feeSource": "estimate",
+    "totalUsd": 85.1105658711098,
+    "status": "stopped",
+    "receiptHash": "0x220fd3dee7a877fec88d36bad1676b00986e246131ed95cf676c082234713dca",
+    "kilnResponseId": "chat-bc4559d3dde04282acb6e6fe3d641d7a",
+    "toolArgsRaw": "{\"amount_usd\": 85, \"memo\": \"Taxi to Incheon airport\", \"merchant_id\": \"m2\"}",
+    "at": "2026-09-29T15:49:28.399Z"
+  },
+  {
+    "id": "led_1790696970045_ode4",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "Buy a bottle of wine as a gift for the client",
+      "amountUsd": 30,
+      "merchantId": "m5",
+      "sourceText": "Buy a bottle of wine as a gift for the client, $30",
+      "requestedAt": "2026-09-29T15:49:30.045Z"
+    },
+    "merchantName": "Wine & Co",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "MERCHANT_NOT_ALLOWED",
+        "limit": "m1, m2, m3, m4, m7",
+        "message": "Wine & Co is not on the permitted list.",
+        "observed": "m5"
+      },
+      {
+        "code": "CATEGORY_NOT_ALLOWED",
+        "limit": "meal, transport, supplies",
+        "message": "Category \"alcohol\" is not permitted.",
+        "observed": "alcohol"
+      },
+      {
+        "code": "BLOCKED_KEYWORD",
+        "message": "Request mentions a blocked item (\"wine\").",
+        "observed": "wine"
+      }
+    ],
+    "feeUsd": 0.110565871109792,
+    "feeSource": "estimate",
+    "totalUsd": 30.11056587110979,
+    "status": "stopped",
+    "receiptHash": "0xe293e4f31f021ae438ff3f956a66b550742425f081e3a746c9e16f73bb1541c9",
+    "kilnResponseId": "chat-49aeb7cf20344d93913f81f6912fba7a",
+    "toolArgsRaw": "{\"amount_usd\": 30, \"memo\": \"Buy a bottle of wine as a gift for the client\", \"merchant_id\": \"m5\"}",
+    "at": "2026-09-29T15:49:30.045Z"
+  },
+  {
+    "id": "led_1790696973649_9ybq",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "Coffee at Starbucks",
+      "amountUsd": 5,
+      "merchantId": "m7",
+      "sourceText": "Coffee at Starbucks, $5",
+      "requestedAt": "2026-09-29T15:49:33.649Z"
+    },
+    "merchantName": "Starbucks aT Center",
+    "decision": "STOP",
+    "reasons": [
+      {
+        "code": "MANDATE_NOT_ACTIVE",
+        "limit": "active",
+        "message": "Mandate is paused; the principal must resume it before the agent can spend.",
+        "observed": "paused"
+      }
+    ],
+    "feeUsd": 0.110565871109792,
+    "feeSource": "estimate",
+    "totalUsd": 5.110565871109792,
+    "status": "stopped",
+    "receiptHash": "0x2212d3eca8fffc45657031e94971f136c3e22d0e9b7a05ea14ab127b402b9ed8",
+    "kilnResponseId": "chat-dd8b4d738dd14b4ab9352d811ef64d7f",
+    "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+    "at": "2026-09-29T15:49:33.649Z"
+  },
+  {
+    "id": "led_1790696975450_y5kw",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "Coffee at Starbucks",
+      "amountUsd": 5,
+      "merchantId": "m7",
+      "sourceText": "Coffee at Starbucks, $5",
+      "requestedAt": "2026-09-29T15:49:35.450Z"
+    },
+    "merchantName": "Starbucks aT Center",
+    "decision": "APPROVE",
+    "reasons": [],
+    "feeUsd": 0.10270230457212799,
+    "feeSource": "estimate",
+    "totalUsd": 5.102702304572128,
+    "status": "settled",
+    "txHash": "0x5a3e76d821c5d54fb352884e313286a01a65bfd1dd56e549a01da8d0cef49d9e",
+    "receiptHash": "0x36b63b0a70a4c399656688e16bce8a7b0769d4e86a59f9192ae988970c6cbe06",
+    "actualFeeUsd": 0.11405151091008,
+    "settledAt": "2026-09-29T15:49:52.675Z",
+    "kilnResponseId": "chat-680607bea6e24b13878673ebc806b40f",
+    "toolArgsRaw": "{\"amount_usd\": 5, \"memo\": \"Coffee at Starbucks\", \"merchant_id\": \"m7\"}",
+    "at": "2026-09-29T15:49:35.450Z"
+  },
+  {
+    "id": "led_1790696994821_uuv4",
+    "mandateId": "qa_A_09291548",
+    "mandateHash": "0x9b122d375cc64eb70b25b6b9e3679d4082585c006daa0404ccd2fe9fe926e02d",
+    "proposal": {
+      "memo": "1 x Bibimbap lunch",
+      "amountUsd": 11.77,
+      "merchantId": "m1",
+      "sourceText": "Pay this bill from Yangjae Kitchen: 1 x Bibimbap lunch, total $11.77. Bill total 16,000 KRW converted at 1 USD = 1,358.968392 KRW (ExchangeRate-API, 2026-09-29).",
+      "requestedAt": "2026-09-29T15:49:54.821Z"
+    },
+    "merchantName": "Yangjae Kitchen",
+    "decision": "APPROVE",
+    "reasons": [],
+    "feeUsd": 0.115524248138048,
+    "feeSource": "estimate",
+    "totalUsd": 11.885524248138047,
+    "status": "settled",
+    "txHash": "0xcd826f2f862b296fb23ec0c22ead51369ee73840f605d81b18eec4fcb7291203",
+    "receiptHash": "0x7a55b4957cff4f48151488069a13e48a2561c228bb9616b3838922cf8b4a8c25",
+    "actualFeeUsd": 0.10696178160288,
+    "settledAt": "2026-09-29T15:50:01.791Z",
+    "kilnResponseId": "chat-cb2ef0b6ecf443a7a90f68fdde9414fe",
+    "toolArgsRaw": "{\"amount_usd\": 11.77, \"memo\": \"1 x Bibimbap lunch\", \"merchant_id\": \"m1\"}",
+    "at": "2026-09-29T15:49:54.821Z"
+  }
+]

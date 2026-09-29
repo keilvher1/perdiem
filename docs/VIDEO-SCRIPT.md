@@ -1,5 +1,7 @@
 # PerDiem — demo video script (2:55, English)
 
+> Hosted demo (2026-09-30): film on https://perdiem-one.vercel.app with the pre-seeded sets `man_A_vid1` / `man_B_vid1` / `man_C_vid1` (then `vid2`, `vid3`), language menu on **English**, theme **Light**, currency **USD**. The step-by-step filming manual for the redesigned UI is kept outside the repo (it contains the site login).
+
 Organizer limit: **≤ 3:00**. Target: **2:55** of narration + a 5-second end card at most. Follows the storyboard in `docs/PITCH.md`. Narration ≈ 420 words at ~150–155 words per minute, written to be voiced by ElevenLabs TTS (or read aloud). Numbers are said in words that stay true for any evidence run ("about seventy percent"), while the screen shows the exact values.
 
 ---
@@ -10,11 +12,11 @@ Organizer limit: **≤ 3:00**. Target: **2:55** of narration + a 5-second end ca
 |---|---|---|---|---|
 | 0:00–0:15 | Title card (slide 1 of `docs/deck.pdf`) | static; slow zoom optional | "PerDiem — an AI agent that spends your per-diem and cannot cross the line" | — |
 | 0:15–0:25 | Slide 3 of `docs/deck.pdf` (the "Why" strip) | static | "Rules in code. Refusals on record." | — |
-| 0:25–0:45 | `/principal` | fill the grant form (budget $150, cap $40, meal/transport/supplies, 5 merchants, blocked: alcohol, wine, gift) → **Grant** → toast "Anchored on Sepolia" → click the anchor link → Etherscan → *Input Data* → *View Input As UTF-8* shows `PERDIEM-MANDATE|0x…` | "The budget and rules are hashed and anchored on Sepolia" | `09-principal.png` |
-| 0:45–1:03 | `/traveler?m=<A>` | click chip #0 "Order a bibimbap lunch…, $12" → APPROVED card → status flips pending → settled → click "View on Etherscan" | "The model proposes. Code decides. The chain settles." | `01-approve.png` |
+| 0:25–0:45 | `/principal` | **Grant a new mandate** → the sheet shows the defaults (budget $150, cap $40, meal/transport/supplies, 5 merchants, blocked: alcohol, wine, gift) → **Grant and anchor** → toast "Anchored on Sepolia" → click the anchor link → Etherscan → *Input Data* → *View Input As UTF-8* shows `PERDIEM-MANDATE|0x…` | "The budget and rules are hashed and anchored on Sepolia" | `09-principal.png` |
+| 0:45–1:03 | `/traveler?m=<A>` | **Attach bill** → `public/samples/bill-yangjae-kitchen-krw.pdf` (₩16,000) → the preview shows $11.77 with the live rate, source and date → **Pay this bill** → APPROVED receipt → pending → settled → "View on Etherscan" (fallback if the bill cannot be read: chip #0 "Order a bibimbap lunch…, $12") | "The model proposes. Code decides. The chain settles." | `01-approve.png` |
 | 1:03–1:35 | `/traveler` (A, then B) | #1 taxi $85 → STOPPED `OVER_PER_TX_CAP`; #2 wine gift $30 → STOPPED with 3 chips; switch mandate to B → #3 dinner $10 → STOPPED `OVER_BUDGET_WITH_FEES` (hover the chip: $10 + fee > $10.00) | "Stopped: over the per-payment cap" → "Stopped: three reasons" → "Stopped: $10 + fee > $10" | `02-…`, `03-…` |
 | 1:35–1:50 | `/principal` ⇄ `/traveler` | **Pause** A → #4 coffee $5 → STOPPED `MANDATE_NOT_ACTIVE` → **Resume** → #6 coffee $5 → APPROVED; switch to C → #5 → STOPPED `EXPIRED` | "The human can stop the agent at any time" | `10-paused.png`, `04-expired.png`, `logs-status.txt` |
-| 1:50–2:00 | `/traveler?m=<A>` → terminal | **Evidence beat (≈ 10 s):** wait until #6 shows settled → click the **Evidence** button (bottom right) → drawer → **Download records** (mandate file, then ledger file) → terminal: `npx tsx scripts/verify.ts ~/Downloads/mandate-<A>.json ~/Downloads/ledger-<A>.json` → all ✅ → `ALL RECORDS VERIFIED` | "Download the records. Verify them yourself." | `14-evidence-drawer.png`, `12-verify.txt` |
+| 1:50–2:00 | `/traveler?m=<A>` → terminal | **Evidence beat (≈ 10 s):** wait until #6 shows settled → click the **Evidence** tab on the right edge → **Download all mandate records** (mandate file, then ledger file) → **Run checks now** → terminal: `npx tsx scripts/verify.ts ~/Downloads/mandate-<A>.json ~/Downloads/ledger-<A>.json` → all ✅ → `ALL RECORDS VERIFIED` | "Download the records. Verify them yourself." | `14-evidence-drawer.png`, `12-verify.txt` |
 | 2:00–2:32 | `/audit/<A>` | anchor match, replay table, decoded memos, "24 of 24 checks passed" (the same count as the ✅ lines in the terminal); optional tamper shot (checklist below) | "An auditor can verify from records alone — no app needed" | `11-audit.png` |
 | 2:32–2:55 | `/metrics` | scroll: tokens by flow (highlight the 0-token rows), thinking on vs off table, energy card with its assumption | "Efficient on the NPU by design" | `07-metrics.png` |
 | 2:55–3:00 | End card | `github.com/keilvher1/perdiem` · "FuriosaAI x Bricksum — Challenge B" | — | — |
@@ -35,7 +37,7 @@ I have settled government startup-grant expenses by hand: rules written in prose
 The finance manager grants a mandate once: a hundred and fifty dollars, forty per payment, meals, transport and supplies, five merchants, a few blocked words. PerDiem hashes those terms and anchors the hash on Sepolia; on Etherscan, the transaction data carries it.
 
 **[0:45–1:03] First payment**
-Now the traveler talks to the agent. It runs on Kiln — Qwen3 32B on Furiosa NPUs — and can do exactly one thing: propose a payment through a tool call. Code checks the proposal; only then does the payment go out. Settled: twelve dollars for lunch, on-chain.
+Now the traveler drops a lunch bill, in Korean won. PerDiem reads it and converts it to dollars at the live rate. The agent runs on Kiln — Qwen3 32B on Furiosa NPUs — and can do exactly one thing: propose a payment through a tool call. Code checks the proposal; only then does the payment go out. Settled, on-chain.
 
 **[1:03–1:35] Pushed outside the line**
 A taxi to the airport for eighty-five dollars: stopped — over the per-payment cap. A bottle of wine as a client gift: stopped, with three reasons at once — merchant not on the list, category not allowed, a blocked word. And on a ten-dollar budget, a ten-dollar dinner: stopped, because the real network fee is added, and ten dollars plus any fee at all is over budget. Every refusal is written to the ledger, without a second model call.
@@ -51,7 +53,7 @@ And it is cheap by design. Token use is reported per flow. Status questions are 
 
 **[2:55–3:00] End card** *(no narration, or:)* PerDiem. Challenge B.
 
-Word count ≈ 420 (≈ 2:48 at 150 wpm, ≈ 2:42 at the 155 wpm typical of TTS voices, plus ≈ 6 s of breaks). If the TTS reads slower than 2:55, cut "Now the traveler talks to the agent." first, then "Token use is reported per flow."
+Word count ≈ 420 (≈ 2:48 at 150 wpm, ≈ 2:42 at the 155 wpm typical of TTS voices, plus ≈ 6 s of breaks). If the TTS reads slower than 2:55, cut "PerDiem reads it and converts it to dollars at the live rate." first, then "Token use is reported per flow."
 
 The "Why" sentence stays generic on purpose: no agency, program, company or amount is named, and nothing in the video comes from the builder's real grant files.
 
@@ -71,7 +73,7 @@ I have settled government startup grant expenses by hand: <break time="0.3s" /> 
 The finance manager grants a mandate once: a hundred and fifty dollars, forty per payment, meals, transport and supplies, five merchants, a few blocked words. <break time="0.3s" /> PerDiem hashes those terms and anchors the hash on Sepolia. On Etherscan, the transaction data carries it.
 ```
 ```
-Now the traveler talks to the agent. It runs on Kiln, Qwen three, thirty-two B, on Furiosa N P Us, and can do exactly one thing: propose a payment through a tool call. Code checks the proposal. Only then does the payment go out. <break time="0.6s" /> Settled. Twelve dollars for lunch, on chain.
+Now the traveler drops a lunch bill, in Korean won. PerDiem reads it and converts it to dollars at the live rate. <break time="0.3s" /> The agent runs on Kiln, Qwen three, thirty-two B, on Furiosa N P Us, and can do exactly one thing: propose a payment through a tool call. Code checks the proposal. Only then does the payment go out. <break time="0.6s" /> Settled, on chain.
 ```
 ```
 A taxi to the airport for eighty-five dollars: <break time="0.3s" /> stopped. Over the per payment cap. <break time="0.4s" /> A bottle of wine as a client gift: <break time="0.3s" /> stopped, with three reasons at once. Merchant not on the list, category not allowed, a blocked word. <break time="0.4s" /> And on a ten dollar budget, a ten dollar dinner: <break time="0.3s" /> stopped, because the real network fee is added, and ten dollars plus any fee at all is over budget. Every refusal is written to the ledger, without a second model call.
@@ -111,7 +113,7 @@ Suggested voice settings: a calm, neutral English voice; stability ≈ 0.5, simi
 - [ ] On the wine card, hover a reason chip once; on the $10 dinner card, show the "$10 + fee" message.
 - [ ] Optional tamper shot for "edit a single decision by hand, and it turns red" (2:00–2:32): copy the downloaded ledger (`cp ~/Downloads/ledger-<A>.json /tmp/ledger-tampered.json`), change **only** the `decision` field of the #1 taxi entry from `"STOP"` to `"APPROVE"`, run `npx tsx scripts/verify.ts ~/Downloads/mandate-<A>.json /tmp/ledger-tampered.json` → `❌ … stored APPROVE == recomputed STOP (OVER_PER_TX_CAP)`, `1 CHECK(S) FAILED`. Edit nothing else: clearing `reasons` as well on the paused #4 entry replays as APPROVE and stays green (README → Approval & evidence → Limitation).
 - [ ] Wait for "settled" on camera once (#0); for #6 a cut is fine — but **download the records only after #6 shows settled** (the drawer warns "still pending" otherwise, and verify's "tx mined and succeeded" fails for an unmined payment).
-- [ ] Evidence beat: the button is bottom right on `/traveler`; in the drawer click the two download buttons one after the other (not "Download both" if Chrome prompts), then switch to the terminal and run the prepared command. Keep the drawer's "Run checks now" for the audit clip or skip it; it is one read-only request.
+- [ ] Evidence beat: the **Evidence** tab sits on the right edge of `/traveler`; in the drawer, under **Download all mandate records**, click the two file buttons one after the other (not "Download both" if Chrome prompts), then switch to the terminal and run the prepared command. Keep the drawer's "Run checks now" for the audit clip or skip it; it is one read-only request.
 - [ ] Order matters: #4 must be sent while A is paused and #6 after Resume (the scenario order in `contracts/api.ts`).
 
 **After the take**

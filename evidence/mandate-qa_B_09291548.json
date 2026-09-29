@@ -1,0 +1,75 @@
+{
+  "mandate": {
+    "id": "qa_B_09291548",
+    "principal": "PerDiem QA",
+    "traveler": "Verification",
+    "agentWallet": "0x8340daD34FD2BA3e15F3E68EF37360F1Ed8B29eF",
+    "budgetUsd": 10,
+    "perTxCapUsd": 40,
+    "allowedMerchantIds": [
+      "m1",
+      "m2",
+      "m3",
+      "m4",
+      "m7"
+    ],
+    "allowedCategories": [
+      "meal",
+      "transport",
+      "supplies"
+    ],
+    "blockedKeywords": [
+      "alcohol",
+      "wine",
+      "gift"
+    ],
+    "startsAt": "2026-09-29T15:46:36.082Z",
+    "expiresAt": "2026-09-30T15:48:36.082Z",
+    "catalog": [
+      {
+        "id": "m1",
+        "name": "Yangjae Kitchen",
+        "category": "meal",
+        "wallet": "0xA863E2A7716fE766CfA3e7004CCf9aE43e00B936"
+      },
+      {
+        "id": "m2",
+        "name": "Kakao T Taxi",
+        "category": "transport",
+        "wallet": "0xFcb8Aa78c5Df5bdEFAaDEB59730cbe28b250af92"
+      },
+      {
+        "id": "m3",
+        "name": "T-money Top-up",
+        "category": "transport",
+        "wallet": "0xa1c7A24b006ECCb773b12f54F2ff0f671B7DE996"
+      },
+      {
+        "id": "m4",
+        "name": "Daiso Yangjae",
+        "category": "supplies",
+        "wallet": "0x4BD835920E96C5907d4afA2F50C50792E7F13531"
+      },
+      {
+        "id": "m5",
+        "name": "Wine & Co",
+        "category": "alcohol",
+        "wallet": "0x11b8012Aa4450c7742DFD6D5E4759A2eCf5179c9"
+      },
+      {
+        "id": "m6",
+        "name": "Lotte Duty Free",
+        "category": "gift",
+        "wallet": "0x7E2f95a836D260844e197aba33C81bDa6983b61e"
+      },
+      {
+        "id": "m7",
+        "name": "Starbucks aT Center",
+        "category": "meal",
+        "wallet": "0xA6b9FA16888f1Dc570FfD1b2e2b98f085801678b"
+      }
+    ],
+    "status": "active"
+  },
+  "anchorTx": "0xa128c0bb73c4d9abe9b3c480916e3350c04832f7bd7f88dcfc564b52ed58e516"
+}
