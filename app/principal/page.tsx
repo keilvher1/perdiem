@@ -6,7 +6,6 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { CreateMandateResponse, MandateDetailResponse } from "@/contracts/api";
 import { api } from "@/lib/api-client";
-import { fmtRel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LedgerTable } from "@/components/perdiem/ledger-table";
@@ -15,6 +14,7 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/perdiem/states
 import { useNow } from "@/hooks/use-now";
 import { useResource } from "@/hooks/use-resource";
 import { useSelectedMandate } from "@/hooks/use-selected-mandate";
+import { useFmt, useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { BoundaryExplainer } from "./boundary-explainer";
 import { GrantForm } from "./grant-form";
@@ -59,11 +59,14 @@ function PrincipalInner() {
   const now = useNow(5000);
   const load = useCallback(() => loadDetailWithConfirm(id ?? ""), [id]);
   const detail = useResource(id ? load : null, 5000);
+  const t = useT();
+  const f = useFmt();
+  const tp = t.principal.page;
 
   const onCreated = (res: CreateMandateResponse) => {
     addOptimistic(res.mandate);
     select(res.mandate.id);
-    toast.success("Mandate granted — anchored on Sepolia", {
+    toast.success(tp.granted, {
       description: `${res.mandate.id} · ${res.anchor.txHash.slice(0, 10)}…`,
       action: { label: "Etherscan", onClick: () => window.open(res.anchor.explorerUrl, "_blank", "noopener,noreferrer") },
       duration: 8000,
@@ -77,11 +80,11 @@ function PrincipalInner() {
 
   let right: React.ReactNode;
   if (listLoading || (id && detail.loading)) right = <ControlsSkeleton />;
-  else if (listError && !mandates) right = <ErrorState title="Couldn’t load mandates" error={listError} onRetry={refreshList} />;
+  else if (listError && !mandates) right = <ErrorState title={tp.loadMandatesFailed} error={listError} onRetry={refreshList} />;
   else if (mandates && mandates.length === 0)
-    right = <EmptyState title="No mandates yet" description="Grant the first one with the form. It is hashed and anchored on Sepolia." />;
+    right = <EmptyState title={tp.noMandates} description={tp.noMandatesHint} />;
   else if (detail.error && !detail.data)
-    right = <ErrorState title={`Couldn’t load ${id}`} error={detail.error} onRetry={detail.refresh} retrying={detail.refreshing} />;
+    right = <ErrorState title={tp.loadMandateFailed(String(id))} error={detail.error} onRetry={detail.refresh} retrying={detail.refreshing} />;
   else if (detail.data) right = <MandateControls mandate={detail.data.mandate} now={now} onChanged={onChanged} />;
   else right = <ControlsSkeleton />;
 
@@ -90,9 +93,9 @@ function PrincipalInner() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Principal"
-        title="Grant a budget, watch it, stop it"
-        description="Set the terms once. Every agent payment is checked against them in code; pause is a kill switch, revoke is final."
+        eyebrow={tp.eyebrow}
+        title={tp.title}
+        description={tp.description}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <GrantForm onCreated={onCreated} />
@@ -104,12 +107,12 @@ function PrincipalInner() {
 
       <Panel className="mt-6" as="section">
         <PanelTitle
-          description="Every decision, approved or stopped, newest first. Refreshes every 5 s; click a row for the proposal, hashes and Kiln evidence."
+          description={tp.ledgerDescription}
           actions={
             <>
               {detail.updatedAt !== null && (
                 <span className="text-xs text-zinc-400 tabular-nums" aria-live="polite">
-                  Updated {fmtRel(new Date(detail.updatedAt).toISOString(), now)}
+                  {tp.updated(f.rel(new Date(detail.updatedAt).toISOString(), now))}
                 </span>
               )}
               <Button
@@ -118,34 +121,34 @@ function PrincipalInner() {
                 size="sm"
                 onClick={detail.refresh}
                 disabled={!id || detail.refreshing}
-                aria-label="Refresh ledger"
+                aria-label={tp.refreshLedger}
               >
                 <RefreshCw aria-hidden className={cn(detail.refreshing && "animate-spin")} />
-                Refresh
+                {tp.refresh}
               </Button>
             </>
           }
         >
-          Ledger{id ? <span className="ml-2 font-mono text-sm font-normal text-zinc-500">{id}</span> : null}
+          {tp.ledgerTitle}{id ? <span className="ml-2 font-mono text-sm font-normal text-zinc-500">{id}</span> : null}
         </PanelTitle>
         {detail.error && ledger && (
           <p role="status" className="mb-3 text-xs text-amber-700">
-            Showing the last good copy — refresh failed: {detail.error.message}
+            {tp.staleCopy(detail.error.message)}
           </p>
         )}
         {ledger === null ? (
           detail.error ? (
-            <ErrorState title="Couldn’t load the ledger" error={detail.error} onRetry={detail.refresh} />
+            <ErrorState title={tp.loadLedgerFailed} error={detail.error} onRetry={detail.refresh} />
           ) : (
             <LoadingRows rows={5} />
           )
         ) : ledger.length === 0 ? (
           <EmptyState
-            title="No requests yet — try a quick prompt"
-            description="The traveler has not asked the agent for anything under this mandate."
+            title={tp.noRequests}
+            description={tp.noRequestsHint}
             action={
               <Button asChild variant="outline" size="sm">
-                <Link href={`/traveler?m=${encodeURIComponent(id ?? "")}`}>Open Traveler</Link>
+                <Link href={`/traveler?m=${encodeURIComponent(id ?? "")}`}>{tp.openTraveler}</Link>
               </Button>
             }
           />

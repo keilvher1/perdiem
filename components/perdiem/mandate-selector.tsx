@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtUsd } from "@/lib/format";
 import type { ApiClientError } from "@/lib/api-client";
+import { useT } from "@/lib/i18n/provider";
 import { useNow } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
 import { effectiveMandateStatus, StatusPill } from "./status-pill";
@@ -29,27 +30,29 @@ export function MandateSelector({
   className?: string;
 }) {
   const now = useNow(30_000);
+  const t = useT();
+  const s = t.shell.mandateSelector;
 
   if (!mandates && error) {
     return (
       <div role="alert" className={cn("flex items-center gap-2 text-xs text-rose-700", className)}>
-        Couldn’t load mandates ({error.code}).
+        {s.loadFailed(error.code)}
         <Button type="button" variant="outline" size="xs" onClick={onRetry} className="bg-white">
           <RefreshCw aria-hidden />
-          Retry
+          {t.common.retry}
         </Button>
       </div>
     );
   }
-  if (!mandates) return <Skeleton className={cn("h-8 w-full sm:w-[460px]", className)} aria-label="Loading mandates" />;
+  if (!mandates) return <Skeleton className={cn("h-8 w-full sm:w-[460px]", className)} aria-label={s.loading} />;
   if (mandates.length === 0) {
     return (
       <p className={cn("text-xs text-zinc-500", className)}>
-        No mandates yet —{" "}
+        {s.emptyBefore}
         <Link href="/principal" className="font-medium text-indigo-700 underline-offset-2 hover:underline">
-          grant one on Principal
+          {s.emptyLink}
         </Link>
-        .
+        {s.emptyAfter}
       </p>
     );
   }
@@ -58,10 +61,10 @@ export function MandateSelector({
   return (
     <Select value={known ? value : undefined} onValueChange={onChange}>
       <SelectTrigger
-        aria-label="Selected mandate"
+        aria-label={s.label}
         className={cn("h-8 w-full bg-white sm:w-[460px] [&_[data-slot=select-value]]:min-w-0", className)}
       >
-        <SelectValue placeholder={value ? `Unknown mandate ${value}` : "Choose a mandate"} />
+        <SelectValue placeholder={value ? s.unknown(value) : s.placeholder} />
       </SelectTrigger>
       <SelectContent position="popper" align="start" className="w-[var(--radix-select-trigger-width)] min-w-[320px]">
         {mandates.map((m) => (

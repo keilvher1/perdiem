@@ -6,7 +6,9 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { AuditResponse, LedgerEntryView, LedgerStatus, MandateDetail } from "@/contracts/api";
 import { API_MODE, api } from "@/lib/api-client";
-import { fmtDate, fmtInt, fmtUsd } from "@/lib/format";
+import { fmtUsd } from "@/lib/format";
+import { useFmt, useLocale, useT } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ledgerFileName, mandateFileName, verifyCommand } from "@/components/perdiem/evidence-records";
@@ -65,17 +67,17 @@ function Box({ on }: { on: boolean }) {
   );
 }
 
-function statusLabel(e: LedgerEntryView): string {
-  if (e.decision === "STOP") return "stopped · nothing sent";
+function statusLabel(e: LedgerEntryView, L: Messages["audit"]["report"]["ledger"]["status"]): string {
+  if (e.decision === "STOP") return L.stopped;
   switch (e.status) {
     case "settled":
-      return "settled on-chain";
+      return L.settled;
     case "pending":
-      return e.txHash ? "pending · awaiting confirmation" : "pending";
+      return e.txHash ? L.pendingTx : L.pending;
     case "approved":
-      return "approved · not broadcast yet";
+      return L.approved;
     case "failed":
-      return e.txHash ? "failed on-chain · not counted" : "broadcast did not confirm · not counted";
+      return e.txHash ? L.failedTx : L.failed;
     default:
       return e.status;
   }
@@ -118,6 +120,11 @@ function Statement({
   demoEthUsd: number | null;
   generatedAt: string | null;
 }) {
+  const t = useT();
+  const R = t.audit.report;
+  const f = useFmt();
+  const locale = useLocale();
+  const cat = (c: string) => t.common.category[c] ?? c;
   const allowedIds = new Set(mandate.allowedMerchantIds);
   const allowedCats = new Set(mandate.allowedCategories);
   const categories = [...new Set([...mandate.allowedCategories, ...mandate.catalog.map((c) => c.category)])];
@@ -142,54 +149,54 @@ function Statement({
       <header className="flex items-start justify-between gap-6 border-b-2 border-zinc-900 pb-3">
         <div>
           <p className="text-[10px] font-medium tracking-[0.14em] text-zinc-500 uppercase">PerDiem</p>
-          <h1 className="text-[20px] leading-tight font-semibold tracking-tight">Trip statement</h1>
+          <h1 className="text-[20px] leading-tight font-semibold tracking-tight">{R.heading}</h1>
           <p className="mt-0.5 font-mono text-[12px] text-zinc-700">{mandate.id}</p>
         </div>
         <dl className="text-right text-[11px] leading-5 text-zinc-600">
           <div>
-            <dt className="inline text-zinc-500">Generated </dt>
-            <dd className="inline tabular-nums">{generatedAt ? fmtDate(generatedAt, true) : "—"}</dd>
+            <dt className="inline text-zinc-500">{R.generated}</dt>
+            <dd className="inline tabular-nums">{generatedAt ? f.date(generatedAt, true) : "—"}</dd>
           </div>
           <div>
-            <dt className="inline text-zinc-500">Records </dt>
+            <dt className="inline text-zinc-500">{R.records}</dt>
             <dd className={cn("inline font-medium", API_MODE === "mock" ? "text-rose-700" : "text-zinc-900")}>
-              {API_MODE === "live" ? "live · Sepolia testnet" : "MOCK DATA · placeholder hashes, not evidence"}
+              {API_MODE === "live" ? R.recordsLive : R.recordsMock}
             </dd>
           </div>
           <div>
-            <dt className="inline text-zinc-500">Mandate status </dt>
-            <dd className="inline">{mandate.status}</dd>
+            <dt className="inline text-zinc-500">{R.mandateStatus}</dt>
+            <dd className="inline">{t.stop.mandateStatus[mandate.status] ?? mandate.status}</dd>
           </div>
         </dl>
       </header>
 
       {/* 2 · Parties */}
       <section className="report-section mt-5">
-        <H2 n={1}>Parties and terms</H2>
+        <H2 n={1}>{R.parties.title}</H2>
         <dl className="rounded-md border border-zinc-300">
           <Pair>
-            <Field label="Principal (grants the budget)">{mandate.principal}</Field>
-            <Field label="Traveler (acts under it)">{mandate.traveler}</Field>
+            <Field label={R.parties.principal}>{mandate.principal}</Field>
+            <Field label={R.parties.traveler}>{mandate.traveler}</Field>
           </Pair>
           <Pair>
-            <Field label="Budget">{fmtUsd(mandate.budgetUsd)}</Field>
-            <Field label="Per-payment cap">{fmtUsd(mandate.perTxCapUsd)}</Field>
+            <Field label={R.parties.budget}>{fmtUsd(mandate.budgetUsd)}</Field>
+            <Field label={R.parties.perPaymentCap}>{fmtUsd(mandate.perTxCapUsd)}</Field>
           </Pair>
           <Pair>
-            <Field label="Trip window opens">{fmtDate(mandate.startsAt, true)}</Field>
-            <Field label="Trip window closes">{fmtDate(mandate.expiresAt, true)}</Field>
+            <Field label={R.parties.opens}>{f.date(mandate.startsAt, true)}</Field>
+            <Field label={R.parties.closes}>{f.date(mandate.expiresAt, true)}</Field>
           </Pair>
           <div className="border-b border-zinc-200">
-            <Field label="Agent wallet (the only payer)" mono>
+            <Field label={R.parties.agentWallet} mono>
               {mandate.agentWallet}
             </Field>
           </div>
           <Pair>
-            <Field label="Mandate hash (keccak256 of the terms)" mono>
+            <Field label={R.parties.mandateHash} mono>
               {mandate.hash}
             </Field>
-            <Field label="Anchor transaction (terms fixed on-chain)" mono>
-              {mandate.anchorTx ?? "not anchored"}
+            <Field label={R.parties.anchorTx} mono>
+              {mandate.anchorTx ?? t.audit.notAnchored}
             </Field>
           </Pair>
         </dl>
@@ -197,16 +204,16 @@ function Statement({
 
       {/* 3 · Boundary */}
       <section className="report-section mt-5">
-        <H2 n={2}>Boundary</H2>
+        <H2 n={2}>{R.boundary.title}</H2>
         <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-5">
           <table className="w-full border-collapse text-[11px]">
             <thead>
               <tr className="border-b border-zinc-300 text-left text-[10px] tracking-wide text-zinc-500 uppercase">
                 <th className="py-1 pr-2 font-medium" colSpan={2}>
-                  Catalog merchant
+                  {R.boundary.catalogMerchant}
                 </th>
-                <th className="py-1 pr-2 font-medium">Category</th>
-                <th className="py-1 font-medium">Payments</th>
+                <th className="py-1 pr-2 font-medium">{R.boundary.category}</th>
+                <th className="py-1 font-medium">{R.boundary.payments}</th>
               </tr>
             </thead>
             <tbody>
@@ -222,9 +229,15 @@ function Statement({
                     <td className="py-1 pr-2 align-top">
                       {c.name} <span className="font-mono text-[10px] text-zinc-500">{c.id}</span>
                     </td>
-                    <td className="py-1 pr-2 align-top">{c.category}</td>
+                    <td className="py-1 pr-2 align-top">{cat(c.category)}</td>
                     <td className={cn("py-1 align-top", ok ? "text-zinc-900" : "text-zinc-500")}>
-                      {ok ? "permitted" : !merchantOk && !catOk ? "not permitted (merchant, category)" : !merchantOk ? "not permitted (merchant)" : "not permitted (category)"}
+                      {ok
+                        ? R.boundary.permitted
+                        : !merchantOk && !catOk
+                          ? R.boundary.notPermittedBoth
+                          : !merchantOk
+                            ? R.boundary.notPermittedMerchant
+                            : R.boundary.notPermittedCategory}
                     </td>
                   </tr>
                 );
@@ -233,109 +246,107 @@ function Statement({
           </table>
           <div className="space-y-3 text-[11px]">
             <div>
-              <p className="mb-1 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">Categories</p>
+              <p className="mb-1 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">{R.boundary.categories}</p>
               <ul className="space-y-0.5">
-                {categories.map((cat) => (
-                  <li key={cat} className="flex items-center gap-1.5">
-                    <Box on={allowedCats.has(cat)} /> {cat}
-                    <span className="text-zinc-500">{allowedCats.has(cat) ? "permitted" : "not permitted"}</span>
+                {categories.map((c) => (
+                  <li key={c} className="flex items-center gap-1.5">
+                    <Box on={allowedCats.has(c)} /> {cat(c)}
+                    <span className="text-zinc-500">{allowedCats.has(c) ? R.boundary.permitted : R.boundary.notPermitted}</span>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="mb-1 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">Blocked words (request or memo)</p>
-              <p className="font-mono text-[11px]">{mandate.blockedKeywords.length ? mandate.blockedKeywords.join(", ") : "none"}</p>
+              <p className="mb-1 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">{R.boundary.blockedWords}</p>
+              <p className="font-mono text-[11px]">{mandate.blockedKeywords.length ? mandate.blockedKeywords.join(", ") : R.boundary.none}</p>
             </div>
-            <p className="text-[10px] leading-4 text-zinc-500">
-              ■ permitted · □ not permitted. A payment is also stopped outside the trip window, above the per-payment cap, over the
-              remaining budget including the network fee, when the fee cannot be estimated, or as a duplicate within 5 minutes.
-            </p>
+            <p className="text-[10px] leading-4 text-zinc-500">{R.boundary.legend}</p>
           </div>
         </div>
       </section>
 
       {/* 4 · Check line */}
       <section className="report-section mt-5">
-        <H2 n={3}>Checks recomputed from the records</H2>
+        <H2 n={3}>{R.checks.title}</H2>
         {audit && breakdown ? (
           <div className={cn("rounded-md border px-3 py-2", audit.summary.allVerified ? "border-zinc-300" : "border-rose-400 bg-rose-50")}>
             <p className="text-[14px] font-semibold tabular-nums">
-              {audit.summary.passed} of {audit.summary.total} checks passed
-              {!audit.summary.allVerified && <span className="ml-2 text-rose-700">({audit.summary.total - audit.summary.passed} failed)</span>}
-            </p>
-            <p className="mt-0.5 text-[11px] text-zinc-600 tabular-nums">
-              Anchor {breakdown.anchor.ok} / {breakdown.anchor.of} · Replay {breakdown.replay.ok} / {breakdown.replay.of} · Transactions{" "}
-              {breakdown.tx.ok} / {breakdown.tx.of}
-              {breakdown.payerMined.of > 0 && (
-                <>
-                  {" "}
-                  · Payer &amp; mined {breakdown.payerMined.ok} / {breakdown.payerMined.of}
-                </>
+              {t.audit.checksPassed(audit.summary.passed, audit.summary.total)}
+              {!audit.summary.allVerified && (
+                <span className="ml-2 text-rose-700">{R.checks.failed(audit.summary.total - audit.summary.passed)}</span>
               )}
             </p>
-            <p className="mt-1 text-[10px] leading-4 text-zinc-500">
-              Anchor: the recomputed mandate hash equals the memo of the anchor transaction. Replay: every entry re-run through the
-              policy with spend rebuilt from earlier entries (2 checks each). Transactions: memo, receipt hash, recipient and amount
-              read back from Sepolia (4 each). Payer &amp; mined: the anchor and every payment were sent by the mandate&apos;s agent
-              wallet, and each payment was mined and succeeded (1 + 2 per payment). Replay cannot show whether the mandate was paused
-              when a payment was approved; pause and resume are in the server log.
+            <p className="mt-0.5 text-[11px] text-zinc-600 tabular-nums">
+              {[
+                `${t.audit.groups.anchor} ${breakdown.anchor.ok} / ${breakdown.anchor.of}`,
+                `${t.audit.groups.replay} ${breakdown.replay.ok} / ${breakdown.replay.of}`,
+                `${t.audit.groups.transactions} ${breakdown.tx.ok} / ${breakdown.tx.of}`,
+                breakdown.payerMined.of > 0 ? `${t.audit.groups.payerMined} ${breakdown.payerMined.ok} / ${breakdown.payerMined.of}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
+            <p className="mt-1 text-[10px] leading-4 text-zinc-500">{R.checks.explanation}</p>
           </div>
         ) : (
           <p className={cn("text-[11px]", auditError ? "text-rose-700" : "text-zinc-500")}>
-            {auditError ? `Checks could not run: ${auditError}` : "Running the checks…"}
+            {auditError ? R.checks.couldNotRun(auditError) : R.checks.running}
           </p>
         )}
       </section>
 
       {/* 5 · Ledger annex (starts page 2 in print) */}
       <section className="report-section report-annex mt-5">
-        <H2 n={4}>Ledger annex · oldest first</H2>
+        <H2 n={4}>{R.ledger.title}</H2>
         <p className="mb-1.5 text-[10px] text-zinc-500 tabular-nums">
-          {ledger.length} decision{ledger.length === 1 ? "" : "s"}: {count("settled")} settled · {count("pending")} pending ·{" "}
-          {count("stopped")} stopped · {count("failed")} failed
-          {count("approved") > 0 ? ` · ${count("approved")} approved, not broadcast` : ""}
+          {R.ledger.summary({
+            total: ledger.length,
+            settled: count("settled"),
+            pending: count("pending"),
+            stopped: count("stopped"),
+            failed: count("failed"),
+            approved: count("approved"),
+          })}
         </p>
         <table className="w-full border-collapse text-[10.5px] leading-[1.35]">
           <thead className="report-thead">
             <tr className="border-y border-zinc-400 bg-zinc-100 text-left text-[9.5px] tracking-wide text-zinc-600 uppercase">
               <th className="px-1.5 py-1 font-medium">#</th>
-              <th className="px-1.5 py-1 font-medium">When</th>
-              <th className="px-1.5 py-1 font-medium">Merchant · request</th>
-              <th className="px-1.5 py-1 font-medium">Outcome</th>
-              <th className="px-1.5 py-1 text-right font-medium">Amount</th>
-              <th className="px-1.5 py-1 text-right font-medium">Counted</th>
-              <th className="px-1.5 py-1 text-right font-medium">Remaining</th>
+              <th className="px-1.5 py-1 font-medium">{R.ledger.when}</th>
+              <th className="px-1.5 py-1 font-medium">{R.ledger.merchantRequest}</th>
+              <th className="px-1.5 py-1 font-medium">{R.ledger.outcome}</th>
+              <th className="px-1.5 py-1 text-right font-medium">{R.ledger.amount}</th>
+              <th className="px-1.5 py-1 text-right font-medium">{R.ledger.counted}</th>
+              <th className="px-1.5 py-1 text-right font-medium">{R.ledger.remaining}</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-zinc-200 text-zinc-600">
               <td className="px-1.5 py-1" />
               <td className="px-1.5 py-1" colSpan={5}>
-                Opening budget
+                {R.ledger.openingBudget}
               </td>
               <td className="px-1.5 py-1 text-right tabular-nums">{fmtUsd(mandate.budgetUsd)}</td>
             </tr>
             {rows.length === 0 && (
               <tr className="border-b border-zinc-200">
                 <td className="px-1.5 py-2 text-zinc-500" colSpan={7}>
-                  No decisions recorded yet.
+                  {R.ledger.empty}
                 </td>
               </tr>
             )}
             {rows.map(({ e, n, counted, remaining }) => (
               <tr key={e.id} className={cn("report-row border-b border-zinc-200 align-top", e.decision === "STOP" && "bg-zinc-50")}>
                 <td className="px-1.5 py-1 text-zinc-500 tabular-nums">{n}</td>
-                <td className="px-1.5 py-1 whitespace-nowrap tabular-nums">{fmtDate(e.at)}</td>
+                <td className="px-1.5 py-1 whitespace-nowrap tabular-nums">{f.date(e.at)}</td>
                 <td className="px-1.5 py-1">
                   <div>
                     {e.merchantName ?? e.proposal.merchantId} <span className="font-mono text-[9.5px] text-zinc-500">{e.proposal.merchantId}</span>
                   </div>
-                  {e.proposal.sourceText && <div className="text-zinc-600">“{e.proposal.sourceText}”</div>}
+                  {e.proposal.sourceText && <div className="text-zinc-600">{R.ledger.quote(e.proposal.sourceText)}</div>}
                   {e.decision === "STOP" &&
                     e.reasons.map((r, i) => {
-                      const d = reasonDetail(r);
+                      const d = reasonDetail(r, locale);
                       return (
                         <div key={`${r.code}-${i}`} className="text-zinc-700">
                           <span className="font-mono text-[9.5px] font-semibold">[{r.code}]</span>
@@ -350,18 +361,18 @@ function Statement({
                 </td>
                 <td className="px-1.5 py-1">
                   <div className="font-mono text-[9.5px] font-semibold">{e.decision}</div>
-                  <div className="text-zinc-600">{statusLabel(e)}</div>
+                  <div className="text-zinc-600">{statusLabel(e, R.ledger.status)}</div>
                 </td>
                 <td className="px-1.5 py-1 text-right whitespace-nowrap tabular-nums">
                   {e.decision === "STOP" ? (
                     <>
-                      <div>requested {fmtUsd(e.proposal.amountUsd)}</div>
-                      <div className="text-zinc-600">sent $0.00</div>
+                      <div>{R.ledger.requested(fmtUsd(e.proposal.amountUsd))}</div>
+                      <div className="text-zinc-600">{R.ledger.sentZero}</div>
                     </>
                   ) : (
                     <>
                       <div>{fmtUsd(e.proposal.amountUsd)}</div>
-                      <div className="text-zinc-600">+ fee {fmtUsd(e.feeUsd)}</div>
+                      <div className="text-zinc-600">{R.ledger.fee(fmtUsd(e.feeUsd))}</div>
                     </>
                   )}
                 </td>
@@ -372,7 +383,7 @@ function Statement({
             {/* A body row, not <tfoot>: Chrome repeats a tfoot at the bottom of every printed page. */}
             <tr className="report-row border-t-2 border-zinc-900 bg-zinc-100 font-semibold">
               <td className="px-1.5 py-1.5" colSpan={5}>
-                Budget {fmtUsd(mandate.budgetUsd)} − Spent {fmtUsd(spent)} = Remaining
+                {R.ledger.total(fmtUsd(mandate.budgetUsd), fmtUsd(spent))}
               </td>
               <td className="px-1.5 py-1.5 text-right tabular-nums">{fmtUsd(spent)}</td>
               <td className="px-1.5 py-1.5 text-right tabular-nums">{fmtUsd(mandate.budgetUsd - spent)}</td>
@@ -381,34 +392,36 @@ function Statement({
         </table>
         <p className={cn("mt-1.5 text-[10px] leading-4", reconciled ? "text-zinc-500" : "font-semibold text-rose-700")}>
           {reconciled
-            ? `Sum of counted lines equals the recorded spend (${fmtUsd(mandate.spentUsd)}) and remaining (${fmtUsd(mandate.remainingUsd)}).`
-            : `MISMATCH: counted lines sum to ${fmtUsd(spent)}, the record says spent ${fmtUsd(mandate.spentUsd)} and remaining ${fmtUsd(mandate.remainingUsd)}.`}{" "}
-          Counted = amount + estimated network fee, for approved, pending and settled payments; stopped and failed lines count $0.00.
-          {mandate.pendingUsd > 0 ? ` ${fmtUsd(mandate.pendingUsd)} of the spend is still pending on-chain.` : ""}
+            ? R.ledger.reconciled(fmtUsd(mandate.spentUsd), fmtUsd(mandate.remainingUsd))
+            : R.ledger.mismatch(fmtUsd(spent), fmtUsd(mandate.spentUsd), fmtUsd(mandate.remainingUsd))}
+          {R.ledger.countedNote}
+          {mandate.pendingUsd > 0 ? R.ledger.pendingNote(fmtUsd(mandate.pendingUsd)) : ""}
         </p>
       </section>
 
       {/* 6 · Demo rate + 7 · Closing */}
       <section className="report-section mt-5 space-y-2 text-[11px]">
-        <H2 n={5}>Verify and sign off</H2>
+        <H2 n={5}>{R.signOff.title}</H2>
         <p className="text-zinc-700">
-          Amounts are USD. On-chain values are Sepolia test ETH converted at the demo rate{" "}
-          {demoEthUsd !== null ? <strong>1 ETH = ${fmtInt(demoEthUsd)}</strong> : "DEMO_ETH_USD"} — the same rate scripts/verify.ts uses. No
-          real money moves.
+          {R.signOff.rateBefore}
+          {demoEthUsd !== null ? <strong>1 ETH = ${f.int(demoEthUsd)}</strong> : "DEMO_ETH_USD"}
+          {R.signOff.rateAfter}
         </p>
         <p className="text-zinc-700">
-          Reconstruct from records alone: download <span className="font-mono">{mandateFileName(mandate.id)}</span> and{" "}
-          <span className="font-mono">{ledgerFileName(mandate.id)}</span> from the audit page (Evidence → Download records), then run in a
-          clone of the repository:
+          {R.signOff.reconstructBefore}
+          <span className="font-mono">{mandateFileName(mandate.id)}</span>
+          {R.signOff.reconstructMid}
+          <span className="font-mono">{ledgerFileName(mandate.id)}</span>
+          {R.signOff.reconstructAfter}
         </p>
         <p className="rounded border border-zinc-300 bg-zinc-50 px-2 py-1.5 font-mono text-[10px] break-all">$ {verifyCommand(mandate.id)}</p>
         <div className="report-keep grid grid-cols-[3fr_2fr] gap-8 pt-8 text-[11px]">
           <p className="flex items-end gap-2">
-            <span className="shrink-0 text-zinc-600">Reviewed by</span>
+            <span className="shrink-0 text-zinc-600">{R.signOff.reviewedBy}</span>
             <span className="h-5 flex-1 border-b border-zinc-900" />
           </p>
           <p className="flex items-end gap-2">
-            <span className="shrink-0 text-zinc-600">Date</span>
+            <span className="shrink-0 text-zinc-600">{R.signOff.date}</span>
             <span className="h-5 flex-1 border-b border-zinc-900" />
           </p>
         </div>
@@ -419,6 +432,8 @@ function Statement({
 
 export default function TripStatementPage() {
   const id = useMandateId();
+  const t = useT();
+  const R = t.audit.report;
   const loadRecords = useCallback(() => api.mandate(id), [id]);
   const loadAudit = useCallback(() => api.audit(id), [id]);
   const loadHealth = useCallback(() => api.health(), []);
@@ -431,13 +446,13 @@ export default function TripStatementPage() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Button asChild variant="ghost" size="sm" className="text-zinc-600">
           <Link href={`/audit/${encodeURIComponent(id)}`}>
-            <ArrowLeft aria-hidden /> Back to the audit
+            <ArrowLeft aria-hidden /> {R.back}
           </Link>
         </Button>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-zinc-500">In the print dialog, turn off “Headers and footers”.</span>
+          <span className="text-xs text-zinc-500">{R.printHint}</span>
           <Button type="button" size="sm" onClick={() => window.print()} disabled={!records.data}>
-            <Printer aria-hidden /> Print / Save as PDF
+            <Printer aria-hidden /> {R.print}
           </Button>
         </div>
       </div>
@@ -445,7 +460,7 @@ export default function TripStatementPage() {
         <LoadingRows rows={6} />
       ) : records.error && !records.data ? (
         <ErrorState
-          title={records.error.status === 404 ? `Mandate ${id} was not found` : "The statement could not be built"}
+          title={records.error.status === 404 ? t.audit.notFound(id) : R.buildError}
           error={records.error}
           onRetry={records.refresh}
           retrying={records.refreshing}

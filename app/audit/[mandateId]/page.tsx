@@ -6,7 +6,8 @@ import { useParams } from "next/navigation";
 import { CircleCheck, OctagonAlert, Printer, RefreshCw, ShieldCheck, SquareTerminal } from "lucide-react";
 import type { AuditResponse, MandateDetailResponse } from "@/contracts/api";
 import { api } from "@/lib/api-client";
-import { fmtRel, fmtUsd } from "@/lib/format";
+import { fmtUsd } from "@/lib/format";
+import { useFmt, useT } from "@/lib/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckMark } from "@/components/perdiem/check-mark";
@@ -26,6 +27,7 @@ function Decision({ d }: { d: "APPROVE" | "STOP" }) {
 }
 
 function Banner({ audit }: { audit: AuditResponse }) {
+  const t = useT();
   const { passed, total, allVerified } = audit.summary;
   const failed = total - passed;
   const replayChecks = audit.replay.length * 2;
@@ -55,33 +57,33 @@ function Banner({ audit }: { audit: AuditResponse }) {
         </span>
         <div>
           <p className={cn("text-xl font-semibold tracking-tight tabular-nums", allVerified ? "text-emerald-900" : "text-rose-900")}>
-            {allVerified ? `${passed} of ${total} checks passed` : `${failed} of ${total} checks failed`}
+            {allVerified ? t.audit.checksPassed(passed, total) : t.audit.checksFailed(failed, total)}
           </p>
           <p className={cn("mt-0.5 text-sm", allVerified ? "text-emerald-800/90" : "text-rose-800/90")}>
-            This page does not trust the stored decisions — it recomputes them.
+            {t.audit.page.recomputes}
           </p>
         </div>
       </div>
       <dl className="flex gap-6 text-sm tabular-nums">
         <div>
-          <dt className="text-xs text-zinc-500">Anchor</dt>
+          <dt className="text-xs text-zinc-500">{t.audit.groups.anchor}</dt>
           <dd className="font-medium text-zinc-900">{audit.anchor.matches ? "1 / 1" : "0 / 1"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-zinc-500">Replay</dt>
+          <dt className="text-xs text-zinc-500">{t.audit.groups.replay}</dt>
           <dd className="font-medium text-zinc-900">
             {replayOk} / {replayChecks}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-zinc-500">Transactions</dt>
+          <dt className="text-xs text-zinc-500">{t.audit.groups.transactions}</dt>
           <dd className="font-medium text-zinc-900">
             {txOk} / {txChecks}
           </dd>
         </div>
         {extraChecks > 0 && (
           <div>
-            <dt className="text-xs text-zinc-500">Payer &amp; mined</dt>
+            <dt className="text-xs text-zinc-500">{t.audit.groups.payerMined}</dt>
             <dd className="font-medium text-zinc-900">
               {extraOk} / {extraChecks}
             </dd>
@@ -93,6 +95,8 @@ function Banner({ audit }: { audit: AuditResponse }) {
 }
 
 function TermsSection({ audit }: { audit: AuditResponse }) {
+  const t = useT();
+  const T = t.audit.page.terms;
   const m = audit.mandate;
   const terms = {
     id: m.id,
@@ -112,39 +116,37 @@ function TermsSection({ audit }: { audit: AuditResponse }) {
   const hashMatches = audit.mandateHash.toLowerCase() === m.hash.toLowerCase();
   return (
     <Panel>
-      <PanelTitle description="The hashed terms (catalog snapshot included). Status is stored beside them, so pausing never changes the hash.">
-        1 · Mandate terms
-      </PanelTitle>
+      <PanelTitle description={T.description}>{T.title}</PanelTitle>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <JsonView value={terms} collapsed={["catalog"]} note={{ status: "mutable, not hashed" }} className="max-h-[420px]" />
+        <JsonView value={terms} collapsed={["catalog"]} note={{ status: T.statusNote }} className="max-h-[420px]" />
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="mb-1 text-xs text-zinc-500">Recomputed hash (keccak256 of the canonical terms)</dt>
+            <dt className="mb-1 text-xs text-zinc-500">{T.recomputedHash}</dt>
             <dd className="flex flex-wrap items-center gap-2">
-              <HashChip value={audit.mandateHash} what="recomputed mandate hash" />
-              <CheckMark ok={hashMatches} yes="equals stored hash" no="differs from stored hash" />
+              <HashChip value={audit.mandateHash} what={T.recomputedHashWhat} />
+              <CheckMark ok={hashMatches} yes={T.equalsStored} no={T.differsStored} />
             </dd>
           </div>
           <div>
-            <dt className="mb-1 text-xs text-zinc-500">Anchor transaction</dt>
+            <dt className="mb-1 text-xs text-zinc-500">{T.anchorTx}</dt>
             <dd>
-              <HashChip value={audit.anchor.txHash} href={audit.anchor.explorerUrl} what="anchor transaction" emptyText="not anchored" />
+              <HashChip value={audit.anchor.txHash} href={audit.anchor.explorerUrl} what={T.anchorTxWhat} emptyText={t.audit.notAnchored} />
             </dd>
           </div>
           <div>
-            <dt className="mb-1 text-xs text-zinc-500">Decoded anchor memo (calldata as UTF-8)</dt>
+            <dt className="mb-1 text-xs text-zinc-500">{T.memo}</dt>
             <dd>
               {audit.anchor.memo ? (
                 <code className="block rounded-md bg-zinc-50 px-2.5 py-2 font-mono text-[11px] leading-5 break-all text-zinc-700 ring-1 ring-zinc-200 ring-inset">
                   {audit.anchor.memo}
                 </code>
               ) : (
-                <span className="text-xs text-zinc-400">No memo found</span>
+                <span className="text-xs text-zinc-400">{T.noMemo}</span>
               )}
             </dd>
           </div>
           <div className="rounded-lg border border-zinc-200 px-3 py-2.5">
-            <CheckMark ok={audit.anchor.matches} yes="Anchor matches the recomputed hash" no="Anchor does NOT match the recomputed hash" />
+            <CheckMark ok={audit.anchor.matches} yes={T.anchorMatches} no={T.anchorMismatch} />
           </div>
         </dl>
       </div>
@@ -153,22 +155,23 @@ function TermsSection({ audit }: { audit: AuditResponse }) {
 }
 
 function ReplaySection({ audit }: { audit: AuditResponse }) {
+  const R = useT().audit.page.replay;
   return (
     <Panel>
-      <PanelTitle description="Every ledger entry re-run through the same policy code, with spend rebuilt from earlier entries only.">2 · Replay</PanelTitle>
+      <PanelTitle description={R.description}>{R.title}</PanelTitle>
       {audit.replay.length === 0 ? (
-        <EmptyState title="No ledger entries to replay yet" description="Decisions appear here once the traveler has made a request." />
+        <EmptyState title={R.emptyTitle} description={R.emptyDescription} />
       ) : (
         <TableShell className="max-h-[480px]">
           <Tbl className="min-w-[860px]">
             <THead>
               <tr>
-                <Th>Entry</Th>
-                <Th>Stored</Th>
-                <Th>Recomputed</Th>
-                <Th>Consistent</Th>
-                <Th>Mandate hash</Th>
-                <Th>Recomputed reasons</Th>
+                <Th>{R.entry}</Th>
+                <Th>{R.stored}</Th>
+                <Th>{R.recomputed}</Th>
+                <Th>{R.consistent}</Th>
+                <Th>{R.mandateHash}</Th>
+                <Th>{R.reasons}</Th>
               </tr>
             </THead>
             <tbody>
@@ -182,7 +185,7 @@ function ReplaySection({ audit }: { audit: AuditResponse }) {
                     <Decision d={r.recomputedDecision} />
                   </Td>
                   <Td>
-                    <CheckMark ok={r.consistent} yes="Same" no="Differs" />
+                    <CheckMark ok={r.consistent} yes={R.same} no={R.differs} />
                   </Td>
                   <Td>
                     <CheckMark ok={r.mandateHashMatches} />
@@ -201,25 +204,24 @@ function ReplaySection({ audit }: { audit: AuditResponse }) {
 }
 
 function TransactionsSection({ audit }: { audit: AuditResponse }) {
+  const X = useT().audit.page.transactions;
   return (
     <Panel>
-      <PanelTitle description="Each approved payment read back from Sepolia: recipient, amount and the memo PERDIEM|mandateHash|receiptHash in calldata.">
-        3 · Transactions
-      </PanelTitle>
+      <PanelTitle description={X.description}>{X.title}</PanelTitle>
       {audit.transactions.length === 0 ? (
-        <EmptyState title="No on-chain payments yet" description="Stopped requests never reach the chain, so there is nothing to read back." />
+        <EmptyState title={X.emptyTitle} description={X.emptyDescription} />
       ) : (
         <TableShell className="max-h-[520px]">
           <Tbl className="min-w-[1000px]">
             <THead>
               <tr>
-                <Th>Entry</Th>
-                <Th>Tx</Th>
-                <Th>Recipient</Th>
-                <Th>Amount</Th>
-                <Th>Receipt hash</Th>
-                <Th>Memo</Th>
-                <Th>Decoded memo</Th>
+                <Th>{X.entry}</Th>
+                <Th>{X.tx}</Th>
+                <Th>{X.recipient}</Th>
+                <Th>{X.amount}</Th>
+                <Th>{X.receiptHash}</Th>
+                <Th>{X.memo}</Th>
+                <Th>{X.decodedMemo}</Th>
               </tr>
             </THead>
             <tbody>
@@ -227,7 +229,7 @@ function TransactionsSection({ audit }: { audit: AuditResponse }) {
                 <Tr key={t.entryId}>
                   <Td className="font-mono text-xs text-zinc-800">{t.entryId}</Td>
                   <Td>
-                    <HashChip value={t.txHash} href={t.explorerUrl} what="transaction hash" />
+                    <HashChip value={t.txHash} href={t.explorerUrl} what={X.txWhat} />
                   </Td>
                   <Td>
                     <CheckMark ok={t.recipientMatches} />
@@ -257,17 +259,15 @@ function TransactionsSection({ audit }: { audit: AuditResponse }) {
 }
 
 function VerifyYourself({ id, records }: { id: string; records: Resource<MandateDetailResponse> }) {
+  const V = useT().audit.page.verify;
   return (
     <Panel className="bg-zinc-900 text-zinc-100" as="section">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold text-white">
-            <SquareTerminal aria-hidden className="size-4 text-zinc-400" /> Verify it yourself
+            <SquareTerminal aria-hidden className="size-4 text-zinc-400" /> {V.title}
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-            Download the two records, then run the script: it needs no app and no database, only the files plus a public Sepolia RPC.
-            It recomputes every hash and decision and reads each transaction’s calldata.
-          </p>
+          <p className="mt-1 max-w-2xl text-sm text-zinc-400">{V.body}</p>
         </div>
       </div>
       <EvidenceActions
@@ -281,15 +281,16 @@ function VerifyYourself({ id, records }: { id: string; records: Resource<Mandate
       />
       <p className="mt-3 flex items-start gap-2 text-xs text-zinc-400">
         <CircleCheck aria-hidden className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
-        By hand: open any transaction on Etherscan → Input Data → View as UTF-8, and compare the two hashes with the tables above.
+        {V.byHand}
       </p>
     </Panel>
   );
 }
 
 function AuditSkeleton() {
+  const t = useT();
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading audit">
+    <div className="space-y-6" aria-busy="true" aria-label={t.audit.page.loading}>
       <Skeleton className="h-[92px] rounded-xl" />
       <Skeleton className="h-[420px] rounded-xl" />
       <Skeleton className="h-[260px] rounded-xl" />
@@ -306,6 +307,9 @@ export default function AuditPage() {
   } catch {
     // keep raw
   }
+  const t = useT();
+  const P = t.audit.page;
+  const f = useFmt();
   const now = useNow(5000);
   const load = useCallback(() => api.audit(id), [id]);
   const audit = useResource(id ? load : null);
@@ -322,27 +326,29 @@ export default function AuditPage() {
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Audit"
+        eyebrow={P.eyebrow}
         title={
           <>
-            Verify <span className="font-mono">{id}</span> from records alone
+            {P.titleBefore}
+            <span className="font-mono">{id}</span>
+            {P.titleAfter}
           </>
         }
-        description="Recomputes the mandate hash, compares it with the on-chain anchor, replays every decision through the policy, and reads each payment back from Sepolia."
+        description={P.description}
         actions={
           <>
             {audit.updatedAt !== null && (
-              <span className="text-xs text-zinc-400 tabular-nums">Checked {fmtRel(new Date(audit.updatedAt).toISOString(), now)}</span>
+              <span className="text-xs text-zinc-400 tabular-nums">{P.checked(f.rel(new Date(audit.updatedAt).toISOString(), now))}</span>
             )}
             <Button asChild variant="outline" size="sm">
               <Link href={`/audit/${encodeURIComponent(id)}/report`}>
                 <Printer aria-hidden />
-                Printable statement
+                {P.printable}
               </Link>
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={rerun} disabled={audit.refreshing || audit.loading}>
               <RefreshCw aria-hidden className={cn((audit.refreshing || audit.loading) && "animate-spin")} />
-              Re-run checks
+              {P.rerun}
             </Button>
           </>
         }
@@ -351,7 +357,7 @@ export default function AuditPage() {
         <AuditSkeleton />
       ) : audit.error && !audit.data ? (
         <ErrorState
-          title={audit.error.status === 404 ? `Mandate ${id} was not found` : "The audit could not run"}
+          title={audit.error.status === 404 ? t.audit.notFound(id) : P.runError}
           error={audit.error}
           onRetry={audit.refresh}
           retrying={audit.refreshing}
@@ -360,7 +366,7 @@ export default function AuditPage() {
         <div className={cn("space-y-6 transition-opacity", audit.refreshing && "opacity-60")}>
           {audit.error && (
             <p role="status" className="text-xs text-amber-700">
-              Showing the previous result — re-run failed: {audit.error.message}
+              {P.stale(audit.error.message)}
             </p>
           )}
           <Banner audit={audit.data} />

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Database, ReceiptText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_MODE } from "@/lib/api-client";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { resolveMandateId } from "@/hooks/use-selected-mandate";
 import { useStoredMandateId, writeStoredMandateId } from "@/hooks/use-stored-mandate";
@@ -16,10 +17,10 @@ import { MandateSelector } from "./mandate-selector";
 import { useMandates } from "./mandates-provider";
 
 const NAV = [
-  { key: "traveler", label: "Traveler", base: "/traveler" },
-  { key: "principal", label: "Principal", base: "/principal" },
-  { key: "audit", label: "Audit", base: "/audit" },
-  { key: "metrics", label: "Metrics", base: "/metrics" },
+  { key: "traveler", base: "/traveler" },
+  { key: "principal", base: "/principal" },
+  { key: "audit", base: "/audit" },
+  { key: "metrics", base: "/metrics" },
 ] as const;
 
 function auditIdFromPath(pathname: string): string | null {
@@ -33,6 +34,7 @@ function auditIdFromPath(pathname: string): string | null {
 }
 
 function Wordmark() {
+  const t = useT();
   return (
     <Link href="/traveler" className="group flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
       <span className="grid size-7 place-items-center rounded-lg bg-indigo-600 text-white shadow-sm">
@@ -40,7 +42,7 @@ function Wordmark() {
       </span>
       <span className="flex flex-col leading-none">
         <span className="text-[15px] font-semibold tracking-tight text-zinc-900">PerDiem</span>
-        <span className="mt-0.5 hidden text-[11px] text-zinc-500 lg:block">delegated spend, kept inside the line</span>
+        <span className="mt-0.5 hidden text-[11px] text-zinc-500 lg:block">{t.shell.brand.tagline}</span>
       </span>
     </Link>
   );
@@ -51,6 +53,7 @@ export function AppShell() {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
+  const t = useT();
   const { mandates, error, refresh } = useMandates();
   const stored = useStoredMandateId();
 
@@ -98,7 +101,7 @@ export function AppShell() {
           <div className="flex h-14 items-center">
             <Wordmark />
           </div>
-          <nav aria-label="Roles" className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-6 overflow-x-auto border-t border-zinc-100 px-4 sm:order-none sm:mx-0 sm:w-auto sm:border-0 sm:px-0">
+          <nav aria-label={t.shell.nav.label} className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-6 overflow-x-auto border-t border-zinc-100 px-4 sm:order-none sm:mx-0 sm:w-auto sm:border-0 sm:px-0">
             {NAV.map((n) => {
               const active = pathname === n.base || pathname.startsWith(`${n.base}/`);
               return (
@@ -111,7 +114,7 @@ export function AppShell() {
                     active ? "border-indigo-600 text-zinc-900" : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900",
                   )}
                 >
-                  {n.label}
+                  {t.shell.nav[n.key]}
                 </Link>
               );
             })}
@@ -123,7 +126,7 @@ export function AppShell() {
         </div>
         <div className="border-t border-zinc-100 bg-zinc-50/90">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 sm:px-6">
-            <span className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Mandate</span>
+            <span className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">{t.shell.context.mandate}</span>
             <MandateSelector
               mandates={mandates}
               value={current}
@@ -140,11 +143,11 @@ export function AppShell() {
                     className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-300 px-2 py-0.5 text-[11px] font-medium text-zinc-500 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     <Database aria-hidden className="size-3" />
-                    <span className="sr-only sm:not-sr-only">Mock data</span>
+                    <span className="sr-only sm:not-sr-only">{t.shell.context.mockData}</span>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="end" className="max-w-xs">
-                  Served from docs/fixtures in the browser. Set NEXT_PUBLIC_API_MODE=live to use the real backend.
+                  {t.shell.context.mockTooltip}
                 </TooltipContent>
               </Tooltip>
             )}

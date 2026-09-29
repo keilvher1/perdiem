@@ -10,6 +10,7 @@ import { useChatSession, sendChat, clearChatSession, nothingWasSent } from "@/ho
 import { toApiClientError } from "@/lib/api-client";
 import { useNow } from "@/hooks/use-now";
 import { findByPrefix, useSelectedMandate } from "@/hooks/use-selected-mandate";
+import { useT } from "@/lib/i18n/provider";
 import { ChatPanel } from "./chat-panel";
 import { MandateCard, MandateCardSkeleton } from "./mandate-card";
 import { SessionRail } from "./session-rail";
@@ -19,6 +20,8 @@ function TravelerInner() {
   const { messages, pending } = useChatSession();
   const now = useNow();
   const [draft, setDraft] = useState("");
+  const t = useT();
+  const tp = t.traveler.page;
 
   const send = async (text: string, mandateId: string | null = id) => {
     if (!mandateId) return;
@@ -30,12 +33,12 @@ function TravelerInner() {
       const err = toApiClientError(e);
       if (nothingWasSent(err)) {
         setDraft(text);
-        toast.error("The agent could not be reached", { description: err.message });
+        toast.error(tp.toastUnreachable, { description: err.message });
         return;
       }
       // A payment may have gone out before the error: no draft to resend, and reload the budget.
       refresh();
-      toast.error("Outcome unknown: check the ledger before retrying", { description: err.message });
+      toast.error(tp.toastOutcomeUnknown, { description: err.message });
     }
   };
 
@@ -45,21 +48,21 @@ function TravelerInner() {
     const target = findByPrefix(mandates, prefix, id);
     if (target) {
       select(target.id);
-      toast.info(`Switched to ${target.id}`, { description: "This scripted request belongs to another mandate." });
+      toast.info(tp.toastSwitched(target.id), { description: tp.toastSwitchedDescription });
     }
   };
 
   let top: React.ReactNode;
   if (loading) top = <MandateCardSkeleton />;
-  else if (error && !mandates) top = <ErrorState title="Couldn’t load mandates" error={error} onRetry={refresh} />;
+  else if (error && !mandates) top = <ErrorState title={tp.loadError} error={error} onRetry={refresh} />;
   else if (mandates && mandates.length === 0)
     top = (
       <EmptyState
-        title="No mandates yet"
-        description="A principal has to grant a per-diem mandate before the agent can propose anything."
+        title={tp.emptyTitle}
+        description={tp.emptyDescription}
         action={
           <Button asChild>
-            <Link href="/principal">Grant a mandate</Link>
+            <Link href="/principal">{tp.grantMandate}</Link>
           </Button>
         }
       />
@@ -69,7 +72,7 @@ function TravelerInner() {
 
   return (
     <PageContainer className="py-6">
-      <h1 className="sr-only">Traveler — ask the agent to pay, inside the mandate</h1>
+      <h1 className="sr-only">{tp.heading}</h1>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <div className="space-y-6 lg:col-start-2 lg:row-start-1">
           {top}

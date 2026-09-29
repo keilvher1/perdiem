@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 async function copyText(text: string): Promise<boolean> {
@@ -32,7 +33,7 @@ async function copyText(text: string): Promise<boolean> {
 
 export function CopyButton({
   value,
-  label = "Copy",
+  label,
   className,
   showText = false,
 }: {
@@ -42,11 +43,13 @@ export function CopyButton({
   className?: string;
   showText?: boolean;
 }) {
+  const t = useT();
+  const name = label ?? t.common.copy.label;
   const [copied, setCopied] = useState(false);
   const onClick = async () => {
     const ok = await copyText(value);
     if (!ok) {
-      toast.error("Copy failed — select the text instead.");
+      toast.error(t.common.copy.failed);
       return;
     }
     setCopied(true);
@@ -56,8 +59,8 @@ export function CopyButton({
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
-      title={label}
+      aria-label={name}
+      title={name}
       className={cn(
         "inline-flex shrink-0 items-center justify-center gap-1 rounded text-zinc-500 transition-colors outline-none hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-indigo-500",
         showText ? "h-7 px-2 text-xs font-medium" : "size-5",
@@ -65,9 +68,9 @@ export function CopyButton({
       )}
     >
       {copied ? <Check aria-hidden className="size-3.5 text-emerald-600" /> : <Copy aria-hidden className="size-3.5" />}
-      {showText && <span>{copied ? "Copied" : "Copy"}</span>}
+      {showText && <span>{copied ? t.common.copy.copied : t.common.copy.label}</span>}
       <span className="sr-only" aria-live="polite">
-        {copied ? "Copied" : ""}
+        {copied ? t.common.copy.copied : ""}
       </span>
     </button>
   );

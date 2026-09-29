@@ -118,7 +118,7 @@ const KO_CODES: Record<StopCode, CodeCopy> = {
   },
   BLOCKED_KEYWORD: {
     title: "차단 항목",
-    meaning: "요청이나 메모에 와인, 선물 같은 차단어가 들어 있습니다.",
+    meaning: "요청이나 메모에 와인, 선물 같은 차단 키워드가 들어 있습니다.",
   },
   INVALID_AMOUNT: {
     title: "잘못된 금액",
@@ -311,7 +311,7 @@ const ZH_CODES: Record<StopCode, CodeCopy> = {
   },
   FEE_UNAVAILABLE: {
     title: "手续费未知",
-    meaning: "无法估算网络手续费，因此直接拒绝而不去猜测（失败即关闭）。",
+    meaning: "无法估算网络手续费，因此直接拒绝而不去猜测（出错时默认拒绝）。",
   },
   OVER_BUDGET_WITH_FEES: {
     title: "含手续费超出预算",

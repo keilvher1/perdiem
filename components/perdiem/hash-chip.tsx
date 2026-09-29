@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { fmtHash } from "@/lib/format";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "./copy-button";
 
@@ -14,7 +15,7 @@ export function HashChip({
   value,
   href,
   label,
-  what = "hash",
+  what: whatProp,
   emptyText = "—",
   className,
 }: {
@@ -27,6 +28,8 @@ export function HashChip({
   emptyText?: string;
   className?: string;
 }) {
+  const t = useT();
+  const what = whatProp ?? t.common.hash.what;
   if (!value) {
     return (
       <span className={cn("inline-flex items-center gap-1.5 text-xs text-zinc-400", className)}>
@@ -47,14 +50,14 @@ export function HashChip({
           </TooltipTrigger>
           <TooltipContent className="max-w-md font-mono text-[11px] break-all">{value}</TooltipContent>
         </Tooltip>
-        <CopyButton value={value} label={`Copy ${what}`} className="ml-1" />
+        <CopyButton value={value} label={t.common.hash.copy(what)} className="ml-1" />
         {href && (
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Open ${what} on Etherscan (new tab)`}
-            title="Open on Etherscan"
+            aria-label={t.common.hash.openOnEtherscan(what)}
+            title={t.common.hash.openTitle}
             className="inline-flex size-5 items-center justify-center rounded text-zinc-500 outline-none hover:bg-zinc-200/70 hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <ExternalLink aria-hidden className="size-3.5" />

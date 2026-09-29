@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from "react";
 import { Ban, CalendarClock, CalendarX, CircleCheck, CircleDot, CirclePause, CircleX, LoaderCircle, OctagonX } from "lucide-react";
 import type { LedgerStatus, MandateStatus, MandateSummary } from "@/contracts/api";
 import { windowState } from "@/lib/format";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 /** Ledger statuses, mandate statuses, and two derived window states for active mandates. */
@@ -16,17 +17,18 @@ const TONES: Record<Tone, string> = {
   slate: "bg-slate-100 text-slate-700 ring-slate-500/20",
 };
 
-const PILLS: Record<PillStatus, { label: string; tone: Tone; Icon: ComponentType<SVGProps<SVGSVGElement>>; spin?: boolean }> = {
-  approved: { label: "Approved", tone: "emerald", Icon: CircleCheck },
-  settled: { label: "Settled", tone: "emerald", Icon: CircleCheck },
-  pending: { label: "Pending", tone: "amber", Icon: LoaderCircle, spin: true },
-  stopped: { label: "Stopped", tone: "rose", Icon: OctagonX },
-  failed: { label: "Failed", tone: "slate", Icon: CircleX },
-  active: { label: "Active", tone: "emerald", Icon: CircleDot },
-  paused: { label: "Paused", tone: "amber", Icon: CirclePause },
-  revoked: { label: "Revoked", tone: "slate", Icon: Ban },
-  expired: { label: "Expired", tone: "slate", Icon: CalendarX },
-  scheduled: { label: "Not started", tone: "slate", Icon: CalendarClock },
+/** Labels live in lib/i18n/messages/common.ts (`t.common.status`). */
+const PILLS: Record<PillStatus, { tone: Tone; Icon: ComponentType<SVGProps<SVGSVGElement>>; spin?: boolean }> = {
+  approved: { tone: "emerald", Icon: CircleCheck },
+  settled: { tone: "emerald", Icon: CircleCheck },
+  pending: { tone: "amber", Icon: LoaderCircle, spin: true },
+  stopped: { tone: "rose", Icon: OctagonX },
+  failed: { tone: "slate", Icon: CircleX },
+  active: { tone: "emerald", Icon: CircleDot },
+  paused: { tone: "amber", Icon: CirclePause },
+  revoked: { tone: "slate", Icon: Ban },
+  expired: { tone: "slate", Icon: CalendarX },
+  scheduled: { tone: "slate", Icon: CalendarClock },
 };
 
 export function StatusPill({
@@ -38,6 +40,7 @@ export function StatusPill({
   size?: "xs" | "sm";
   className?: string;
 }) {
+  const t = useT();
   const p = PILLS[status];
   return (
     <span
@@ -52,7 +55,7 @@ export function StatusPill({
         aria-hidden
         className={cn(size === "xs" ? "size-3" : "size-3.5", p.spin && "animate-spin [animation-duration:1.8s]")}
       />
-      {p.label}
+      {t.common.status[status]}
     </span>
   );
 }

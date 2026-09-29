@@ -6,6 +6,8 @@ import type { MandateDetailResponse } from "@/contracts/api";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { API_MODE, type ApiClientError } from "@/lib/api-client";
+import { en as evidenceEn } from "@/lib/i18n/messages/evidence";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "./copy-button";
 import {
@@ -17,8 +19,8 @@ import {
   verifyCommand,
 } from "./evidence-records";
 
-export const MOCK_DOWNLOAD_HINT =
-  "Mock data uses placeholder hashes (lib/api-client.ts:211-225) and will not verify. Set NEXT_PUBLIC_API_MODE=live.";
+/** English copy; the component shows the viewer's language (lib/i18n/messages/evidence.ts). */
+export const MOCK_DOWNLOAD_HINT = evidenceEn.actions.mockHint;
 
 type Tone = "light" | "dark";
 
@@ -54,6 +56,7 @@ export function EvidenceActions({
   tone?: Tone;
   className?: string;
 }) {
+  const t = useT().evidence.actions;
   const mock = API_MODE === "mock";
   const ready = records !== null && records.mandate.id === id;
   const disabled = mock || !ready;
@@ -96,7 +99,7 @@ export function EvidenceActions({
         onClick={saveBoth}
         className={cn(dark ? "text-zinc-300 hover:bg-white/10 hover:text-white disabled:opacity-40" : "text-zinc-600")}
       >
-        Download both
+        {t.both}
       </Button>
     </div>
   );
@@ -108,47 +111,44 @@ export function EvidenceActions({
         <Tooltip>
           <TooltipTrigger asChild>
             {/* Disabled buttons get no pointer events, so the wrapper carries the tooltip. */}
-            <div tabIndex={0} aria-label={`Downloads disabled: ${MOCK_DOWNLOAD_HINT}`} className="w-fit rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+            <div tabIndex={0} aria-label={t.downloadsDisabled(t.mockHint)} className="w-fit rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
               {buttons}
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
-            {MOCK_DOWNLOAD_HINT}
+            {t.mockHint}
           </TooltipContent>
         </Tooltip>
       ) : (
         buttons
       )}
 
-      {mock && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>Mock mode: downloads are off (placeholder hashes would not verify).</p>}
-      {!mock && loading && !ready && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>Loading the records…</p>}
+      {mock && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>{t.mockOff}</p>}
+      {!mock && loading && !ready && <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>{t.loading}</p>}
       {!mock && error && !ready && (
         <p role="alert" className={cn("flex flex-wrap items-center gap-2 text-xs", dark ? "text-rose-300" : "text-rose-700")}>
-          Records could not be loaded: {error.message}
+          {t.loadError(error.message)}
           {onRetry && (
             <button type="button" onClick={onRetry} className="underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-              Retry
+              {t.retry}
             </button>
           )}
         </p>
       )}
-      {ready && records.mandate.anchorTx === null && <Note tone={tone}>Not anchored on-chain: verify will fail the anchor check.</Note>}
-      {ready && pending > 0 && (
-        <Note tone={tone}>
-          {pending} payment{pending === 1 ? "" : "s"} still pending on-chain: download again after {pending === 1 ? "it settles" : "they settle"}.
-        </Note>
-      )}
+      {ready && records.mandate.anchorTx === null && <Note tone={tone}>{t.notAnchored}</Note>}
+      {ready && pending > 0 && <Note tone={tone}>{t.stillPending(pending)}</Note>}
 
       <div className={cn("flex items-start gap-2 rounded-lg px-3 py-2", dark ? "bg-black/40 ring-1 ring-white/10" : "bg-zinc-900")}>
         <span aria-hidden className="py-1 font-mono text-[11px] leading-5 text-zinc-500">
           $
         </span>
         <code className="min-w-0 flex-1 py-1 font-mono text-[11px] leading-5 break-all text-zinc-100">{cmd}</code>
-        <CopyButton value={cmd} label="Copy verify command" showText className="text-zinc-300 hover:bg-white/10 hover:text-white" />
+        <CopyButton value={cmd} label={t.copyCommand} showText className="text-zinc-300 hover:bg-white/10 hover:text-white" />
       </div>
       <p className={cn("text-xs", dark ? "text-zinc-400" : "text-zinc-500")}>
-        Run from a clone after <code className="font-mono">npm ci</code>; needs only a public Sepolia RPC. If your browser renamed a file to
-        “… (1).json”, adjust the path.
+        {t.runFrom.before}
+        <code className="font-mono">npm ci</code>
+        {t.runFrom.after}
       </p>
     </div>
   );

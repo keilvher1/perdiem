@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Bot, CornerDownLeft, LoaderCircle, RotateCcw, SendHorizontal, TriangleAlert } from "lucide-react";
 import type { LedgerEntryView, MandateSummary, UsageRecord } from "@/contracts/api";
 import { DEMO_SCRIPT } from "@/lib/api-client";
-import { fmtInt, fmtTime } from "@/lib/format";
+import { useFmt, useT } from "@/lib/i18n/provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/perdiem/states";
@@ -39,25 +39,30 @@ function displayReply(text: string, entry: LedgerEntryView | null): string {
 }
 
 function UsageLine({ usage }: { usage: UsageRecord[] }) {
+  const t = useT();
+  const f = useFmt();
   if (usage.length === 0) return null;
   const zeroOnly = usage.every((u) => u.totalTokens === 0);
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-zinc-400">
       {usage.map((u, i) => (
         <span key={`${u.flow}-${i}`} className={cn("rounded px-1.5 py-0.5 font-mono", u.totalTokens === 0 ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500")}>
-          {u.flow} · {fmtInt(u.totalTokens)} tok
+          {u.flow} · {t.traveler.chat.tokens(f.int(u.totalTokens))}
         </span>
       ))}
-      {zeroOnly && <span>answered without the model</span>}
+      {zeroOnly && <span>{t.traveler.chat.noModel}</span>}
     </p>
   );
 }
 
 function Divider({ mandate }: { mandate: string }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-3 py-1 text-[11px] text-zinc-400" role="separator">
       <span className="h-px flex-1 bg-zinc-200" />
-      now acting under <span className="font-mono text-zinc-500">{mandate}</span>
+      {t.traveler.chat.dividerBefore}
+      <span className="font-mono text-zinc-500">{mandate}</span>
+      {t.traveler.chat.dividerAfter}
       <span className="h-px flex-1 bg-zinc-200" />
     </div>
   );
@@ -82,12 +87,15 @@ function Message({
   busy: boolean;
   onSettled?: () => void;
 }) {
+  const t = useT();
+  const f = useFmt();
+  const te = t.traveler.errors;
   if (m.kind === "user") {
     return (
       <div className="flex justify-end">
         <div className="max-w-[80%]">
           <div className="rounded-2xl rounded-br-md bg-zinc-900 px-4 py-2.5 text-sm whitespace-pre-line text-white">{m.text}</div>
-          <p className="mt-1 text-right text-[11px] text-zinc-400 tabular-nums">{fmtTime(m.at)}</p>
+          <p className="mt-1 text-right text-[11px] text-zinc-400 tabular-nums">{f.time(m.at)}</p>
         </div>
       </div>
     );
@@ -99,14 +107,14 @@ function Message({
           <AgentAvatar />
           <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm">
             <p className="flex items-center gap-1.5 font-medium text-rose-900">
-              <TriangleAlert aria-hidden className="size-4" /> The request did not go through
+              <TriangleAlert aria-hidden className="size-4" /> {te.notSentTitle}
             </p>
             <p className="mt-1 text-rose-800/90">
               {m.text} <span className="font-mono text-xs text-rose-700/80">{m.code}</span>
             </p>
-            <p className="mt-1 text-xs text-rose-800/70">Nothing was proposed or paid.</p>
+            <p className="mt-1 text-xs text-rose-800/70">{te.notSentNote}</p>
             <Button type="button" size="sm" variant="outline" className="mt-2 bg-white" disabled={busy} onClick={() => onRetry(m.request, m.mandateId)}>
-              <RotateCcw aria-hidden /> Try again
+              <RotateCcw aria-hidden /> {te.tryAgain}
             </Button>
           </div>
         </div>
@@ -121,7 +129,7 @@ function Message({
         <AgentAvatar />
         <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-amber-300 bg-amber-50/80 px-4 py-3 text-sm">
           <p className="flex items-center gap-1.5 font-medium text-amber-950">
-            <TriangleAlert aria-hidden className="size-4" /> The server did not confirm the outcome
+            <TriangleAlert aria-hidden className="size-4" /> {te.unconfirmedTitle}
           </p>
           <p className="mt-1 text-amber-900/90">
             {m.text}{" "}
@@ -130,20 +138,15 @@ function Message({
               {m.status > 0 && m.code !== `HTTP_${m.status}` ? ` · HTTP ${m.status}` : ""}
             </span>
           </p>
-          <p className="mt-1 text-xs font-medium text-amber-900">
-            {m.status === 0
-              ? "No response arrived (the connection dropped), so the outcome is unknown: a payment may have been sent."
-              : "The server returned an error without confirming the outcome: a payment may have been sent."}{" "}
-            Check the ledger before retrying.
-          </p>
+          <p className="mt-1 text-xs font-medium text-amber-900">{te.unconfirmedNote(m.status === 0)}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button asChild size="sm" variant="outline" className="bg-white">
-              <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>Open ledger</Link>
+              <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>{te.openLedger}</Link>
             </Button>
             {txHash && (
               <Button asChild size="sm" variant="outline" className="bg-white">
                 <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
-                  View tx on Etherscan
+                  {te.viewTx}
                   <ArrowUpRight aria-hidden />
                 </a>
               </Button>
@@ -167,7 +170,7 @@ function Message({
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-zinc-400 tabular-nums">{fmtTime(m.at)}</span>
+          <span className="text-[11px] text-zinc-400 tabular-nums">{f.time(m.at)}</span>
           <UsageLine usage={m.usage} />
         </div>
       </div>
@@ -189,23 +192,20 @@ function UnrecordedPayment({
   txHash: `0x${string}` | null;
 }) {
   const thisRequest = code === "PAYMENT_NOT_RECORDED";
+  const t = useT();
+  const te = t.traveler.errors;
   return (
     <div className="flex gap-3">
       <AgentAvatar />
       <div role="alert" className="max-w-[85%] rounded-2xl rounded-tl-md border border-amber-300 bg-amber-50/80 px-4 py-3 text-sm">
         <p className="flex items-center gap-1.5 font-medium text-amber-950">
           <TriangleAlert aria-hidden className="size-4" />
-          {thisRequest ? "A payment may have been broadcast — do not retry" : "An earlier payment is not in the ledger yet — do not retry"}
+          {thisRequest ? te.unrecorded.thisTitle : te.unrecorded.earlierTitle}
         </p>
         <p className="mt-1 text-amber-900/90">
-          {thisRequest
-            ? "This payment may already be on its way on Sepolia, but the ledger could not record it. Sending the request again could pay twice."
-            : "A payment for this mandate may have been broadcast without being recorded. Until the server writes it to the ledger, it evaluates no new spend for this mandate; this request was refused before any evaluation. Do not resend the earlier request: it could pay twice."}
+          {thisRequest ? te.unrecorded.thisBody : te.unrecorded.earlierBody}
         </p>
-        <p className="mt-1 text-xs font-medium text-amber-900">
-          The server keeps the entry and records it before evaluating anything else for this mandate. Check the ledger or Etherscan
-          instead of retrying.
-        </p>
+        <p className="mt-1 text-xs font-medium text-amber-900">{te.unrecorded.note}</p>
         <p className="mt-1 text-xs text-amber-800/80">
           {m.text}{" "}
           <span className="font-mono">
@@ -217,13 +217,13 @@ function UnrecordedPayment({
           {txHash && (
             <Button asChild size="sm" variant="outline" className="bg-white">
               <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">
-                View tx on Etherscan
+                {te.viewTx}
                 <ArrowUpRight aria-hidden />
               </a>
             </Button>
           )}
           <Button asChild size="sm" variant="outline" className="bg-white">
-            <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>Open ledger</Link>
+            <Link href={`/principal?m=${encodeURIComponent(m.mandateId)}`}>{te.openLedger}</Link>
           </Button>
         </div>
       </div>
@@ -259,12 +259,14 @@ export function QuickChips({
   onPick: (text: string, prefix: string, forSelected: boolean) => void;
   disabled?: boolean;
 }) {
+  const t = useT();
+  const tc = t.traveler.chips;
   const chips = CHIPS;
   const mine = chips.filter((c) => selectedId?.startsWith(c.prefix));
   const others = chips.filter((c) => !selectedId?.startsWith(c.prefix));
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Scripted demo requests</p>
+      <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">{tc.heading}</p>
       <div className="flex flex-wrap gap-2">
         {[...mine, ...others].map((c) => {
           const forSelected = selectedId?.startsWith(c.prefix) ?? false;
@@ -274,7 +276,7 @@ export function QuickChips({
               type="button"
               disabled={disabled}
               onClick={() => onPick(c.text, c.prefix, forSelected)}
-              title={forSelected ? "Fill the composer" : `Switch to ${c.prefix} and fill the composer`}
+              title={forSelected ? tc.fill : tc.switchAndFill(c.prefix)}
               className={cn(
                 "inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1 text-left text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50",
                 forSelected
@@ -284,7 +286,7 @@ export function QuickChips({
             >
               <span className="font-mono text-[10px] text-zinc-400">#{c.steps.join("/")}</span>
               <span className="truncate">{c.text}</span>
-              {!forSelected && <span className="shrink-0 rounded bg-zinc-100 px-1 font-mono text-[10px] text-zinc-500">for {c.prefix}</span>}
+              {!forSelected && <span className="shrink-0 rounded bg-zinc-100 px-1 font-mono text-[10px] text-zinc-500">{tc.forMandate(c.prefix)}</span>}
             </button>
           );
         })}
@@ -319,6 +321,8 @@ export function ChatPanel({
   onSettled?: () => void;
   canSend: boolean;
 }) {
+  const t = useT();
+  const tc = t.traveler.chat;
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const busy = pending !== null;
@@ -367,17 +371,15 @@ export function ChatPanel({
   };
 
   return (
-    <section aria-label="Conversation with the agent" className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)]">
+    <section aria-label={tc.ariaLabel} className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)]">
       <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-5 py-3">
         <div>
-          <h2 className="text-base font-semibold text-zinc-900">Ask the agent to pay</h2>
-          <p className="text-xs text-zinc-500">
-            The agent only proposes. Policy code approves or stops every payment before anything reaches the chain, and records why.
-          </p>
+          <h2 className="text-base font-semibold text-zinc-900">{tc.title}</h2>
+          <p className="text-xs text-zinc-500">{tc.subtitle}</p>
         </div>
         {messages.length > 0 && (
           <Button type="button" variant="ghost" size="sm" onClick={onClear} disabled={busy} className="text-zinc-500">
-            <RotateCcw aria-hidden /> Clear
+            <RotateCcw aria-hidden /> {tc.clear}
           </Button>
         )}
       </div>
@@ -387,8 +389,8 @@ export function ChatPanel({
         {messages.length === 0 && !busy ? (
           <EmptyState
             className="h-full border-0 bg-transparent"
-            title="No requests yet — try a quick prompt"
-            description="Pick a scripted request below or type your own, e.g. “Order a bibimbap lunch from Yangjae Kitchen, $12”."
+            title={tc.emptyTitle}
+            description={tc.emptyDescription}
           />
         ) : (
           messages.map((m, i) => {
@@ -407,7 +409,7 @@ export function ChatPanel({
             <AgentAvatar />
             <div className="flex items-center gap-2 rounded-2xl rounded-tl-md border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-500">
               <LoaderCircle aria-hidden className="size-4 animate-spin text-zinc-400" />
-              Proposing, then checking the mandate…
+              {tc.thinking}
             </div>
           </div>
         )}
@@ -425,7 +427,7 @@ export function ChatPanel({
         />
         <form onSubmit={submit} className="flex items-end gap-2">
           <label htmlFor="traveler-composer" className="sr-only">
-            Message to the agent
+            {tc.composerLabel}
           </label>
           <Textarea
             id="traveler-composer"
@@ -434,17 +436,17 @@ export function ChatPanel({
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
             rows={2}
-            placeholder={summary ? `Ask for a purchase under ${summary.id}…` : "Choose a mandate first"}
+            placeholder={summary ? tc.placeholder(summary.id) : tc.placeholderNoMandate}
             disabled={!canSend}
             className="max-h-40 min-h-11 resize-none bg-white"
           />
           <Button type="submit" size="lg" disabled={!canSend || busy || draft.trim() === ""} className="h-11 px-4">
             {busy ? <LoaderCircle aria-hidden className="animate-spin" /> : <SendHorizontal aria-hidden />}
-            Send
+            {tc.send}
           </Button>
         </form>
         <p className="flex items-center gap-1 text-[11px] text-zinc-400">
-          <CornerDownLeft aria-hidden className="size-3" /> Enter to send · Shift+Enter for a new line
+          <CornerDownLeft aria-hidden className="size-3" /> {tc.keyHint}
         </p>
       </div>
     </section>

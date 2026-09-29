@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
@@ -29,6 +30,7 @@ function Node({
   last: boolean;
   note?: Record<string, string>;
 }) {
+  const t = useT();
   const container = value !== null && typeof value === "object";
   const [open, setOpen] = useState(!(name !== null && collapsed.has(name)));
   const pad = { paddingLeft: `${depth * 14}px` };
@@ -74,7 +76,7 @@ function Node({
           type="button"
           onClick={() => setOpen((x) => !x)}
           aria-expanded={open}
-          aria-label={`${open ? "Collapse" : "Expand"} ${name ?? "value"}`}
+          aria-label={t.common.json.toggle(open, name ?? t.common.json.value)}
           className="-ml-4 mr-0.5 grid size-4 place-items-center rounded text-zinc-400 outline-none hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           <ChevronRight aria-hidden className={cn("size-3 transition-transform", open && "rotate-90")} />
@@ -85,7 +87,7 @@ function Node({
           {!open && (
             <>
               <button type="button" onClick={() => setOpen(true)} className="mx-1 rounded bg-zinc-100 px-1.5 text-[11px] text-zinc-500 hover:bg-zinc-200">
-                {entries.length} {isArray ? "items" : "keys"}
+                {t.common.json.count(entries.length, isArray)}
               </button>
               {c}
               {comma}

@@ -8,6 +8,8 @@ import { api, toApiClientError } from "@/lib/api-client";
 import { fmtUsd, toDatetimeLocal } from "@/lib/format";
 import { useResource } from "@/hooks/use-resource";
 import { useNow } from "@/hooks/use-now";
+import { useT } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,8 @@ const DEFAULT_BLOCKED = "alcohol, wine, gift";
 const loadMerchants = () => api.merchants();
 
 type Field = "principal" | "traveler" | "budget" | "cap" | "categories" | "merchants" | "start" | "end";
+/** A validation message, resolved at render time so it follows a language switch. */
+type FieldMsg = (m: Messages["principal"]["grant"]["errors"]) => string;
 
 function FieldError({ id, msg }: { id: string; msg?: string }) {
   if (!msg) return null;
@@ -52,6 +56,9 @@ function GrantFormInner({
   initialNow: number;
   onCreated: (res: CreateMandateResponse) => void;
 }) {
+  const t = useT();
+  const tg = t.principal.grant;
+  const catLabel = (c: string) => t.common.category[c] ?? c;
   const categories = useMemo(() => [...new Set(merchants.map((m) => m.category))], [merchants]);
   const [principal, setPrincipal] = useState("MICEMore Finance");
   const [traveler, setTraveler] = useState("Mingyu");
@@ -64,29 +71,32 @@ function GrantFormInner({
   const [blocked, setBlocked] = useState(DEFAULT_BLOCKED);
   const [start, setStart] = useState(() => toDatetimeLocal(new Date(initialNow)));
   const [end, setEnd] = useState(() => toDatetimeLocal(new Date(initialNow + 2 * 86_400_000)));
-  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<Field, FieldMsg>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const toggle = (list: string[], v: string, on: boolean) => (on ? [...new Set([...list, v])] : list.filter((x) => x !== v));
   const offCategory = merchants.filter((m) => picked.includes(m.id) && !cats.includes(m.category));
 
-  const validate = (): Partial<Record<Field, string>> => {
-    const e: Partial<Record<Field, string>> = {};
+  const validate = (): Partial<Record<Field, FieldMsg>> => {
+    const e: Partial<Record<Field, FieldMsg>> = {};
     const b = Number(budget);
     const c = Number(cap);
-    if (!principal.trim()) e.principal = "Who grants the budget?";
-    if (!traveler.trim()) e.traveler = "Who travels?";
-    if (!(b > 0) || !Number.isFinite(b)) e.budget = "Budget must be a positive number.";
-    if (!(c > 0) || !Number.isFinite(c)) e.cap = "Cap must be a positive number.";
-    else if (b > 0 && c > b) e.cap = `Cap cannot exceed the budget (${fmtUsd(b)}).`;
-    if (cats.length === 0) e.categories = "Allow at least one category.";
-    if (picked.length === 0) e.merchants = "Allow at least one merchant.";
+    if (!principal.trim()) e.principal = (m) => m.principal;
+    if (!traveler.trim()) e.traveler = (m) => m.traveler;
+    if (!(b > 0) || !Number.isFinite(b)) e.budget = (m) => m.budget;
+    if (!(c > 0) || !Number.isFinite(c)) e.cap = (m) => m.cap;
+    else if (b > 0 && c > b) {
+      const max = fmtUsd(b);
+      e.cap = (m) => m.capOverBudget(max);
+    }
+    if (cats.length === 0) e.categories = (m) => m.categories;
+    if (picked.length === 0) e.merchants = (m) => m.merchants;
     const s = new Date(start).getTime();
     const en = new Date(end).getTime();
-    if (!start || !Number.isFinite(s)) e.start = "Pick a start time.";
-    if (!end || !Number.isFinite(en)) e.end = "Pick an end time.";
-    else if (Number.isFinite(s) && en <= s) e.end = "End must be after the start.";
+    if (!start || !Number.isFinite(s)) e.start = (m) => m.start;
+    if (!end || !Number.isFinite(en)) e.end = (m) => m.end;
+    else if (Number.isFinite(s) && en <= s) e.end = (m) => m.endBeforeStart;
     return e;
   };
 
@@ -117,7 +127,7 @@ function GrantFormInner({
     } catch (err) {
       const apiErr = toApiClientError(err);
       setSubmitError(`${apiErr.message} (${apiErr.code})`);
-      toast.error("Mandate was not created", { description: apiErr.message });
+      toast.error(tg.notCreated, { description: apiErr.message });
     } finally {
       setBusy(false);
     }
@@ -125,27 +135,28 @@ function GrantFormInner({
 
   const inputCls = "h-9 bg-white";
   const err = (f: Field) => (errors[f] ? { "aria-invalid": true, "aria-describedby": `err-${f}` } : {});
+  const errMsg = (f: Field) => errors[f]?.(tg.errors);
 
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="g-principal" className="mb-1.5">
-            Principal
+            {tg.principal}
           </Label>
           <Input id="g-principal" className={inputCls} value={principal} onChange={(e) => setPrincipal(e.target.value)} {...err("principal")} />
-          <FieldError id="err-principal" msg={errors.principal} />
+          <FieldError id="err-principal" msg={errMsg("principal")} />
         </div>
         <div>
           <Label htmlFor="g-traveler" className="mb-1.5">
-            Traveler
+            {tg.traveler}
           </Label>
           <Input id="g-traveler" className={inputCls} value={traveler} onChange={(e) => setTraveler(e.target.value)} {...err("traveler")} />
-          <FieldError id="err-traveler" msg={errors.traveler} />
+          <FieldError id="err-traveler" msg={errMsg("traveler")} />
         </div>
         <div>
           <Label htmlFor="g-budget" className="mb-1.5">
-            Budget (USD)
+            {tg.budget}
           </Label>
           <Input
             id="g-budget"
@@ -158,11 +169,11 @@ function GrantFormInner({
             onChange={(e) => setBudget(e.target.value)}
             {...err("budget")}
           />
-          <FieldError id="err-budget" msg={errors.budget} />
+          <FieldError id="err-budget" msg={errMsg("budget")} />
         </div>
         <div>
           <Label htmlFor="g-cap" className="mb-1.5">
-            Per-transaction cap (USD)
+            {tg.cap}
           </Label>
           <Input
             id="g-cap"
@@ -175,30 +186,29 @@ function GrantFormInner({
             onChange={(e) => setCap(e.target.value)}
             {...err("cap")}
           />
-          <FieldError id="err-cap" msg={errors.cap} />
+          <FieldError id="err-cap" msg={errMsg("cap")} />
         </div>
       </div>
 
-      <Fieldset legend="Allowed categories">
+      <Fieldset legend={tg.categories}>
         <div className="flex flex-wrap gap-x-4 gap-y-2" {...(errors.categories ? { "aria-describedby": "err-categories" } : {})}>
           {categories.map((c) => (
             <Label key={c} className="cursor-pointer font-normal text-zinc-700">
               <Checkbox checked={cats.includes(c)} onCheckedChange={(v) => setCats((l) => toggle(l, c, v === true))} />
-              {c}
+              {catLabel(c)}
             </Label>
           ))}
         </div>
-        <FieldError id="err-categories" msg={errors.categories} />
+        <FieldError id="err-categories" msg={errMsg("categories")} />
       </Fieldset>
 
       <Fieldset
-        legend="Allowed merchants"
+        legend={tg.merchants}
         hint={
           offCategory.length > 0 ? (
             <span className="flex items-start gap-1.5 text-amber-800">
               <TriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-              {offCategory.map((m) => m.name).join(", ")} {offCategory.length === 1 ? "is" : "are"} allowed but {offCategory.length === 1 ? "its" : "their"} category is
-              not — payments there will still be stopped.
+              {tg.offCategory(offCategory.map((m) => m.name).join(t.principal.listSep), offCategory.length)}
             </span>
           ) : undefined
         }
@@ -208,35 +218,35 @@ function GrantFormInner({
             <Label key={m.id} className="cursor-pointer font-normal text-zinc-700">
               <Checkbox checked={picked.includes(m.id)} onCheckedChange={(v) => setPicked((l) => toggle(l, m.id, v === true))} />
               <span className="truncate">{m.name}</span>
-              <span className="ml-auto rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">{m.category}</span>
+              <span className="ml-auto rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">{catLabel(m.category)}</span>
             </Label>
           ))}
         </div>
-        <FieldError id="err-merchants" msg={errors.merchants} />
+        <FieldError id="err-merchants" msg={errMsg("merchants")} />
       </Fieldset>
 
       <div>
         <Label htmlFor="g-blocked" className="mb-1.5">
-          Blocked keywords
+          {tg.blocked}
         </Label>
         <Input id="g-blocked" className={inputCls} value={blocked} onChange={(e) => setBlocked(e.target.value)} placeholder="alcohol, wine, gift" />
-        <p className="mt-1 text-xs text-zinc-500">Comma-separated. Checked against the agent’s memo and the traveler’s own words.</p>
+        <p className="mt-1 text-xs text-zinc-500">{tg.blockedHint}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="g-start" className="mb-1.5">
-            Window start
+            {tg.start}
           </Label>
           <Input id="g-start" type="datetime-local" className={cn(inputCls, "tabular-nums")} value={start} onChange={(e) => setStart(e.target.value)} {...err("start")} />
-          <FieldError id="err-start" msg={errors.start} />
+          <FieldError id="err-start" msg={errMsg("start")} />
         </div>
         <div>
           <Label htmlFor="g-end" className="mb-1.5">
-            Window end
+            {tg.end}
           </Label>
           <Input id="g-end" type="datetime-local" className={cn(inputCls, "tabular-nums")} value={end} onChange={(e) => setEnd(e.target.value)} {...err("end")} />
-          <FieldError id="err-end" msg={errors.end} />
+          <FieldError id="err-end" msg={errMsg("end")} />
         </div>
       </div>
 
@@ -249,9 +259,9 @@ function GrantFormInner({
       <div className="flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-4">
         <Button type="submit" size="lg" disabled={busy} className="h-9 px-4">
           {busy ? <LoaderCircle aria-hidden className="animate-spin" /> : <Anchor aria-hidden />}
-          {busy ? "Anchoring on Sepolia…" : "Grant and anchor"}
+          {busy ? tg.submitting : tg.submit}
         </Button>
-        <p className="text-xs text-zinc-500">The terms are hashed and the hash is written to Sepolia.</p>
+        <p className="text-xs text-zinc-500">{tg.footnote}</p>
       </div>
     </form>
   );
@@ -260,17 +270,18 @@ function GrantFormInner({
 export function GrantForm({ onCreated }: { onCreated: (res: CreateMandateResponse) => void }) {
   const merchants = useResource(loadMerchants);
   const now = useNow(60_000);
+  const tg = useT().principal.grant;
   return (
     <Panel>
-      <PanelTitle description="Budget, per-payment cap, permitted merchants and categories, blocked words and a trip window.">
-        Grant a mandate
+      <PanelTitle description={tg.description}>
+        {tg.title}
       </PanelTitle>
       {merchants.error ? (
-        <ErrorState title="Couldn’t load the merchant catalog" error={merchants.error} onRetry={merchants.refresh} />
+        <ErrorState title={tg.loadMerchantsFailed} error={merchants.error} onRetry={merchants.refresh} />
       ) : merchants.data && now !== null ? (
         <GrantFormInner merchants={merchants.data.merchants} initialNow={now} onCreated={onCreated} />
       ) : (
-        <div className="space-y-4" aria-busy="true" aria-label="Loading form">
+        <div className="space-y-4" aria-busy="true" aria-label={tg.loadingForm}>
           <div className="grid grid-cols-2 gap-4">
             <Skeleton className="h-14" />
             <Skeleton className="h-14" />

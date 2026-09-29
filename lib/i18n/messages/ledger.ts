@@ -1,11 +1,159 @@
 /**
  * "ledger" namespace. `en` is the reference: its strings must equal the English UI copy exactly.
  * The other languages are typed `typeof en`, so a missing key is a compile error.
+ * Ledger data (merchant names, memos, the traveler's words, hashes, APPROVE / STOP) is never
+ * translated.
  */
-export const en = {};
+export const en = {
+  details: "Details",
+  showDetails: (id: string) => `Show details for ${id}`,
+  hideDetails: (id: string) => `Hide details for ${id}`,
+  col: {
+    time: "Time",
+    merchant: "Merchant",
+    amount: "Amount",
+    fee: "Fee",
+    total: "Total",
+    decision: "Decision",
+    reasons: "Reasons",
+    status: "Status",
+  },
+  actualFee: (fee: string) => `actual ${fee}`,
+  txWhat: "transaction hash",
+  nothingSent: "nothing sent",
+  travelerSaid: "Traveler said",
+  /** Wraps the traveler's own words (data). */
+  quote: (s: string) => `“${s}”`,
+  agentMemo: "Agent memo",
+  entry: "Entry",
+  mandateHash: "Mandate hash",
+  mandateHashWhat: "mandate hash",
+  receiptHash: "Receipt hash",
+  receiptHashWhat: "receipt hash",
+  feeSource: "Fee source",
+  /** feeSource values; show `t.ledger.feeSourceValue[s] ?? s`. English shows the value itself. */
+  feeSourceValue: {
+    estimate: "estimate",
+    fallback: "fallback",
+    actual: "actual",
+    none: "none",
+  } as Record<string, string>,
+  settledAt: "Settled at",
+  kilnResponseId: "Kiln response id",
+  toolArgs: "Tool call arguments (raw, from the model)",
+  stopReasons: "Stop reasons",
+};
 
-export const ko: typeof en = {};
+export const ko: typeof en = {
+  details: "상세",
+  showDetails: (id) => `${id} 상세 보기`,
+  hideDetails: (id) => `${id} 상세 숨기기`,
+  col: {
+    time: "시각",
+    merchant: "가맹점",
+    amount: "금액",
+    fee: "수수료",
+    total: "합계",
+    decision: "결정",
+    reasons: "사유",
+    status: "상태",
+  },
+  actualFee: (fee) => `실제 ${fee}`,
+  txWhat: "트랜잭션 해시",
+  nothingSent: "전송 안 됨",
+  travelerSaid: "출장자 입력",
+  quote: (s) => `“${s}”`,
+  agentMemo: "에이전트 메모",
+  entry: "항목",
+  mandateHash: "위임 해시",
+  mandateHashWhat: "위임 해시",
+  receiptHash: "영수증 해시",
+  receiptHashWhat: "영수증 해시",
+  feeSource: "수수료 출처",
+  feeSourceValue: {
+    estimate: "추정치",
+    fallback: "대체 추정치",
+    actual: "실제",
+    none: "없음",
+  },
+  settledAt: "정산 시각",
+  kilnResponseId: "Kiln 응답 ID",
+  toolArgs: "도구 호출 인수 (모델 원본)",
+  stopReasons: "중단 사유",
+};
 
-export const ja: typeof en = {};
+export const ja: typeof en = {
+  details: "詳細",
+  showDetails: (id) => `${id} の詳細を表示`,
+  hideDetails: (id) => `${id} の詳細を隠す`,
+  col: {
+    time: "時刻",
+    merchant: "加盟店",
+    amount: "金額",
+    fee: "手数料",
+    total: "合計",
+    decision: "判定",
+    reasons: "理由",
+    status: "ステータス",
+  },
+  actualFee: (fee) => `実費 ${fee}`,
+  txWhat: "トランザクションハッシュ",
+  nothingSent: "未送信",
+  travelerSaid: "出張者の発言",
+  quote: (s) => `「${s}」`,
+  agentMemo: "エージェントのメモ",
+  entry: "エントリ",
+  mandateHash: "委任ハッシュ",
+  mandateHashWhat: "委任ハッシュ",
+  receiptHash: "レシートハッシュ",
+  receiptHashWhat: "レシートハッシュ",
+  feeSource: "手数料の算出元",
+  feeSourceValue: {
+    estimate: "見積もり",
+    fallback: "予備の見積もり",
+    actual: "実績",
+    none: "なし",
+  },
+  settledAt: "決済日時",
+  kilnResponseId: "Kiln レスポンス ID",
+  toolArgs: "ツール呼び出しの引数（モデルの生出力）",
+  stopReasons: "停止理由",
+};
 
-export const zh: typeof en = {};
+export const zh: typeof en = {
+  details: "详情",
+  showDetails: (id) => `显示 ${id} 的详情`,
+  hideDetails: (id) => `隐藏 ${id} 的详情`,
+  col: {
+    time: "时间",
+    merchant: "商户",
+    amount: "金额",
+    fee: "手续费",
+    total: "合计",
+    decision: "决策",
+    reasons: "原因",
+    status: "状态",
+  },
+  actualFee: (fee) => `实际 ${fee}`,
+  txWhat: "交易哈希",
+  nothingSent: "未发送",
+  travelerSaid: "出差人原话",
+  quote: (s) => `“${s}”`,
+  agentMemo: "代理备注",
+  entry: "条目",
+  mandateHash: "授权哈希",
+  mandateHashWhat: "授权哈希",
+  receiptHash: "收据哈希",
+  receiptHashWhat: "收据哈希",
+  feeSource: "手续费来源",
+  feeSourceValue: {
+    estimate: "估算",
+    fallback: "备用估算",
+    actual: "实际",
+    none: "无",
+  },
+  settledAt: "结算时间",
+  kilnResponseId: "Kiln 响应 ID",
+  toolArgs: "工具调用参数（模型原始输出）",
+  stopReasons: "拦截原因",
+};
