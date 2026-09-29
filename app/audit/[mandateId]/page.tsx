@@ -412,16 +412,16 @@ function Summary({
   audit,
   running,
   checkedAt,
-  now,
   areas,
 }: {
   mandateId: string;
   audit: AuditResponse | null;
   running: boolean;
   checkedAt: number | null;
-  now: number | null;
   areas: AreaResult[];
 }) {
+  // The "checked … ago" clock lives here so its 5 s tick re-renders only this card.
+  const now = useNow(5000);
   const t = useT();
   const f = useFmt();
   const S = t.audit.page.summary;
@@ -1384,7 +1384,6 @@ function AuditInner() {
   const router = useRouter();
   const t = useT();
   const P = t.audit.page;
-  const now = useNow(5000);
 
   const load = useCallback(() => api.audit(id), [id]);
   const audit = useResource(id ? load : null);
@@ -1533,7 +1532,7 @@ function AuditInner() {
           {audit.error && !data && (
             <ErrorState title={P.runError} error={audit.error} onRetry={rerun} retrying={audit.refreshing} />
           )}
-          <Summary mandateId={id} audit={data} running={running} checkedAt={audit.updatedAt} now={now} areas={areas} />
+          <Summary mandateId={id} audit={data} running={running} checkedAt={audit.updatedAt} areas={areas} />
           {newer && <Note state="unverifiable">{P.summary.newer(newer.now, newer.audited)}</Note>}
         </div>
 

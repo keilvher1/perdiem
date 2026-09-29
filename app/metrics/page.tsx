@@ -807,11 +807,22 @@ function MetricsSkeleton() {
   );
 }
 
-function MetricsInner() {
-  const usage = useResource(loadUsage);
+/** The "Updated … ago" label; it owns the 5 s clock so the tick re-renders only this label. */
+function UpdatedAgo({ updatedAt }: { updatedAt: number | null }) {
   const now = useNow(5000);
   const t = useT().metrics;
   const f = useFmt();
+  if (updatedAt === null) return null;
+  return (
+    <span className="text-xs text-muted-ink tabular-nums">
+      {t.header.updated(f.rel(new Date(updatedAt).toISOString(), now === null ? null : Math.max(now, updatedAt)))}
+    </span>
+  );
+}
+
+function MetricsInner() {
+  const usage = useResource(loadUsage);
+  const t = useT().metrics;
   const u = usage.data;
   const busy = usage.loading || usage.refreshing;
 
@@ -823,11 +834,7 @@ function MetricsInner() {
         description={t.header.description}
         actions={
           <>
-            {usage.updatedAt !== null && (
-              <span className="text-xs text-muted-ink tabular-nums">
-                {t.header.updated(f.rel(new Date(usage.updatedAt).toISOString(), now === null ? null : Math.max(now, usage.updatedAt)))}
-              </span>
-            )}
+            <UpdatedAgo updatedAt={usage.updatedAt} />
             <Button
               type="button"
               variant="outline"
